@@ -3,6 +3,9 @@
 import os
 import uuid
 
+class MainFrame(wx.Frame):
+    pass # 1
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
