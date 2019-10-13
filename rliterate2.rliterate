@@ -117,7 +117,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(%proportion[1])\n  HBorder(thickness=4)\n  MainArea(%proportion[2])\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(border=4 %expand)\n  HBorder(color=\"#aaaaaa\" %expand thickness=1)\n  MainArea(%expand %proportion[2])\n}\n",
 "type":"code"
 }
 ],
@@ -130,11 +130,6 @@
 "type":"code"
 },
 {
-"code_id":"7501efbaaca640c9aaf8e66a7309ad74",
-"id":"c347ec191de34906885f4aefa45f950a",
-"type":"expanded_code"
-},
-{
 "chunkpath":[
 "classes"
 ],
@@ -143,7 +138,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(%proportion[1])\n  VBorder(thickness=2)\n  Workspace(%proportion[2])\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(%expand %proportion[1])\n  VBorder(color=\"#aaaaaa\" %expand thickness=1)\n  Workspace(%expand %proportion[2])\n}\n",
 "type":"code"
 }
 ],
@@ -171,7 +166,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %vbox {\n  #background = \"#0000ff\"\n}\n",
+"text":"panel Toolbar %hbox {\n  BoxSpace(#border)\n  ToolbarButton(\n    icon=\"quit\"\n    %border[#border,TOP|BOTTOM]\n  )\n  BoxSpace(#border)\n}\n",
 "type":"code"
 }
 ],
@@ -199,7 +194,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %vbox {\n}\n",
+"text":"panel TableOfContents %vbox {\n  #background = \"#ffffff\"\n}\n",
 "type":"code"
 }
 ],
@@ -255,7 +250,7 @@
 ],
 "fragments":[
 {
-"text":"panel HBorder %vbox {\n  #background = \"#ff00ff\"\n  #min_size   = size(-1 #thickness)\n}\n",
+"text":"panel HBorder %vbox {\n  #background = #color\n  #min_size   = size(-1 #thickness)\n}\n",
 "type":"code"
 }
 ],
@@ -276,7 +271,7 @@
 ],
 "fragments":[
 {
-"text":"panel VBorder %vbox {\n  #background = \"#ffff00\"\n  #min_size   = size(#thickness -1)\n}\n",
+"text":"panel VBorder %vbox {\n  #background = #color\n  #min_size   = size(#thickness -1)\n}\n",
 "type":"code"
 }
 ],
@@ -287,11 +282,6 @@
 "rlgui/rlgui.py"
 ],
 "type":"code"
-},
-{
-"code_id":"5c17f50053b24b4cadb41b3de44a038a",
-"id":"eaf06381e66642a4a57d1cf7c04d4520",
-"type":"expanded_code"
 }
 ],
 "title":"Borders"
@@ -317,7 +307,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = instance | property\n  instance = name:x '(' insntaceBody*:xs ')' -> [\"instance\" x xs]\n  insntaceBody = sizer | propAssign\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  sizer = ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = string | call | number | propertyRef\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = name:x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propAssign\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = string | call | number | propertyRef\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = name:x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -377,7 +367,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance = .:name [ast*:xs] -> {\n    \"props = {}\\n\"\n    \"sizer = {\\\"flag\\\": wx.EXPAND, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n    xs\n    \"self._create_widget(\" name \", props, sizer)\\n\"\n  }\n  sizer = \"proportion\" ast:x -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  call = .:name astItems:y -> { name \"(\" y \")\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  call = .:name astItems:y -> { name \"(\" y \")\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -485,7 +475,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n",
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
 "type":"code"
 }
 ],
@@ -501,7 +491,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer):\n        widget = widget_cls(self, props)\n        self.Sizer.Insert(self._sizer_index, widget, **sizer)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n",
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer):\n        widget = widget_cls(self, props)\n        self.Sizer.Insert(self._sizer_index, widget, **sizer)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
 "type":"code"
 }
 ],
@@ -538,6 +528,38 @@
 }
 ],
 "id":"c16e05ddb3ef4549ad64ffc3f46a411a",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiPanel(wx.Panel, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n",
+"type":"code"
+}
+],
+"id":"ed59b02189cd466c8409d47dae04ed0b",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ToolbarButton(wx.BitmapButton, RLGuiMixin):\n\n    def __init__(self, parent, props):\n        wx.BitmapButton.__init__(\n            self,\n            parent,\n            bitmap=wx.ArtProvider.GetBitmap(\n                {\n                    \"add\": wx.ART_ADD_BOOKMARK,\n                    \"back\": wx.ART_GO_BACK,\n                    \"forward\": wx.ART_GO_FORWARD,\n                    \"undo\": wx.ART_UNDO,\n                    \"redo\": wx.ART_REDO,\n                    \"quit\": wx.ART_QUIT,\n                    \"save\": wx.ART_FILE_SAVE,\n                }.get(props.get(\"icon\"), wx.ART_QUESTION),\n                wx.ART_BUTTON,\n                (24, 24)\n            ),\n            style=wx.NO_BORDER\n        )\n        RLGuiMixin.__init__(self, props)\n",
+"type":"code"
+}
+],
+"id":"a18b175c332a41bebdeb0acb6332dcbd",
 "type":"code"
 }
 ],
