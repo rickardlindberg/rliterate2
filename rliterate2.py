@@ -146,8 +146,12 @@ class Project(object):
             "toolbar": {
                 "border": 4,
             },
-            "toc": {},
-            "workspace": {},
+            "toc": {
+                "background": "#ffeeff",
+                "width": 230,
+            },
+            "workspace": {
+            },
             "border": {
                 "thickness": 2,
                 "color": "#aaaaff",
@@ -242,8 +246,7 @@ class TableOfContents(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'background': '#ffffff',
-            'min_size': size(250, -1),
+            'min_size': size(self._props['width'], -1),
         }
 
     def _create_sizer(self):

@@ -85,7 +85,7 @@
 ],
 "fragments":[
 {
-"text":"class Project(object):\n\n    def __init__(self, doc):\n        self._doc = doc\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {},\n            \"workspace\": {},\n            \"border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            }\n        }\n",
+"text":"class Project(object):\n\n    def __init__(self, doc):\n        self._doc = doc\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n            },\n            \"workspace\": {\n            },\n            \"border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            }\n        }\n",
 "type":"code"
 }
 ],
@@ -217,7 +217,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %vbox {\n  #background = \"#ffffff\"\n  #min_size   = size(250 -1)\n}\n",
+"text":"panel TableOfContents %vbox {\n  #min_size = size(#width -1)\n}\n",
 "type":"code"
 }
 ],
