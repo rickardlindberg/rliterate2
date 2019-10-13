@@ -138,7 +138,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(%expand %proportion[1])\n  VBorder(color=\"#aaaaaa\" %expand thickness=1)\n  Workspace(%expand %proportion[2])\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(%expand)\n  VBorder(color=\"#aaaaaa\" %expand thickness=1)\n  Workspace(%expand %proportion[1])\n}\n",
 "type":"code"
 }
 ],
@@ -194,7 +194,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %vbox {\n  #background = \"#ffffff\"\n}\n",
+"text":"panel TableOfContents %vbox {\n  #background = \"#ffffff\"\n  #min_size   = size(250 -1)\n}\n",
 "type":"code"
 }
 ],

@@ -177,7 +177,6 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 1
         self._create_widget(TableOfContents, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
@@ -188,7 +187,7 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 2
+        sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer)
 
 class Toolbar(RLGuiPanel):
@@ -217,6 +216,7 @@ class TableOfContents(RLGuiPanel):
     def _get_props(self):
         return {
             'background': '#ffffff',
+            'min_size': size(250, -1),
         }
 
     def _create_sizer(self):
