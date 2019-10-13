@@ -117,7 +117,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar()\n  HBorder()\n  Toolbar()\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(%proportion[1])\n  HBorder()\n  MainArea(%proportion[2])\n}\n",
 "type":"code"
 }
 ],
@@ -131,7 +131,7 @@
 },
 {
 "code_id":"7501efbaaca640c9aaf8e66a7309ad74",
-"id":"baa2b6e9def04cbfa294872bf05aedf4",
+"id":"c347ec191de34906885f4aefa45f950a",
 "type":"expanded_code"
 },
 {
@@ -143,7 +143,119 @@
 ],
 "fragments":[
 {
-"text":"panel HBorder %vbox {\n  #background = \"#ff00ff\"\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(%proportion[1])\n  VBorder()\n  Workspace(%proportion[2])\n}\n",
+"type":"code"
+}
+],
+"id":"a8e40ef2da854034b55c8c7a3097e3ba",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Main frame"
+},
+{
+"children":[],
+"id":"a52749c4dac1446ba6877e63f59b00d3",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel Toolbar %vbox {\n  #background = \"#0000ff\"\n}\n",
+"type":"code"
+}
+],
+"id":"7d87330167694a41a0222b278aeb5aa5",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Toolbar"
+},
+{
+"children":[],
+"id":"1f79ba6407164d8dbcc3f2e90f409093",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel TableOfContents %vbox {\n}\n",
+"type":"code"
+}
+],
+"id":"e0db56dacc9f4aa3b223033b6feee2f2",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Table of contents"
+},
+{
+"children":[],
+"id":"e6a157bbac8842a2b8c625bfa9255159",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel Workspace %hbox {\n}\n",
+"type":"code"
+}
+],
+"id":"3e408b8af8bf432f9db783f07ea161d8",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Workspace"
+},
+{
+"children":[],
+"id":"b022c98477a04ed2a492e75f63e75796",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel HBorder %vbox {\n  #background = \"#ff00ff\"\n  #min_size   = size(-1 3)\n}\n",
 "type":"code"
 }
 ],
@@ -156,11 +268,6 @@
 "type":"code"
 },
 {
-"code_id":"6b9bbfc9a6cd4bb88cea712ebb9909dd",
-"id":"94ac21b275c84ab59414c88b0c9c0e35",
-"type":"expanded_code"
-},
-{
 "chunkpath":[
 "classes"
 ],
@@ -169,25 +276,20 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %vbox {\n  #background = \"#00ffff\"\n}\n",
+"text":"panel VBorder %vbox {\n  #background = \"#ffff00\"\n  #min_size   = size(3 -1)\n}\n",
 "type":"code"
 }
 ],
-"id":"7d87330167694a41a0222b278aeb5aa5",
+"id":"5c17f50053b24b4cadb41b3de44a038a",
 "language":"rlgui",
 "post_process":[
 "python",
 "rlgui/rlgui.py"
 ],
 "type":"code"
-},
-{
-"code_id":"7d87330167694a41a0222b278aeb5aa5",
-"id":"660ca520d84b41999ce91a917e9ffa39",
-"type":"expanded_code"
 }
 ],
-"title":"Main frame"
+"title":"Borders"
 }
 ],
 "id":"d625649aae0a40bcb3e2e8cc9ede4373",
@@ -210,7 +312,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = instance | property\n  instance = name:x '()' -> [\"instance\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  expr = string\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = instance | property\n  instance = name:x '(' sizer*:xs ')' -> [\"instance\" x xs]\n  sizer = ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  expr = string | call | number\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = name:x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -270,7 +372,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance = .:name -> {\n    \"self._create_widget(\" name \")\\n\"\n  }\n  property = .:name ast:default -> {\n    repr(name) \": \" default \",\\n\"\n  }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance = .:name [ast*:xs] -> {\n    \"sizer = {\\\"flag\\\": wx.EXPAND, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n    xs\n    \"self._create_widget(\" name \", sizer=sizer)\\n\"\n  }\n  sizer = \"proportion\" ast:x -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n  property = .:name ast:default -> {\n    repr(name) \": \" default \",\\n\"\n  }\n  call = .:name astItems:y -> { name \"(\" y \")\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = .:x -> repr(x)\n  number = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -343,6 +445,24 @@
 "--support"
 ],
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def size(w, h):\n    return wx.Size(w, h)\n",
+"type":"code"
+}
+],
+"id":"90df86522a67483095acdf98bf1c58a8",
+"language":"",
+"post_process":[],
+"type":"code"
 }
 ],
 "title":"Compiler"
@@ -376,7 +496,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls):\n        widget = widget_cls(self, {})\n        self.Sizer.Insert(self._sizer_index, widget, flag=wx.EXPAND, proportion=1)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n",
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, sizer):\n        widget = widget_cls(self, {})\n        self.Sizer.Insert(self._sizer_index, widget, **sizer)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n",
 "type":"code"
 }
 ],

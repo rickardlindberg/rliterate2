@@ -55,6 +55,8 @@ class RLGuiContainerMixin(RLGuiMixin):
         for name in self._changed_props:
             if name == "background":
                 self.SetBackgroundColour(self._props["background"])
+            if name == "min_size":
+                self.SetMinSize(self._props["min_size"])
 
     def _create(self):
         self._update_builtin()
@@ -62,9 +64,9 @@ class RLGuiContainerMixin(RLGuiMixin):
         self._child_index = 0
         self._create_widgets()
 
-    def _create_widget(self, widget_cls):
+    def _create_widget(self, widget_cls, sizer):
         widget = widget_cls(self, {})
-        self.Sizer.Insert(self._sizer_index, widget, flag=wx.EXPAND, proportion=1)
+        self.Sizer.Insert(self._sizer_index, widget, **sizer)
         self._sizer_index += 1
         self._children.insert(self._child_index, widget)
         self._child_index += 1
@@ -92,15 +94,40 @@ class MainFrame(RLGuiFrame):
 
     def _create_widgets(self):
         pass
-        self._create_widget(Toolbar)
-        self._create_widget(HBorder)
-        self._create_widget(Toolbar)
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        sizer["proportion"] = 1
+        self._create_widget(Toolbar, sizer=sizer)
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        self._create_widget(HBorder, sizer=sizer)
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        sizer["proportion"] = 2
+        self._create_widget(MainArea, sizer=sizer)
 
-class HBorder(RLGuiPanel):
+class MainArea(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'background': '#ff00ff',
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        sizer["proportion"] = 1
+        self._create_widget(TableOfContents, sizer=sizer)
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        self._create_widget(VBorder, sizer=sizer)
+        sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
+        sizer["proportion"] = 2
+        self._create_widget(Workspace, sizer=sizer)
+
+class Toolbar(RLGuiPanel):
+
+    def _get_props(self):
+        return {
+            'background': '#0000ff',
         }
 
     def _create_sizer(self):
@@ -109,11 +136,50 @@ class HBorder(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class Toolbar(RLGuiPanel):
+class TableOfContents(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'background': '#00ffff',
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+
+class Workspace(RLGuiPanel):
+
+    def _get_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+
+class HBorder(RLGuiPanel):
+
+    def _get_props(self):
+        return {
+            'background': '#ff00ff',
+            'min_size': size(-1, 3),
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+
+class VBorder(RLGuiPanel):
+
+    def _get_props(self):
+        return {
+            'background': '#ffff00',
+            'min_size': size(3, -1),
         }
 
     def _create_sizer(self):
@@ -148,6 +214,9 @@ def genid():
 def load_json_from_file(path):
     with open(path) as f:
         return json.load(f)
+
+def size(w, h):
+    return wx.Size(w, h)
 
 def main():
     app = wx.App()
