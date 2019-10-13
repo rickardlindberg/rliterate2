@@ -179,8 +179,8 @@ class MainFrame(RLGuiFrame):
         self._create_widget(HBorder, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
-        props['border'] = self._props['border']
         props['toc'] = self._props['toc']
+        props['border'] = self._props['border']
         props['workspace'] = self._props['workspace']
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1

@@ -140,7 +140,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #border\n    %expand\n  )\n  MainArea(\n    border    = #border\n    toc       = #toc\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #border\n    %expand\n  )\n  MainArea(\n    toc       = #toc\n    border    = #border\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
