@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import uuid
 import wx
 
@@ -135,6 +136,20 @@ class ToolbarButton(wx.BitmapButton, RLGuiMixin):
         )
         RLGuiMixin.__init__(self, props)
 
+class Project(object):
+
+    def __init__(self, doc):
+        self._doc = doc
+
+    def create_view(self):
+        return {
+            "toolbar": {
+                "border": 4,
+            },
+            "toc": {},
+            "workspace": {},
+        }
+
 class MainFrame(RLGuiFrame):
 
     def _get_props(self):
@@ -148,7 +163,8 @@ class MainFrame(RLGuiFrame):
         pass
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
-        props['border'] = 4
+        for k, v in self._props['toolbar'].items():
+            props[k] = v
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Toolbar, props, sizer)
         props = {}
@@ -159,6 +175,8 @@ class MainFrame(RLGuiFrame):
         self._create_widget(HBorder, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        props['toc'] = self._props['toc']
+        props['workspace'] = self._props['workspace']
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 2
         self._create_widget(MainArea, props, sizer)
@@ -176,6 +194,8 @@ class MainArea(RLGuiPanel):
         pass
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        for k, v in self._props['toc'].items():
+            props[k] = v
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContents, props, sizer)
         props = {}
@@ -186,6 +206,8 @@ class MainArea(RLGuiPanel):
         self._create_widget(VBorder, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        for k, v in self._props['workspace'].items():
+            props[k] = v
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer)
@@ -297,7 +319,8 @@ def size(w, h):
 
 def main():
     app = wx.App()
-    frame = MainFrame(None, {})
+    project = Project(load_document_from_file(sys.argv[1]))
+    frame = MainFrame(None, project.create_view())
     frame.Show()
     app.MainLoop()
 
