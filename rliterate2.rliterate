@@ -143,6 +143,8 @@
 "title":"GUI"
 },
 {
+"children":[
+{
 "children":[],
 "id":"26afd5121ebb4f6eafe5ccb1e934ffd3",
 "paragraphs":[
@@ -156,7 +158,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget =\n    containerType:x name:y boxType:z\n    ws '{' body*:as ws '}' ws !.       -> [x y [z as]]\n  containerType = ws (\n    | 'frame'\n    ):x !NameChar -> x\n  boxType = ws (\n    | '%vbox'\n    ):x !NameChar -> x\n  body = 'i will not match and i dont care'\n  name = ws NameChar:x NameChar*:xs   -> join([x ~xs])\n  NameChar = 'a'-'z' | 'A'-'Z'\n  ws = (' ' | '\\n')*\n}\n",
+"text":"GuiParser {\n  widget =\n    containerType:c name:name boxType:b\n    ws '{' body*:ps ws '}' ws !.       -> [\"widget\" name c b ~ps]\n  containerType = ws (\n    | 'frame'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    ):x !NameChar -> [\"box\" x]\n  body = 'i will not match and i dont care'\n  name = ws NameStart:x NameChar*:xs   -> join([x ~xs])\n  ws = (' ' | '\\n')*\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -170,6 +172,25 @@
 },
 {
 "chunkpath":[
+"support"
+],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"join = \"\".join\n",
+"type":"code"
+}
+],
+"id":"b762d2f9dacf44c0914eadb32ef5d1fc",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -178,7 +199,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast =\n    | [topLevel:x .:name ast:y]-> {\n      \"class \" name \"(\" x \"):\\n\" > y <\n    }\n    | . -> \"pass # 1\"\n  topLevel =\n    | \"frame\" -> \"wx.Frame\"\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  widget = .:name ast:container ast:sizer ast*:def -> {\n    \"class \" name \"(\" container \"):\\n\" >\n      \"def _get_defaults(self):\\n\" >\n        \"pass\\n\" >\n        <\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\" >\n        <\n      <\n      \"def _create(self):\\n\" >\n        \"pass\\n\" >\n        def\n        <\n      <\n    <\n  }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n}\n",
 "type":"code"
 }
 ],
@@ -202,7 +223,7 @@
 "type":"code"
 },
 {
-"blank_lines_before":0,
+"blank_lines_before":1,
 "path":[
 "support"
 ],
@@ -222,7 +243,7 @@
 "type":"chunk"
 },
 {
-"text":"\njoin = \"\".join\n\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.stderr.write(e.describe())\n        sys.exit(1)\n",
+"text":"\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.stderr.write(e.describe())\n        sys.exit(1)\n",
 "type":"code"
 }
 ],
@@ -239,11 +260,12 @@
 ],
 "fragments":[
 {
-"text":"# Dummy content to generate support library\n",
+"text":"# Placeholder to generate support library\n",
 "type":"code"
 }
 ],
-"id":"9080e9fe9d494de79f6f67cbb7375c5b",
+"id":"7f08cdb6050944b98378a4b4106105d9",
+"language":"",
 "post_process":[
 "python",
 "rlmeta/rlmeta.py",
@@ -252,6 +274,66 @@
 "type":"code"
 }
 ],
+"title":"Compiler"
+},
+{
+"children":[],
+"id":"da31b318d9f2479496494b3e56985a07",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiMixin(object):\n\n    def __init__(self):\n        self.props = {}\n        self.props.update(self._get_defaults())\n        self._create_gui()\n\n    def _get_defaults(self):\n        return {}\n\n    def UpdateProps(self, props):\n        changed = False\n        for key, value in props.items():\n            if self._prop_differs(key, value):\n                self.props[key] = value\n                changed = True\n        if changed:\n            self._update_gui()\n\n    def _prop_differs(self, key, value):\n        if key not in self.props:\n            return True\n        if self.props[key] is value:\n            return False\n        if self.props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n",
+"type":"code"
+}
+],
+"id":"a0987644a69445dea88e612f31f16eba",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self._children = []\n\n    def _update_gui(self):\n        self._sizer_index = 0\n        self._child_index = 0\n\n    def _add(self, widget_cls, properties, handlers, sizer):\n        widget = widget_cls(self._container, properties)\n        self._sizer.Insert(self._sizer_index)\n        self._children.insert(self._child_index)\n",
+"type":"code"
+}
+],
+"id":"e09eeec305864f0e9a791b0e287def75",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n    pass\n",
+"type":"code"
+}
+],
+"id":"1f2d77d65d6345b884d7755a1e963332",
+"type":"code"
+}
+],
+"title":"Support library"
+}
+],
+"id":"f4c7873224fb4dfcbe73180d7afdfd72",
+"paragraphs":[],
 "title":"GUI framework"
 },
 {
@@ -267,7 +349,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    print(\"Hello\")\n",
+"text":"def main():\n    app = wx.App()\n    frame = MainFrame(None)\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -288,7 +370,19 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nimport os\nimport uuid\n\n",
+"text":"#!/usr/bin/env python3\n\nimport os\nimport uuid\nimport wx\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"base classes"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
 "type":"code"
 },
 {
