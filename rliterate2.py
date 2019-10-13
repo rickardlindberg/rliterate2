@@ -183,7 +183,7 @@ class MainFrame(RLGuiFrame):
         props['toc'] = self._props['toc']
         props['workspace'] = self._props['workspace']
         sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 2
+        sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer)
 
 class MainArea(RLGuiPanel):

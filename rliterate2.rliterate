@@ -140,7 +140,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(#toolbar %expand)\n  HBorder(#border %expand)\n  MainArea(border=#border toc=#toc workspace=#workspace %expand %proportion[2])\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #border\n    %expand\n  )\n  MainArea(\n    border    = #border\n    toc       = #toc\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -161,7 +161,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(#toc %expand)\n  VBorder(#border %expand)\n  Workspace(#workspace %expand %proportion[1])\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #border\n    %expand\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
