@@ -117,7 +117,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar()\n  HBorder()\n  Toolbar()\n}\n",
 "type":"code"
 }
 ],
@@ -132,6 +132,58 @@
 {
 "code_id":"7501efbaaca640c9aaf8e66a7309ad74",
 "id":"baa2b6e9def04cbfa294872bf05aedf4",
+"type":"expanded_code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel HBorder %vbox {\n  #background = \"#ff00ff\"\n}\n",
+"type":"code"
+}
+],
+"id":"6b9bbfc9a6cd4bb88cea712ebb9909dd",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"code_id":"6b9bbfc9a6cd4bb88cea712ebb9909dd",
+"id":"94ac21b275c84ab59414c88b0c9c0e35",
+"type":"expanded_code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel Toolbar %vbox {\n  #background = \"#00ffff\"\n}\n",
+"type":"code"
+}
+],
+"id":"7d87330167694a41a0222b278aeb5aa5",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"code_id":"7d87330167694a41a0222b278aeb5aa5",
+"id":"660ca520d84b41999ce91a917e9ffa39",
 "type":"expanded_code"
 }
 ],
@@ -158,7 +210,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget =\n    containerType:c name:name boxType:b\n    ws '{' body*:ps ws '}' ws !.       -> [\"widget\" name c b ~ps]\n  containerType = ws (\n    | 'frame'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    ):x !NameChar -> [\"box\" x]\n  body = 'i will not match and i dont care'\n  name = ws NameStart:x NameChar*:xs   -> join([x ~xs])\n  ws = (' ' | '\\n')*\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = instance | property\n  instance = name:x '()' -> [\"instance\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  expr = string\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -191,6 +243,25 @@
 },
 {
 "chunkpath":[
+"support"
+],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"def partition(values):\n    by_type = defaultdict(list)\n    for x in values:\n        by_type[x[0]].append(x)\n    return by_type\n\ndef extract(by_type, name):\n    return by_type[name]\n",
+"type":"code"
+}
+],
+"id":"cdbf7f0cd1754a718c370450a4f01496",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -199,7 +270,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  widget = .:name ast:container ast:sizer ast*:def -> {\n    \"class \" name \"(\" container \"):\\n\" >\n      \"def _get_defaults(self):\\n\" >\n        \"pass\\n\" >\n        <\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\" >\n        <\n      <\n      \"def _create(self):\\n\" >\n        \"pass\\n\" >\n        def\n        <\n      <\n    <\n  }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance = .:name -> {\n    \"self._create_widget(\" name \")\\n\"\n  }\n  property = .:name ast:default -> {\n    repr(name) \": \" default \",\\n\"\n  }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -219,7 +290,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python2\n\nimport sys\n\n",
+"text":"#!/usr/bin/env python2\n\nfrom collections import defaultdict\nimport sys\n\n",
 "type":"code"
 },
 {
@@ -289,7 +360,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiMixin(object):\n\n    def __init__(self):\n        self.props = {}\n        self.props.update(self._get_defaults())\n        self._create_gui()\n\n    def _get_defaults(self):\n        return {}\n\n    def UpdateProps(self, props):\n        changed = False\n        for key, value in props.items():\n            if self._prop_differs(key, value):\n                self.props[key] = value\n                changed = True\n        if changed:\n            self._update_gui()\n\n    def _prop_differs(self, key, value):\n        if key not in self.props:\n            return True\n        if self.props[key] is value:\n            return False\n        if self.props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n",
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [props, self._get_props()]:\n            for key, value in p.items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n",
 "type":"code"
 }
 ],
@@ -305,7 +376,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self._children = []\n\n    def _update_gui(self):\n        self._sizer_index = 0\n        self._child_index = 0\n\n    def _add(self, widget_cls, properties, handlers, sizer):\n        widget = widget_cls(self._container, properties)\n        self._sizer.Insert(self._sizer_index)\n        self._children.insert(self._child_index)\n",
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls):\n        widget = widget_cls(self, {})\n        self.Sizer.Insert(self._sizer_index, widget, flag=wx.EXPAND, proportion=1)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n",
 "type":"code"
 }
 ],
@@ -321,11 +392,27 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n    pass\n",
+"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Frame.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n",
 "type":"code"
 }
 ],
 "id":"1f2d77d65d6345b884d7755a1e963332",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiPanel(wx.Panel, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n",
+"type":"code"
+}
+],
+"id":"c16e05ddb3ef4549ad64ffc3f46a411a",
 "type":"code"
 }
 ],
@@ -349,7 +436,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    app = wx.App()\n    frame = MainFrame(None)\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def main():\n    app = wx.App()\n    frame = MainFrame(None, {})\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
