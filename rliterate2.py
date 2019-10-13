@@ -17,8 +17,8 @@ class RLGuiMixin(object):
 
     def _update_props(self, props):
         self._changed_props = []
-        for p in [props, self._get_props()]:
-            for key, value in p.items():
+        for p in [lambda: props, self._get_props]:
+            for key, value in p().items():
                 if self._prop_differs(key, value):
                     self._props[key] = value
                     self._changed_props.append(key)
@@ -64,8 +64,8 @@ class RLGuiContainerMixin(RLGuiMixin):
         self._child_index = 0
         self._create_widgets()
 
-    def _create_widget(self, widget_cls, sizer):
-        widget = widget_cls(self, {})
+    def _create_widget(self, widget_cls, props, sizer):
+        widget = widget_cls(self, props)
         self.Sizer.Insert(self._sizer_index, widget, **sizer)
         self._sizer_index += 1
         self._children.insert(self._child_index, widget)
@@ -94,14 +94,18 @@ class MainFrame(RLGuiFrame):
 
     def _create_widgets(self):
         pass
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
         sizer["proportion"] = 1
-        self._create_widget(Toolbar, sizer=sizer)
+        self._create_widget(Toolbar, props, sizer)
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
-        self._create_widget(HBorder, sizer=sizer)
+        props['thickness'] = 4
+        self._create_widget(HBorder, props, sizer)
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
         sizer["proportion"] = 2
-        self._create_widget(MainArea, sizer=sizer)
+        self._create_widget(MainArea, props, sizer)
 
 class MainArea(RLGuiPanel):
 
@@ -114,14 +118,18 @@ class MainArea(RLGuiPanel):
 
     def _create_widgets(self):
         pass
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
         sizer["proportion"] = 1
-        self._create_widget(TableOfContents, sizer=sizer)
+        self._create_widget(TableOfContents, props, sizer)
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
-        self._create_widget(VBorder, sizer=sizer)
+        props['thickness'] = 2
+        self._create_widget(VBorder, props, sizer)
+        props = {}
         sizer = {"flag": wx.EXPAND, "border": 0, "proportion": 0}
         sizer["proportion"] = 2
-        self._create_widget(Workspace, sizer=sizer)
+        self._create_widget(Workspace, props, sizer)
 
 class Toolbar(RLGuiPanel):
 
@@ -165,7 +173,7 @@ class HBorder(RLGuiPanel):
     def _get_props(self):
         return {
             'background': '#ff00ff',
-            'min_size': size(-1, 3),
+            'min_size': size(-1, self._props['thickness']),
         }
 
     def _create_sizer(self):
@@ -179,7 +187,7 @@ class VBorder(RLGuiPanel):
     def _get_props(self):
         return {
             'background': '#ffff00',
-            'min_size': size(3, -1),
+            'min_size': size(self._props['thickness'], -1),
         }
 
     def _create_sizer(self):
