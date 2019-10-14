@@ -39,7 +39,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n                \"set_width\": self._set_toc_width,\n            },\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
+"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create(self):\n        return {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(self._path),\n                os.path.abspath(os.path.dirname(self._path))\n            ),\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n                \"set_width\": self._set_toc_width,\n            },\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
 "type":"code"
 }
 ],
@@ -518,6 +518,52 @@
 "children":[
 {
 "children":[],
+"id":"35d081d36a7546bbb2c4785312fb3a12",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n        self._update_builtin()\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._update_props(props):\n            self._update_gui()\n            self._update_builtin()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n            if name == \"cursor\":\n                self.SetCursor({\n                    \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                }.get(self._props[\"cursor\"]))\n\n    def _get_props(self):\n        return {}\n",
+"type":"code"
+}
+],
+"id":"a0987644a69445dea88e612f31f16eba",
+"type":"code"
+}
+],
+"title":"Base"
+},
+{
+"children":[],
+"id":"70714ee9823a41518a42251ffb370b01",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _create(self):\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].update_props(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
+"type":"code"
+}
+],
+"id":"e09eeec305864f0e9a791b0e287def75",
+"type":"code"
+}
+],
+"title":"Container"
+},
+{
+"children":[],
 "id":"e5101e53ceb24575920e4cb52b50298e",
 "paragraphs":[
 {
@@ -568,7 +614,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Frame.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n",
+"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Frame.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n\n    def _update_builtin(self):\n        RLGuiContainerMixin._update_builtin(self)\n        if \"title\" in self._changed_props:\n            self.SetTitle(self.prop(\"title\"))\n",
 "type":"code"
 }
 ],
@@ -612,40 +658,7 @@
 }
 ],
 "id":"da31b318d9f2479496494b3e56985a07",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
-"type":"code"
-}
-],
-"id":"a0987644a69445dea88e612f31f16eba",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n            if name == \"cursor\":\n                self.SetCursor({\n                    \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                }.get(self._props[\"cursor\"]))\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].update_props(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
-"type":"code"
-}
-],
-"id":"e09eeec305864f0e9a791b0e287def75",
-"type":"code"
-}
-],
+"paragraphs":[],
 "title":"Support library"
 }
 ],

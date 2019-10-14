@@ -71,6 +71,7 @@ class RLGuiMixin(object):
         self._props = {}
         self._update_props(props)
         self._create_gui()
+        self._update_builtin()
 
     def prop(self, path):
         value = self._props
@@ -81,6 +82,7 @@ class RLGuiMixin(object):
     def update_props(self, props):
         if self._update_props(props):
             self._update_gui()
+            self._update_builtin()
 
     def _update_props(self, props):
         self._changed_props = []
@@ -106,6 +108,17 @@ class RLGuiMixin(object):
     def _update_gui(self):
         pass
 
+    def _update_builtin(self):
+        for name in self._changed_props:
+            if name == "background":
+                self.SetBackgroundColour(self._props["background"])
+            if name == "min_size":
+                self.SetMinSize(self._props["min_size"])
+            if name == "cursor":
+                self.SetCursor({
+                    "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
+                }.get(self._props["cursor"]))
+
     def _get_props(self):
         return {}
 
@@ -121,19 +134,7 @@ class RLGuiContainerMixin(RLGuiMixin):
         self.Layout()
         self.Refresh()
 
-    def _update_builtin(self):
-        for name in self._changed_props:
-            if name == "background":
-                self.SetBackgroundColour(self._props["background"])
-            if name == "min_size":
-                self.SetMinSize(self._props["min_size"])
-            if name == "cursor":
-                self.SetCursor({
-                    "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
-                }.get(self._props["cursor"]))
-
     def _create(self):
-        self._update_builtin()
         self._sizer_index = 0
         self._child_index = 0
         self._create_widgets()
@@ -201,6 +202,11 @@ class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
         wx.Frame.__init__(self, parent)
         RLGuiContainerMixin.__init__(self, props)
 
+    def _update_builtin(self):
+        RLGuiContainerMixin._update_builtin(self)
+        if "title" in self._changed_props:
+            self.SetTitle(self.prop("title"))
+
 class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
 
     def __init__(self, parent, props):
@@ -254,6 +260,10 @@ class MainFrameView(Observable):
 
     def create(self):
         return {
+            "title": "{} ({}) - RLiterate 2".format(
+                os.path.basename(self._path),
+                os.path.abspath(os.path.dirname(self._path))
+            ),
             "toolbar": {
                 "border": 4,
             },
