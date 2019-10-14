@@ -7,6 +7,22 @@ import time
 import uuid
 import wx
 
+def main():
+    @profile("create")
+    def create():
+        return view.create_view()
+    @profile("update")
+    def update(props):
+        return frame.UpdateProps(props)
+    def listener():
+        update(create())
+    app = wx.App()
+    view = MainFrameView(sys.argv[1])
+    view.listen(listener)
+    frame = MainFrame(None, view.create_view())
+    frame.Show()
+    app.MainLoop()
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -43,7 +59,7 @@ def profile(text):
             t1 = time.perf_counter()
             value = fn(*args, **kwargs)
             t2 = time.perf_counter()
-            print("{}: {:.3}ms".format(text, 1000*(t2-t1)))
+            print("{}: {:.3f}ms".format(text, 1000*(t2-t1)))
             return value
         if "--profile" in sys.argv:
             return fn_with_timing
@@ -51,17 +67,6 @@ def profile(text):
             return fn
     return wrap
 
-
-def main():
-    @profile("create & update main")
-    def listener():
-        frame.UpdateProps(view.create_view())
-    app = wx.App()
-    view = MainFrameView(load_document_from_file(sys.argv[1]))
-    view.listen(listener)
-    frame = MainFrame(None, view.create_view())
-    frame.Show()
-    app.MainLoop()
 
 class RLGuiMixin(object):
 
@@ -239,39 +244,6 @@ class Observable(object):
     def unlisten(self, listener):
         self._listeners.remove(listener)
 
-class MainFrameView(Observable):
-
-    def __init__(self, doc):
-        Observable.__init__(self)
-        self._doc = doc
-        self._toc_width = 230
-
-    def create_view(self):
-        return {
-            "toolbar": {
-                "border": 4,
-            },
-            "toc": {
-                "background": "#ffeeff",
-                "width": self._toc_width,
-            },
-            "set_toc_width": self._set_toc_width,
-            "workspace": {
-            },
-            "toolbar_border": {
-                "thickness": 2,
-                "color": "#aaaaff",
-            },
-            "toc_border": {
-                "thickness": 3,
-                "color": "#aaaaaf",
-            },
-        }
-
-    def _set_toc_width(self, value):
-        self._toc_width = max(50, value)
-        self._notify()
-
 class MainFrame(RLGuiFrame):
 
     def _get_props(self):
@@ -349,6 +321,39 @@ class MainArea(RLGuiPanel):
             self._start_width = self._props["toc"]["width"]
         else:
             self._props["set_toc_width"](self._start_width+event.dx)
+
+class MainFrameView(Observable):
+
+    def __init__(self, path):
+        Observable.__init__(self)
+        self._path = path
+        self._toc_width = 230
+
+    def create_view(self):
+        return {
+            "toolbar": {
+                "border": 4,
+            },
+            "toc": {
+                "background": "#ffeeff",
+                "width": self._toc_width,
+            },
+            "set_toc_width": self._set_toc_width,
+            "workspace": {
+            },
+            "toolbar_border": {
+                "thickness": 2,
+                "color": "#aaaaff",
+            },
+            "toc_border": {
+                "thickness": 3,
+                "color": "#aaaaaf",
+            },
+        }
+
+    def _set_toc_width(self, value):
+        self._toc_width = max(50, value)
+        self._notify()
 
 class Toolbar(RLGuiPanel):
 
