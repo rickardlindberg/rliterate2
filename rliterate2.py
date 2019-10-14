@@ -263,8 +263,8 @@ class MainFrameView(Observable):
             "toc": {
                 "background": "#ffeeff",
                 "width": self._toc_width,
+                "set_width": self._set_toc_width,
             },
-            "set_toc_width": self._set_toc_width,
             "workspace": {
             },
             "toolbar_border": {
@@ -310,7 +310,6 @@ class MainFrame(RLGuiFrame):
         props['toc'] = self._props['toc']
         props['toc_border'] = self._props['toc_border']
         props['workspace'] = self._props['workspace']
-        props['set_toc_width'] = self._props['set_toc_width']
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer, handlers)
@@ -352,7 +351,7 @@ class MainArea(RLGuiPanel):
         if event.initial:
             self._start_width = self.prop("toc.width")
         else:
-            self.prop("set_toc_width")(self._start_width+event.dx)
+            self.prop("toc.set_width")(self._start_width+event.dx)
 
 class Toolbar(RLGuiPanel):
 
