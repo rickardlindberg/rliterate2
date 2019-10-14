@@ -518,6 +518,45 @@
 "children":[
 {
 "children":[],
+"id":"e5101e53ceb24575920e4cb52b50298e",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n",
+"type":"code"
+}
+],
+"id":"0ec8866b29734c2ca5d8699411d5f613",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"DragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
+"type":"code"
+}
+],
+"id":"c271e666cf75407b9f4d10b0860cbae8",
+"type":"code"
+}
+],
+"title":"Event handling"
+},
+{
+"children":[],
 "id":"bf2fd902b8794da3851327a2a97f4939",
 "paragraphs":[
 {
@@ -604,38 +643,6 @@
 }
 ],
 "id":"e09eeec305864f0e9a791b0e287def75",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n",
-"type":"code"
-}
-],
-"id":"0ec8866b29734c2ca5d8699411d5f613",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"DragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
-"type":"code"
-}
-],
-"id":"c271e666cf75407b9f4d10b0860cbae8",
 "type":"code"
 }
 ],
