@@ -13,7 +13,7 @@ def main():
         return view.create()
     @profile("update")
     def update(props):
-        frame.UpdateProps(props)
+        frame.update_props(props)
     app = wx.App()
     view = MainFrameView(sys.argv[1])
     view.listen(lambda: update(create()))
@@ -72,15 +72,15 @@ class RLGuiMixin(object):
         self._update_props(props)
         self._create_gui()
 
-    def UpdateProps(self, props):
-        if self._update_props(props):
-            self._update_gui()
-
     def prop(self, path):
         value = self._props
         for part in path.split("."):
             value = value[part]
         return value
+
+    def update_props(self, props):
+        if self._update_props(props):
+            self._update_gui()
 
     def _update_props(self, props):
         self._changed_props = []
@@ -147,7 +147,7 @@ class RLGuiContainerMixin(RLGuiMixin):
             self.Sizer.Insert(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, widget)
         else:
-            self._children[self._child_index].UpdateProps(props)
+            self._children[self._child_index].update_props(props)
         self._sizer_index += 1
         self._child_index += 1
 
