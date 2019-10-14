@@ -39,6 +39,22 @@
 ],
 "fragments":[
 {
+"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n            },\n            \"set_toc_width\": self._set_toc_width,\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
+"type":"code"
+}
+],
+"id":"817bfdde2cd042328c69a297120bdf9d",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
 "text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc           = #toc\n    toc_border    = #toc_border\n    workspace     = #workspace\n    set_toc_width = #set_toc_width\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
@@ -88,22 +104,6 @@
 "id":"72cfc592c2ea47e499de1164ed087bdb",
 "language":"",
 "post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n            },\n            \"set_toc_width\": self._set_toc_width,\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
-"type":"code"
-}
-],
-"id":"817bfdde2cd042328c69a297120bdf9d",
 "type":"code"
 }
 ],

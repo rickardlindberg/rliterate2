@@ -244,6 +244,39 @@ class Observable(object):
     def unlisten(self, listener):
         self._listeners.remove(listener)
 
+class MainFrameView(Observable):
+
+    def __init__(self, path):
+        Observable.__init__(self)
+        self._path = path
+        self._toc_width = 230
+
+    def create_view(self):
+        return {
+            "toolbar": {
+                "border": 4,
+            },
+            "toc": {
+                "background": "#ffeeff",
+                "width": self._toc_width,
+            },
+            "set_toc_width": self._set_toc_width,
+            "workspace": {
+            },
+            "toolbar_border": {
+                "thickness": 2,
+                "color": "#aaaaff",
+            },
+            "toc_border": {
+                "thickness": 3,
+                "color": "#aaaaaf",
+            },
+        }
+
+    def _set_toc_width(self, value):
+        self._toc_width = max(50, value)
+        self._notify()
+
 class MainFrame(RLGuiFrame):
 
     def _get_props(self):
@@ -321,39 +354,6 @@ class MainArea(RLGuiPanel):
             self._start_width = self._props["toc"]["width"]
         else:
             self._props["set_toc_width"](self._start_width+event.dx)
-
-class MainFrameView(Observable):
-
-    def __init__(self, path):
-        Observable.__init__(self)
-        self._path = path
-        self._toc_width = 230
-
-    def create_view(self):
-        return {
-            "toolbar": {
-                "border": 4,
-            },
-            "toc": {
-                "background": "#ffeeff",
-                "width": self._toc_width,
-            },
-            "set_toc_width": self._set_toc_width,
-            "workspace": {
-            },
-            "toolbar_border": {
-                "thickness": 2,
-                "color": "#aaaaff",
-            },
-            "toc_border": {
-                "thickness": 3,
-                "color": "#aaaaaf",
-            },
-        }
-
-    def _set_toc_width(self, value):
-        self._toc_width = max(50, value)
-        self._notify()
 
 class Toolbar(RLGuiPanel):
 
