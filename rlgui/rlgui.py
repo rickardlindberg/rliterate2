@@ -1073,7 +1073,7 @@ class WxCodeGenerator(_Grammar):
         I('PUSH_SCOPE')
         I('CALL', 'py')
         I('BIND', 'name')
-        I('ACTION', lambda scope: _Builder.create(['for k, v in self._props[', scope['name'].eval(), '].items():\n', _IndentBuilder(), 'props[k] = v\n', _DedentBuilder()]))
+        I('ACTION', lambda scope: _Builder.create(['props.update(self._props[', scope['name'].eval(), '])\n']))
         I('POP_SCOPE')
         I('RETURN')
         LABEL('call')

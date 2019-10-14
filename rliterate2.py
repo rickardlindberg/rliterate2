@@ -291,15 +291,13 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        for k, v in self._props['toolbar'].items():
-            props[k] = v
+        props.update(self._props['toolbar'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Toolbar, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        for k, v in self._props['toolbar_border'].items():
-            props[k] = v
+        props.update(self._props['toolbar_border'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(HBorder, props, sizer, handlers)
         props = {}
@@ -327,15 +325,13 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        for k, v in self._props['toc'].items():
-            props[k] = v
+        props.update(self._props['toc'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContents, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        for k, v in self._props['toc_border'].items():
-            props[k] = v
+        props.update(self._props['toc_border'])
         props['cursor'] = 'size_horizontal'
         sizer["flag"] |= wx.EXPAND
         handlers['drag'] = lambda event: self._on_border_drag(event)
@@ -343,8 +339,7 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        for k, v in self._props['workspace'].items():
-            props[k] = v
+        props.update(self._props['workspace'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer, handlers)
