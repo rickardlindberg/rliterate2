@@ -330,8 +330,10 @@
 {
 "children":[
 {
+"children":[
+{
 "children":[],
-"id":"26afd5121ebb4f6eafe5ccb1e934ffd3",
+"id":"05f21609be344a7396ee38ae3c05e278",
 "paragraphs":[
 {
 "chunkpath":[
@@ -384,7 +386,7 @@
 ],
 "fragments":[
 {
-"text":"def partition(values):\n    by_type = defaultdict(list)\n    for x in values:\n        by_type[x[0]].append(x)\n    return by_type\n\ndef extract(by_type, name):\n    return by_type[name]\n",
+"text":"def partition(values):\n    by_type = defaultdict(list)\n    for x in values:\n        by_type[x[0]].append(x)\n    return by_type\n",
 "type":"code"
 }
 ],
@@ -393,6 +395,32 @@
 "post_process":[],
 "type":"code"
 },
+{
+"chunkpath":[
+"support"
+],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"def extract(by_type, name):\n    return by_type[name]\n",
+"type":"code"
+}
+],
+"id":"5e88fc430da84fc1a21ffe6afa2b4e44",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Parser"
+},
+{
+"children":[],
+"id":"7c7bfc3d69a0434ab62157bd6f274209",
+"paragraphs":[
 {
 "chunkpath":[
 "classes"
@@ -414,7 +442,13 @@
 "rlmeta/rlmeta.py"
 ],
 "type":"code"
-},
+}
+],
+"title":"Code generator"
+}
+],
+"id":"26afd5121ebb4f6eafe5ccb1e934ffd3",
+"paragraphs":[
 {
 "chunkpath":[],
 "filepath":[
@@ -481,41 +515,11 @@
 "title":"Compiler"
 },
 {
+"children":[
+{
 "children":[],
-"id":"da31b318d9f2479496494b3e56985a07",
+"id":"bf2fd902b8794da3851327a2a97f4939",
 "paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
-"type":"code"
-}
-],
-"id":"a0987644a69445dea88e612f31f16eba",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n            if name == \"cursor\":\n                self.SetCursor({\n                    \"size_horizontal\": wx.StockCursor(wx.CURSOR_SIZEWE),\n                }.get(self._props[\"cursor\"]))\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].UpdateProps(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n\nclass DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n\n\nDragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
-"type":"code"
-}
-],
-"id":"e09eeec305864f0e9a791b0e287def75",
-"type":"code"
-},
 {
 "chunkpath":[
 "base classes"
@@ -562,6 +566,76 @@
 }
 ],
 "id":"a18b175c332a41bebdeb0acb6332dcbd",
+"type":"code"
+}
+],
+"title":"WX wrappers"
+}
+],
+"id":"da31b318d9f2479496494b3e56985a07",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
+"type":"code"
+}
+],
+"id":"a0987644a69445dea88e612f31f16eba",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n            if name == \"cursor\":\n                self.SetCursor({\n                    \"size_horizontal\": wx.StockCursor(wx.CURSOR_SIZEWE),\n                }.get(self._props[\"cursor\"]))\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].UpdateProps(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
+"type":"code"
+}
+],
+"id":"e09eeec305864f0e9a791b0e287def75",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n",
+"type":"code"
+}
+],
+"id":"0ec8866b29734c2ca5d8699411d5f613",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"DragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
+"type":"code"
+}
+],
+"id":"c271e666cf75407b9f4d10b0860cbae8",
 "type":"code"
 }
 ],
@@ -633,7 +707,7 @@
 ],
 "fragments":[
 {
-"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            print(\"{}: {:.3f}ms\".format(text, 1000*(t2-t1)))\n            return value\n        if \"--profile\" in sys.argv:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n\n",
+"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            print(\"{}: {:.3f}ms\".format(text, 1000*(t2-t1)))\n            return value\n        if \"--profile\" in sys.argv:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],

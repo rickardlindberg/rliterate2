@@ -62,7 +62,6 @@ def profile(text):
             return fn
     return wrap
 
-
 def size(w, h):
     return (w, h)
 
@@ -172,7 +171,6 @@ class RLGuiContainerMixin(RLGuiMixin):
         else:
             return (1, size)
 
-
 class DragHandler(object):
 
     def __init__(self, widget, handler):
@@ -194,7 +192,6 @@ class DragHandler(object):
         if self._down_pos is not None:
             new_pos = self._widget.ClientToScreen(wx_event.Position)
             self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
-
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 

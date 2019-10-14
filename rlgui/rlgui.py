@@ -3,17 +3,6 @@
 from collections import defaultdict
 import sys
 
-join = "".join
-
-def partition(values):
-    by_type = defaultdict(list)
-    for x in values:
-        by_type[x[0]].append(x)
-    return by_type
-
-def extract(by_type, name):
-    return by_type[name]
-
 try:
     from cStringIO import StringIO
 except:
@@ -339,6 +328,17 @@ def _makeList(items):
     for depth, item in items:
         _addItem(depth, item)
     return result
+
+join = "".join
+
+def partition(values):
+    by_type = defaultdict(list)
+    for x in values:
+        by_type[x[0]].append(x)
+    return by_type
+
+def extract(by_type, name):
+    return by_type[name]
 
 class GuiParser(_Grammar):
 
