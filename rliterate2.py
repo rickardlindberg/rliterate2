@@ -7,6 +7,62 @@ import time
 import uuid
 import wx
 
+def load_document_from_file(path):
+    if os.path.exists(path):
+        return load_json_from_file(path)
+    else:
+        return create_new_document()
+
+def create_new_document():
+    return {
+        "root_page": create_new_page(),
+        "variables": {},
+    }
+
+def create_new_page():
+    return {
+        "id": genid(),
+        "title": "New page...",
+        "children": [],
+        "paragraphs": [],
+    }
+
+def genid():
+    return uuid.uuid4().hex
+
+def size(w, h):
+    return wx.Size(w, h)
+
+def load_json_from_file(path):
+    with open(path) as f:
+        return json.load(f)
+
+def profile(text):
+    def wrap(fn):
+        def fn_with_timing(*args, **kwargs):
+            t1 = time.perf_counter()
+            value = fn(*args, **kwargs)
+            t2 = time.perf_counter()
+            print("{}: {:.3}ms".format(text, 1000*(t2-t1)))
+            return value
+        if "--profile" in sys.argv:
+            return fn_with_timing
+        else:
+            return fn
+    return wrap
+
+
+def main():
+    @profile("create & update main")
+    def listener():
+        frame.UpdateProps(view.create_view())
+    app = wx.App()
+    view = MainFrameView(load_document_from_file(sys.argv[1]))
+    view.listen(listener)
+    frame = MainFrame(None, view.create_view())
+    frame.Show()
+    app.MainLoop()
+
 class RLGuiMixin(object):
 
     def __init__(self, props):
@@ -145,12 +201,6 @@ class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
         wx.Panel.__init__(self, parent)
         RLGuiContainerMixin.__init__(self, props)
 
-class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
-
-    def __init__(self, parent, props):
-        wx.Panel.__init__(self, parent)
-        RLGuiContainerMixin.__init__(self, props)
-
 class ToolbarButton(wx.BitmapButton, RLGuiMixin):
 
     def __init__(self, parent, props):
@@ -174,11 +224,26 @@ class ToolbarButton(wx.BitmapButton, RLGuiMixin):
         )
         RLGuiMixin.__init__(self, props)
 
-class Project(object):
+class Observable(object):
 
-    def __init__(self, doc, listener):
+    def __init__(self):
+        self._listeners = []
+
+    def _notify(self):
+        for listener in self._listeners:
+            listener()
+
+    def listen(self, listener):
+        self._listeners.append(listener)
+
+    def unlisten(self, listener):
+        self._listeners.remove(listener)
+
+class MainFrameView(Observable):
+
+    def __init__(self, doc):
+        Observable.__init__(self)
         self._doc = doc
-        self._listener = listener
         self._toc_width = 230
 
     def create_view(self):
@@ -206,12 +271,6 @@ class Project(object):
     def _set_toc_width(self, value):
         self._toc_width = max(50, value)
         self._notify()
-
-    def _notify(self):
-        t1 = time.perf_counter()
-        self._listener()
-        t2 = time.perf_counter()
-        print("Update {:.3}ms".format((t2-t1)*1000))
 
 class MainFrame(RLGuiFrame):
 
@@ -365,45 +424,6 @@ class VBorder(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-
-def load_document_from_file(path):
-    if os.path.exists(path):
-        return load_json_from_file(path)
-    else:
-        return create_new_document()
-
-def create_new_document():
-    return {
-        "root_page": create_new_page(),
-        "variables": {},
-    }
-
-def create_new_page():
-    return {
-        "id": genid(),
-        "title": "New page...",
-        "children": [],
-        "paragraphs": [],
-    }
-
-def genid():
-    return uuid.uuid4().hex
-
-def load_json_from_file(path):
-    with open(path) as f:
-        return json.load(f)
-
-def size(w, h):
-    return wx.Size(w, h)
-
-def main():
-    def listener():
-        frame.UpdateProps(project.create_view())
-    app = wx.App()
-    project = Project(load_document_from_file(sys.argv[1]), listener)
-    frame = MainFrame(None, project.create_view())
-    frame.Show()
-    app.MainLoop()
 
 if __name__ == "__main__":
     main()
