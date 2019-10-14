@@ -85,7 +85,7 @@
 ],
 "fragments":[
 {
-"text":"class Project(object):\n\n    def __init__(self, doc):\n        self._doc = doc\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n            },\n            \"workspace\": {\n            },\n            \"border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            }\n        }\n",
+"text":"class Project(object):\n\n    def __init__(self, doc):\n        self._doc = doc\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n            },\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n",
 "type":"code"
 }
 ],
@@ -140,7 +140,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #border\n    %expand\n  )\n  MainArea(\n    toc       = #toc\n    border    = #border\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc        = #toc\n    toc_border = #toc_border\n    workspace  = #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -161,7 +161,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #border\n    %expand\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    %expand\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],

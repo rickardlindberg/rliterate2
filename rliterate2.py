@@ -152,10 +152,14 @@ class Project(object):
             },
             "workspace": {
             },
-            "border": {
+            "toolbar_border": {
                 "thickness": 2,
                 "color": "#aaaaff",
-            }
+            },
+            "toc_border": {
+                "thickness": 3,
+                "color": "#aaaaaf",
+            },
         }
 
 class MainFrame(RLGuiFrame):
@@ -177,14 +181,14 @@ class MainFrame(RLGuiFrame):
         self._create_widget(Toolbar, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
-        for k, v in self._props['border'].items():
+        for k, v in self._props['toolbar_border'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
         self._create_widget(HBorder, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         props['toc'] = self._props['toc']
-        props['border'] = self._props['border']
+        props['toc_border'] = self._props['toc_border']
         props['workspace'] = self._props['workspace']
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
@@ -209,7 +213,7 @@ class MainArea(RLGuiPanel):
         self._create_widget(TableOfContents, props, sizer)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
-        for k, v in self._props['border'].items():
+        for k, v in self._props['toc_border'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
         self._create_widget(VBorder, props, sizer)
