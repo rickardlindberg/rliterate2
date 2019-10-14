@@ -129,7 +129,7 @@ class RLGuiContainerMixin(RLGuiMixin):
                 self.SetMinSize(self._props["min_size"])
             if name == "cursor":
                 self.SetCursor({
-                    "size_horizontal": wx.StockCursor(wx.CURSOR_SIZEWE),
+                    "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
                 }.get(self._props["cursor"]))
 
     def _create(self):
