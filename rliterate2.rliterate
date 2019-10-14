@@ -14,7 +14,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    @profile(\"create\")\n    def create():\n        return view.create_view()\n    @profile(\"update\")\n    def update(props):\n        return frame.UpdateProps(props)\n    def listener():\n        update(create())\n    app = wx.App()\n    view = MainFrameView(sys.argv[1])\n    view.listen(listener)\n    frame = MainFrame(None, view.create_view())\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def main():\n    @profile(\"create\")\n    def create():\n        return view.create()\n    @profile(\"update\")\n    def update(props):\n        frame.UpdateProps(props)\n    app = wx.App()\n    view = MainFrameView(sys.argv[1])\n    view.listen(lambda: update(create()))\n    frame = MainFrame(None, view.create())\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -39,7 +39,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n            },\n            \"set_toc_width\": self._set_toc_width,\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
+"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n            },\n            \"set_toc_width\": self._set_toc_width,\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
 "type":"code"
 }
 ],
@@ -76,8 +76,16 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"MainArea"
+],
+"prefix":"",
+"type":"chunk"
 }
 ],
 "id":"a8e40ef2da854034b55c8c7a3097e3ba",
@@ -90,14 +98,15 @@
 },
 {
 "chunkpath":[
-"classes"
+"classes",
+"MainArea"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"    def _on_border_drag(self, event):\n        if event.initial:\n            self._start_width = self._props[\"toc\"][\"width\"]\n        else:\n            self._props[\"set_toc_width\"](self._start_width+event.dx)\n",
+"text":"def _on_border_drag(self, event):\n    if event.initial:\n        self._start_width = self.prop(\"toc.width\")\n    else:\n        self.prop(\"set_toc_width\")(self._start_width+event.dx)\n",
 "type":"code"
 }
 ],
@@ -334,7 +343,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign | handler\n  handler = ws '@' Name:x ws '=' expr:y -> [\"handler\" x y]\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = string | call | number | propertyRef | identifier\n  identifier = name:x -> [\"identifier\" x]\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = (identifier|propertyRef):x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ' '* '\\n'? .*:xs -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n    join(xs)\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign | handler\n  handler = ws '@' Name:x ws '=' expr:y -> [\"handler\" x y]\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = string | call | number | propertyRef | identifier\n  identifier = name:x -> [\"identifier\" x]\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = (identifier|propertyRef):x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -394,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"props.update(self._props[\" name \"])\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"props.update(self._props[\" name \"])\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -467,24 +476,6 @@
 "--support"
 ],
 "type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def size(w, h):\n    return wx.Size(w, h)\n",
-"type":"code"
-}
-],
-"id":"90df86522a67483095acdf98bf1c58a8",
-"language":"",
-"post_process":[],
-"type":"code"
 }
 ],
 "title":"Compiler"
@@ -502,7 +493,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._update_props(props)\n        self._create_gui()\n\n    def UpdateProps(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _create_gui(self):\n        pass\n\n    def _update_gui(self):\n        pass\n\n    def _get_props(self):\n        return {}\n",
 "type":"code"
 }
 ],
@@ -651,6 +642,31 @@
 }
 ],
 "title":"Profile"
+},
+{
+"children":[],
+"id":"35ef5a963f054d02b14cf8ca245e8518",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def size(w, h):\n    return (w, h)\n",
+"type":"code"
+}
+],
+"id":"90df86522a67483095acdf98bf1c58a8",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Misc"
 }
 ],
 "id":"f0ec3620177047238aaecb5777a789db",

@@ -10,16 +10,14 @@ import wx
 def main():
     @profile("create")
     def create():
-        return view.create_view()
+        return view.create()
     @profile("update")
     def update(props):
-        return frame.UpdateProps(props)
-    def listener():
-        update(create())
+        frame.UpdateProps(props)
     app = wx.App()
     view = MainFrameView(sys.argv[1])
-    view.listen(listener)
-    frame = MainFrame(None, view.create_view())
+    view.listen(lambda: update(create()))
+    frame = MainFrame(None, view.create())
     frame.Show()
     app.MainLoop()
 
@@ -46,9 +44,6 @@ def create_new_page():
 def genid():
     return uuid.uuid4().hex
 
-def size(w, h):
-    return wx.Size(w, h)
-
 def load_json_from_file(path):
     with open(path) as f:
         return json.load(f)
@@ -68,6 +63,9 @@ def profile(text):
     return wrap
 
 
+def size(w, h):
+    return (w, h)
+
 class RLGuiMixin(object):
 
     def __init__(self, props):
@@ -78,6 +76,12 @@ class RLGuiMixin(object):
     def UpdateProps(self, props):
         if self._update_props(props):
             self._update_gui()
+
+    def prop(self, path):
+        value = self._props
+        for part in path.split("."):
+            value = value[part]
+        return value
 
     def _update_props(self, props):
         self._changed_props = []
@@ -251,7 +255,7 @@ class MainFrameView(Observable):
         self._path = path
         self._toc_width = 230
 
-    def create_view(self):
+    def create(self):
         return {
             "toolbar": {
                 "border": 4,
@@ -346,9 +350,9 @@ class MainArea(RLGuiPanel):
 
     def _on_border_drag(self, event):
         if event.initial:
-            self._start_width = self._props["toc"]["width"]
+            self._start_width = self.prop("toc.width")
         else:
-            self._props["set_toc_width"](self._start_width+event.dx)
+            self.prop("set_toc_width")(self._start_width+event.dx)
 
 class Toolbar(RLGuiPanel):
 
