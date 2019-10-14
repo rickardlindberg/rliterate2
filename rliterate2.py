@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+from collections import namedtuple
 import os
 import sys
+import time
 import uuid
 import wx
 
@@ -61,6 +63,10 @@ class RLGuiContainerMixin(RLGuiMixin):
                 self.SetBackgroundColour(self._props["background"])
             if name == "min_size":
                 self.SetMinSize(self._props["min_size"])
+            if name == "cursor":
+                self.SetCursor({
+                    "size_horizontal": wx.StockCursor(wx.CURSOR_SIZEWE),
+                }.get(self._props["cursor"]))
 
     def _create(self):
         self._update_builtin()
@@ -68,11 +74,17 @@ class RLGuiContainerMixin(RLGuiMixin):
         self._child_index = 0
         self._create_widgets()
 
-    def _create_widget(self, widget_cls, props, sizer):
-        widget = widget_cls(self, props)
-        self.Sizer.Insert(self._sizer_index, widget, **sizer)
+    def _create_widget(self, widget_cls, props, sizer, handlers):
+        if self._child_index >= len(self._children):
+            widget = widget_cls(self, props)
+            for handler, fn in handlers.items():
+                if handler == "drag":
+                    DragHandler(widget, fn)
+            self.Sizer.Insert(self._sizer_index, widget, **sizer)
+            self._children.insert(self._child_index, widget)
+        else:
+            self._children[self._child_index].UpdateProps(props)
         self._sizer_index += 1
-        self._children.insert(self._child_index, widget)
         self._child_index += 1
 
     def _create_space(self, thickness):
@@ -94,6 +106,32 @@ class RLGuiContainerMixin(RLGuiMixin):
             return (size, 1)
         else:
             return (1, size)
+
+
+class DragHandler(object):
+
+    def __init__(self, widget, handler):
+        self._widget = widget
+        self._handler = handler
+        widget.Bind(wx.EVT_LEFT_DOWN, self._down)
+        widget.Bind(wx.EVT_LEFT_UP, self._up)
+        widget.Bind(wx.EVT_MOTION, self._move)
+        self._down_pos = None
+
+    def _down(self, wx_event):
+        self._down_pos = self._widget.ClientToScreen(wx_event.Position)
+        self._handler(DragEvent(True, 0))
+
+    def _up(self, wx_event):
+        self._down_pos = None
+
+    def _move(self, wx_event):
+        if self._down_pos is not None:
+            new_pos = self._widget.ClientToScreen(wx_event.Position)
+            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
+
+
+DragEvent = namedtuple("DragEvent", "initial,dx")
 
 class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
 
@@ -138,8 +176,10 @@ class ToolbarButton(wx.BitmapButton, RLGuiMixin):
 
 class Project(object):
 
-    def __init__(self, doc):
+    def __init__(self, doc, listener):
         self._doc = doc
+        self._listener = listener
+        self._toc_width = 230
 
     def create_view(self):
         return {
@@ -148,8 +188,9 @@ class Project(object):
             },
             "toc": {
                 "background": "#ffeeff",
-                "width": 230,
+                "width": self._toc_width,
             },
+            "set_toc_width": self._set_toc_width,
             "workspace": {
             },
             "toolbar_border": {
@@ -161,6 +202,16 @@ class Project(object):
                 "color": "#aaaaaf",
             },
         }
+
+    def _set_toc_width(self, value):
+        self._toc_width = max(50, value)
+        self._notify()
+
+    def _notify(self):
+        t1 = time.perf_counter()
+        self._listener()
+        t2 = time.perf_counter()
+        print("Update {:.3}ms".format((t2-t1)*1000))
 
 class MainFrame(RLGuiFrame):
 
@@ -175,24 +226,28 @@ class MainFrame(RLGuiFrame):
         pass
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         for k, v in self._props['toolbar'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Toolbar, props, sizer)
+        self._create_widget(Toolbar, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         for k, v in self._props['toolbar_border'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(HBorder, props, sizer)
+        self._create_widget(HBorder, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         props['toc'] = self._props['toc']
         props['toc_border'] = self._props['toc_border']
         props['workspace'] = self._props['workspace']
+        props['set_toc_width'] = self._props['set_toc_width']
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
-        self._create_widget(MainArea, props, sizer)
+        self._create_widget(MainArea, props, sizer, handlers)
 
 class MainArea(RLGuiPanel):
 
@@ -207,23 +262,34 @@ class MainArea(RLGuiPanel):
         pass
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         for k, v in self._props['toc'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(TableOfContents, props, sizer)
+        self._create_widget(TableOfContents, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         for k, v in self._props['toc_border'].items():
             props[k] = v
+        props['cursor'] = 'size_horizontal'
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(VBorder, props, sizer)
+        handlers['drag'] = lambda event: self._on_border_drag(event)
+        self._create_widget(VBorder, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         for k, v in self._props['workspace'].items():
             props[k] = v
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
-        self._create_widget(Workspace, props, sizer)
+        self._create_widget(Workspace, props, sizer, handlers)
+
+    def _on_border_drag(self, event):
+        if event.initial:
+            self._start_width = self._props["toc"]["width"]
+        else:
+            self._props["set_toc_width"](self._start_width+event.dx)
 
 class Toolbar(RLGuiPanel):
 
@@ -239,11 +305,12 @@ class Toolbar(RLGuiPanel):
         self._create_space(self._props['border'])
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
         props['icon'] = 'quit'
         sizer["border"] = self._props['border']
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
-        self._create_widget(ToolbarButton, props, sizer)
+        self._create_widget(ToolbarButton, props, sizer, handlers)
         self._create_space(self._props['border'])
 
 class TableOfContents(RLGuiPanel):
@@ -330,8 +397,10 @@ def size(w, h):
     return wx.Size(w, h)
 
 def main():
+    def listener():
+        frame.UpdateProps(project.create_view())
     app = wx.App()
-    project = Project(load_document_from_file(sys.argv[1]))
+    project = Project(load_document_from_file(sys.argv[1]), listener)
     frame = MainFrame(None, project.create_view())
     frame.Show()
     app.MainLoop()

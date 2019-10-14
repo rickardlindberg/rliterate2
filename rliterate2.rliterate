@@ -85,7 +85,7 @@
 ],
 "fragments":[
 {
-"text":"class Project(object):\n\n    def __init__(self, doc):\n        self._doc = doc\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n            },\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n",
+"text":"class Project(object):\n\n    def __init__(self, doc, listener):\n        self._doc = doc\n        self._listener = listener\n        self._toc_width = 230\n\n    def create_view(self):\n        return {\n            \"toolbar\": {\n                \"border\": 4,\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n            },\n            \"set_toc_width\": self._set_toc_width,\n            \"workspace\": {\n            },\n            \"toolbar_border\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n            \"toc_border\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n\n    def _notify(self):\n        t1 = time.perf_counter()\n        self._listener()\n        t2 = time.perf_counter()\n        print(\"Update {:.3}ms\".format((t2-t1)*1000))\n",
 "type":"code"
 }
 ],
@@ -140,7 +140,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc        = #toc\n    toc_border = #toc_border\n    workspace  = #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc           = #toc\n    toc_border    = #toc_border\n    workspace     = #workspace\n    set_toc_width = #set_toc_width\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -161,7 +161,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    %expand\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -171,6 +171,24 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"    def _on_border_drag(self, event):\n        if event.initial:\n            self._start_width = self._props[\"toc\"][\"width\"]\n        else:\n            self._props[\"set_toc_width\"](self._start_width+event.dx)\n",
+"type":"code"
+}
+],
+"id":"72cfc592c2ea47e499de1164ed087bdb",
+"language":"",
+"post_process":[],
 "type":"code"
 }
 ],
@@ -330,7 +348,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = string | call | number | propertyRef\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = name:x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ws !. -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign | handler\n  handler = ws '@' Name:x ws '=' expr:y -> [\"handler\" x y]\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = string | call | number | propertyRef | identifier\n  identifier = name:x -> [\"identifier\" x]\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = (identifier|propertyRef):x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -390,7 +408,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"for k, v in self._props[\" name \"].items():\\n\" >\n                                 \"props[k] = v\\n\" < }\n  call = .:name astItems:y -> { name \"(\" y \")\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"for k, v in self._props[\" name \"].items():\\n\" >\n                                 \"props[k] = v\\n\" < }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -514,7 +532,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer):\n        widget = widget_cls(self, props)\n        self.Sizer.Insert(self._sizer_index, widget, **sizer)\n        self._sizer_index += 1\n        self._children.insert(self._child_index, widget)\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        for name in self._changed_props:\n            if name == \"background\":\n                self.SetBackgroundColour(self._props[\"background\"])\n            if name == \"min_size\":\n                self.SetMinSize(self._props[\"min_size\"])\n            if name == \"cursor\":\n                self.SetCursor({\n                    \"size_horizontal\": wx.StockCursor(wx.CURSOR_SIZEWE),\n                }.get(self._props[\"cursor\"]))\n\n    def _create(self):\n        self._update_builtin()\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].UpdateProps(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n\nclass DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n\n\nDragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
 "type":"code"
 }
 ],
@@ -606,7 +624,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    app = wx.App()\n    project = Project(load_document_from_file(sys.argv[1]))\n    frame = MainFrame(None, project.create_view())\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def main():\n    def listener():\n        frame.UpdateProps(project.create_view())\n    app = wx.App()\n    project = Project(load_document_from_file(sys.argv[1]), listener)\n    frame = MainFrame(None, project.create_view())\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -627,7 +645,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nimport os\nimport sys\nimport uuid\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\n",
 "type":"code"
 },
 {
