@@ -131,8 +131,6 @@ class RLGuiContainerMixin(RLGuiMixin):
 
     def _update_gui(self):
         self._create()
-        self.Layout()
-        self.Refresh()
 
     def _create(self):
         self._sizer_index = 0
@@ -201,6 +199,15 @@ class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
     def __init__(self, parent, props):
         wx.Frame.__init__(self, parent)
         RLGuiContainerMixin.__init__(self, props)
+
+    def _create_gui(self):
+        RLGuiContainerMixin._create_gui(self)
+        self.Layout()
+
+    def _update_gui(self):
+        RLGuiContainerMixin._update_gui(self)
+        self.Layout()
+        self.Refresh()
 
     def _update_builtin(self):
         RLGuiContainerMixin._update_builtin(self)

@@ -535,6 +535,16 @@
 ],
 "id":"a0987644a69445dea88e612f31f16eba",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"todo: clarify what the interface is",
+"type":"strong"
+}
+],
+"id":"fad5147d61114d8bb0ccc0293829a899",
+"type":"text"
 }
 ],
 "title":"Base"
@@ -552,7 +562,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n        self.Layout()\n        self.Refresh()\n\n    def _create(self):\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].update_props(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
+"text":"class RLGuiContainerMixin(RLGuiMixin):\n\n    def _create_gui(self):\n        self.Sizer = self._create_sizer()\n        self._children = []\n        self._create()\n\n    def _update_gui(self):\n        self._create()\n\n    def _create(self):\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, widget)\n        else:\n            self._children[self._child_index].update_props(props)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            space = self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )\n            self._children.insert(self._child_index, space)\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
 "type":"code"
 }
 ],
@@ -614,7 +624,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Frame.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n\n    def _update_builtin(self):\n        RLGuiContainerMixin._update_builtin(self)\n        if \"title\" in self._changed_props:\n            self.SetTitle(self.prop(\"title\"))\n",
+"text":"class RLGuiFrame(wx.Frame, RLGuiContainerMixin):\n\n    def __init__(self, parent, props):\n        wx.Frame.__init__(self, parent)\n        RLGuiContainerMixin.__init__(self, props)\n\n    def _create_gui(self):\n        RLGuiContainerMixin._create_gui(self)\n        self.Layout()\n\n    def _update_gui(self):\n        RLGuiContainerMixin._update_gui(self)\n        self.Layout()\n        self.Refresh()\n\n    def _update_builtin(self):\n        RLGuiContainerMixin._update_builtin(self)\n        if \"title\" in self._changed_props:\n            self.SetTitle(self.prop(\"title\"))\n",
 "type":"code"
 }
 ],
@@ -652,6 +662,16 @@
 ],
 "id":"a18b175c332a41bebdeb0acb6332dcbd",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"todo: should not set bitmap in constructor (update not supported)",
+"type":"strong"
+}
+],
+"id":"0094cf38fb6c4184a0c5deb9c764f2bb",
+"type":"text"
 }
 ],
 "title":"WX wrappers"
