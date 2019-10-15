@@ -65,6 +65,21 @@ def profile(text):
 def size(w, h):
     return (w, h)
 
+def im_modify(obj, path, modify_fn):
+    if path:
+        if isinstance(obj, list):
+            new_obj = list(obj)
+        elif isinstance(obj, dict):
+            new_obj = dict(obj)
+        else:
+            raise ValueError("unknown type")
+        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)
+        return new_obj
+    return modify_fn(obj)
+
+def im_replace(obj, path, value):
+    return im_modify(obj, path, lambda old_value: value)
+
 class RLGuiMixin(object):
 
     def __init__(self, props):
@@ -263,10 +278,7 @@ class MainFrameView(Observable):
     def __init__(self, path):
         Observable.__init__(self)
         self._path = path
-        self._toc_width = 230
-
-    def create(self):
-        return {
+        self._view = {
             "title": "{} ({}) - RLiterate 2".format(
                 os.path.basename(self._path),
                 os.path.abspath(os.path.dirname(self._path))
@@ -280,7 +292,7 @@ class MainFrameView(Observable):
             },
             "toc": {
                 "background": "#ffeeff",
-                "width": self._toc_width,
+                "width": 230,
                 "set_width": self._set_toc_width,
                 "border": {
                     "thickness": 3,
@@ -291,8 +303,11 @@ class MainFrameView(Observable):
             },
         }
 
+    def create(self):
+        return self._view
+
     def _set_toc_width(self, value):
-        self._toc_width = max(50, value)
+        self._view = im_replace(self._view, ["toc", "width"], max(50, value))
         self._notify()
 
 class MainFrame(RLGuiFrame):

@@ -39,7 +39,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._toc_width = 230\n\n    def create(self):\n        return {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(self._path),\n                os.path.abspath(os.path.dirname(self._path))\n            ),\n            \"toolbar\": {\n                \"margin\": 4,\n                \"border\": {\n                    \"thickness\": 2,\n                    \"color\": \"#aaaaff\",\n                },\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": self._toc_width,\n                \"set_width\": self._set_toc_width,\n                \"border\": {\n                    \"thickness\": 3,\n                    \"color\": \"#aaaaaf\",\n                },\n            },\n            \"workspace\": {\n            },\n        }\n\n    def _set_toc_width(self, value):\n        self._toc_width = max(50, value)\n        self._notify()\n",
+"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._view = {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(self._path),\n                os.path.abspath(os.path.dirname(self._path))\n            ),\n            \"toolbar\": {\n                \"margin\": 4,\n                \"border\": {\n                    \"thickness\": 2,\n                    \"color\": \"#aaaaff\",\n                },\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n                \"set_width\": self._set_toc_width,\n                \"border\": {\n                    \"thickness\": 3,\n                    \"color\": \"#aaaaaf\",\n                },\n            },\n            \"workspace\": {\n            },\n        }\n\n    def create(self):\n        return self._view\n\n    def _set_toc_width(self, value):\n        self._view = im_replace(self._view, [\"toc\", \"width\"], max(50, value))\n        self._notify()\n",
 "type":"code"
 }
 ],
@@ -781,6 +781,49 @@
 }
 ],
 "title":"Misc"
+},
+{
+"children":[],
+"id":"ececc958dff648909493062a2283a5ae",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def im_modify(obj, path, modify_fn):\n    if path:\n        if isinstance(obj, list):\n            new_obj = list(obj)\n        elif isinstance(obj, dict):\n            new_obj = dict(obj)\n        else:\n            raise ValueError(\"unknown type\")\n        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)\n        return new_obj\n    return modify_fn(obj)\n",
+"type":"code"
+}
+],
+"id":"95dd623524c84e72a68d55645dc7dbca",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def im_replace(obj, path, value):\n    return im_modify(obj, path, lambda old_value: value)\n",
+"type":"code"
+}
+],
+"id":"518a7fa43fb24344bf2bb80f1956f54f",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Immutable"
 }
 ],
 "id":"f0ec3620177047238aaecb5777a789db",
