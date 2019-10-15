@@ -680,6 +680,62 @@
 "id":"da31b318d9f2479496494b3e56985a07",
 "paragraphs":[],
 "title":"Support library"
+},
+{
+"children":[],
+"id":"347b1111a1a54adb8bde870d06cbf49e",
+"paragraphs":[
+{
+"chunkpath":[],
+"filepath":[
+"rlgui",
+"pygments",
+"rlgui_lexer",
+"__init__.py"
+],
+"fragments":[
+{
+"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'#\\w+([.]\\w+)*', Keyword.Declaration),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
+"type":"code"
+}
+],
+"id":"e3b741de46484d63b5de7ea5d0479290",
+"type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[
+"rlgui",
+"pygments",
+"setup.py"
+],
+"fragments":[
+{
+"text":"from setuptools import setup\n\nsetup(\n    name='rlgui_lexer',\n    version='0.1',\n    packages=['rlgui_lexer'],\n    entry_points={\n        'pygments.lexers': ['rlgui_lexer=rlgui_lexer:RLGuiLexer'],\n    },\n    zip_safe=False,\n)\n",
+"type":"code"
+}
+],
+"id":"16592d2a3f3640eca209a07274bbcaba",
+"type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[
+"rlgui",
+"pygments",
+"install.sh"
+],
+"fragments":[
+{
+"text":"#!/bin/sh\n\nset -e\n\npip install --upgrade --user .\n\n",
+"type":"code"
+}
+],
+"id":"31514c5ac3f64c978ecdbf9cdc36711a",
+"type":"code"
+}
+],
+"title":"Pygments plugin"
 }
 ],
 "id":"f4c7873224fb4dfcbe73180d7afdfd72",
