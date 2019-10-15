@@ -423,7 +423,7 @@ class HBorder(RLGuiPanel):
         }
 
     def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
+        return wx.BoxSizer(wx.HORIZONTAL)
 
     def _create_widgets(self):
         pass

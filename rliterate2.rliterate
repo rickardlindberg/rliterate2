@@ -55,7 +55,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %vbox {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc           = #toc\n    toc_border    = #toc_border\n    workspace     = #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar_border\n    %expand\n  )\n  MainArea(\n    toc           = #toc\n    toc_border    = #toc_border\n    workspace     = #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -76,7 +76,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %hbox {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc_border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n\n",
 "type":"code"
 },
 {
@@ -131,7 +131,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %hbox {\n  BoxSpace(#border)\n  ToolbarButton(\n    icon=\"quit\"\n    %border[#border,TOP|BOTTOM]\n  )\n  BoxSpace(#border)\n}\n",
+"text":"panel Toolbar %layout_columns {\n  BoxSpace(#border)\n  ToolbarButton(\n    icon=\"quit\"\n    %border[#border,TOP|BOTTOM]\n  )\n  BoxSpace(#border)\n}\n",
 "type":"code"
 }
 ],
@@ -159,7 +159,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %vbox {\n  #min_size = size(#width -1)\n}\n",
+"text":"panel TableOfContents %layout_rows {\n  #min_size = size(#width -1)\n}\n",
 "type":"code"
 }
 ],
@@ -187,7 +187,7 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %hbox {\n}\n",
+"text":"panel Workspace %layout_columns {\n}\n",
 "type":"code"
 }
 ],
@@ -215,7 +215,7 @@
 ],
 "fragments":[
 {
-"text":"panel HBorder %vbox {\n  #background = #color\n  #min_size   = size(-1 #thickness)\n}\n",
+"text":"panel HBorder %layout_columns {\n  #background = #color\n  #min_size   = size(-1 #thickness)\n}\n",
 "type":"code"
 }
 ],
@@ -236,7 +236,7 @@
 ],
 "fragments":[
 {
-"text":"panel VBorder %vbox {\n  #background = #color\n  #min_size   = size(#thickness -1)\n}\n",
+"text":"panel VBorder %layout_rows {\n  #background = #color\n  #min_size   = size(#thickness -1)\n}\n",
 "type":"code"
 }
 ],
@@ -345,7 +345,7 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ' '* '\\n'? .*:xs -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n    join(xs)\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%vbox'\n    | '%hbox'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign | handler\n  handler = ws '@' Name:x ws '=' expr:y -> [\"handler\" x y]\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = string | call | number | propertyRef | identifier\n  identifier = name:x -> [\"identifier\" x]\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = (identifier|propertyRef):x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
+"text":"GuiParser {\n  widget = containerType:c name:x boxType:b ws '{' bodyParts:d ws '}' ' '* '\\n'? .*:xs -> [\n    \"widget\"\n    x\n    c\n    b\n    extract(d \"property\")\n    extract(d \"instance\")\n    join(xs)\n  ]\n  containerType = ws (\n    | 'frame'\n    | 'panel'\n    ):x !NameChar -> [\"container\" x]\n  boxType = ws (\n    | '%layout_rows'\n    | '%layout_columns'\n    ):x !NameChar -> [\"box\" x]\n  bodyParts = body*:xs -> partition(xs)\n  body = builtIn | instance | property\n  builtIn =\n    | ws 'BoxSpace(' expr:x ')' -> [\"instance\" \"BoxSpace\" x]\n  instance = name:x '(' instanceBody*:xs ws ')' -> [\"instance\" x xs]\n  instanceBody = sizer | propExplode | propAssign | handler\n  handler = ws '@' Name:x ws '=' expr:y -> [\"handler\" x y]\n  propAssign = name:x ws '=' expr:y -> [\"propAssign\" x y]\n  propExplode = ws '#' Name:x !NameChar -> [\"propExplode\" x]\n  sizer =\n    | ws '%proportion[' number:x ']' -> [\"sizer\" \"proportion\" x]\n    | ws '%expand' !NameChar -> [\"sizer\" \"expand\"]\n    | ws '%border[' expr:x ',' borderSides:y ']' -> [\"sizer\" \"border\" x ~y]\n  borderSides = borderSide:x ('|' borderSide)*:xs -> [x ~xs]\n  borderSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"borderSide\" x]\n  property = ws '#' Name:x ws '=' expr:y -> [\"property\" x y]\n  propertyRef = ws '#' Name:x -> [\"propertyRef\" x]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = string | call | number | propertyRef | identifier\n  identifier = name:x -> [\"identifier\" x]\n  string = ws '\"' (!'\"' .)*:xs '\"' -> [\"string\" join(xs)]\n  call = (identifier|propertyRef):x '(' expr*:xs ws ')' -> [\"call\" x ~xs]\n  number = ws ('-' | -> \"\"):x Digit:y Digit*:ys -> [\"number\" int(join([x y ~ys]))]\n  Digit = '0'-'9'\n  name = ws Name\n  ws = (' ' | '\\n')*\n  Name = NameStart:x NameChar*:xs -> join([x ~xs])\n  NameStart = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar  = NameStart | '0'-'9'\n}\n",
 "type":"code"
 }
 ],
@@ -431,7 +431,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"props.update(self._props[\" name \"])\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  box =\n    | \"%vbox\" -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%hbox\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"BoxSpace\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers)\\n\"\n    }\n  sizer =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"expand\"                -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"border\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  borderSide =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n  property = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propertyRef = py:name -> { \"self._props[\" name \"]\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = py:name -> { \"props.update(self._props[\" name \"])\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  box =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\" -> \"RLGuiFrame\"\n    | \"panel\" -> \"RLGuiPanel\"\n  string = py\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
