@@ -20,6 +20,16 @@
 ],
 "id":"9e71e85a89e143fe86cb4b90a5eed8a7",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"todo: what is the interface between the \"view\" and the \"gui\"? Can we name it?",
+"type":"strong"
+}
+],
+"id":"f74dd75218d642d2b53e45696e13abdb",
+"type":"text"
 }
 ],
 "title":"Main"
@@ -249,7 +259,7 @@
 "type":"code"
 }
 ],
-"title":"Borders"
+"title":"Separators"
 }
 ],
 "id":"d625649aae0a40bcb3e2e8cc9ede4373",
@@ -442,6 +452,16 @@
 "rlmeta/rlmeta.py"
 ],
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"todo: What is the correct name of _get_props? More like setting derived/default props.",
+"type":"strong"
+}
+],
+"id":"3df64ac884e04f6680fec150bb86f74e",
+"type":"text"
 }
 ],
 "title":"Code generator"
@@ -607,6 +627,16 @@
 ],
 "id":"c271e666cf75407b9f4d10b0860cbae8",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"todo: flesh out better event handling architecture",
+"type":"strong"
+}
+],
+"id":"09bc24b72d544b65affb2761c3c8b8e9",
+"type":"text"
 }
 ],
 "title":"Event handling"
@@ -927,7 +957,92 @@
 }
 ],
 "id":"46533f3be0674d1cae08ff281edbc37d",
-"paragraphs":[],
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"This is a rewrite of RLiterate with the following goals:",
+"type":"text"
+}
+],
+"id":"313389d1d33342909fe864a0717a0cd0",
+"type":"text"
+},
+{
+"child_type":"unordered",
+"children":[
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Improve performance so that it is not annoying to use.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Fix bugs that make it annoying to use.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Clean up the code base and remove old cruft.",
+"type":"text"
+}
+]
+}
+],
+"id":"20fd19faf32a4577bdc992cfe7be4256",
+"type":"list"
+},
+{
+"fragments":[
+{
+"text":"Features that I will consider removing because I haven't used them much or I found the usage not pleasant:",
+"type":"text"
+}
+],
+"id":"7c08b9898a0649adb5c14324fcc678dd",
+"type":"text"
+},
+{
+"child_type":"unordered",
+"children":[
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Variables.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Tab stops.",
+"type":"text"
+}
+]
+}
+],
+"id":"db0d204a26374f808fe6bcc676ec378c",
+"type":"list"
+}
+],
 "title":"RLiterate 2"
 },
 "variables":{}
