@@ -54,7 +54,7 @@ def profile(text):
             t1 = time.perf_counter()
             value = fn(*args, **kwargs)
             t2 = time.perf_counter()
-            print("{}: {:.3f}ms".format(text, 1000*(t2-t1)))
+            print("{:<10} = {:.3f}ms".format(text, 1000*(t2-t1)))
             return value
         if "--profile" in sys.argv:
             return fn_with_timing
@@ -76,9 +76,6 @@ def im_modify(obj, path, modify_fn):
         new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)
         return new_obj
     return modify_fn(obj)
-
-def im_replace(obj, path, value):
-    return im_modify(obj, path, lambda old_value: value)
 
 class RLGuiMixin(object):
 
@@ -307,8 +304,12 @@ class MainFrameView(Observable):
         return self._view
 
     def _set_toc_width(self, value):
-        self._view = im_replace(self._view, ["toc", "width"], max(50, value))
+        self._replace(["toc", "width"], max(50, value))
         self._notify()
+
+    @profile("im_modify")
+    def _replace(self, path, value):
+        self._view = im_modify(self._view, path, lambda old: value)
 
 class MainFrame(RLGuiFrame):
 
