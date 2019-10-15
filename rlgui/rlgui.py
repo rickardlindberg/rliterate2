@@ -739,7 +739,6 @@ class GuiParser(_Grammar):
         LABEL('prop')
         I('PUSH_SCOPE')
         I('CALL', 'WS')
-        I('MATCH_CHARSEQ', '#')
         I('CALL', 'Name')
         I('BIND', 'x')
         I('CALL', 'WS')
