@@ -272,7 +272,7 @@ class MainFrameView(Observable):
                 os.path.abspath(os.path.dirname(self._path))
             ),
             "toolbar": {
-                "border": 4,
+                "margin": 4,
             },
             "toc": {
                 "background": "#ffeeff",
@@ -378,16 +378,16 @@ class Toolbar(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self._props['border'])
+        self._create_space(self._props['margin'])
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['icon'] = 'quit'
-        sizer["border"] = self._props['border']
+        sizer["border"] = self._props['margin']
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers)
-        self._create_space(self._props['border'])
+        self._create_space(self._props['margin'])
 
 class TableOfContents(RLGuiPanel):
 
