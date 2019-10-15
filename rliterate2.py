@@ -282,7 +282,7 @@ class MainFrameView(Observable):
             ),
             "toolbar": {
                 "margin": 4,
-                "border": {
+                "separator": {
                     "thickness": 2,
                     "color": "#aaaaff",
                 },
@@ -291,7 +291,7 @@ class MainFrameView(Observable):
                 "background": "#ffeeff",
                 "width": 230,
                 "set_width": self._set_toc_width,
-                "border": {
+                "separator": {
                     "thickness": 3,
                     "color": "#aaaaaf",
                 },
@@ -331,7 +331,7 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toolbar.border'))
+        props.update(self.prop('toolbar.separator'))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(RowSeparator, props, sizer, handlers)
         props = {}
@@ -363,10 +363,10 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toc.border'))
+        props.update(self.prop('toc.separator'))
         props['cursor'] = 'size_horizontal'
         sizer["flag"] |= wx.EXPAND
-        handlers['drag'] = lambda event: self._on_border_drag(event)
+        handlers['drag'] = lambda event: self._on_separator_drag(event)
         self._create_widget(ColumnSeparator, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
@@ -376,7 +376,7 @@ class MainArea(RLGuiPanel):
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer, handlers)
 
-    def _on_border_drag(self, event):
+    def _on_separator_drag(self, event):
         if event.initial:
             self._start_width = self.prop("toc.width")
         else:
