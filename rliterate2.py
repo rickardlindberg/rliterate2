@@ -332,7 +332,7 @@ class MainFrame(RLGuiFrame):
         handlers = {}
         props.update(self.prop('toolbar.border'))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(HBorder, props, sizer, handlers)
+        self._create_widget(RowSeparator, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
@@ -366,7 +366,7 @@ class MainArea(RLGuiPanel):
         props['cursor'] = 'size_horizontal'
         sizer["flag"] |= wx.EXPAND
         handlers['drag'] = lambda event: self._on_border_drag(event)
-        self._create_widget(VBorder, props, sizer, handlers)
+        self._create_widget(ColumnSeparator, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
@@ -428,7 +428,7 @@ class Workspace(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class HBorder(RLGuiPanel):
+class RowSeparator(RLGuiPanel):
 
     def _get_props(self):
         return {
@@ -442,7 +442,7 @@ class HBorder(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class VBorder(RLGuiPanel):
+class ColumnSeparator(RLGuiPanel):
 
     def _get_props(self):
         return {

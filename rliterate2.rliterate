@@ -55,7 +55,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  HBorder(\n    #toolbar.border\n    %expand\n  )\n  MainArea(\n    toc       = #toc\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %expand\n  )\n  RowSeparator(\n    #toolbar.border\n    %expand\n  )\n  MainArea(\n    toc       = #toc\n    workspace = #workspace\n    %expand %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -76,7 +76,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  VBorder(\n    #toc.border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %expand\n  )\n  ColumnSeparator(\n    #toc.border\n    cursor = \"size_horizontal\"\n    %expand\n    @drag = self._on_border_drag(event)\n  )\n  Workspace(\n    #workspace\n    %expand %proportion[1]\n  )\n}\n\n",
 "type":"code"
 },
 {
@@ -215,7 +215,7 @@
 ],
 "fragments":[
 {
-"text":"panel HBorder %layout_columns {\n  background = #color\n  min_size   = size(-1 #thickness)\n}\n",
+"text":"panel RowSeparator %layout_columns {\n  background = #color\n  min_size   = size(-1 #thickness)\n}\n",
 "type":"code"
 }
 ],
@@ -236,7 +236,7 @@
 ],
 "fragments":[
 {
-"text":"panel VBorder %layout_rows {\n  background = #color\n  min_size   = size(#thickness -1)\n}\n",
+"text":"panel ColumnSeparator %layout_rows {\n  background = #color\n  min_size   = size(#thickness -1)\n}\n",
 "type":"code"
 }
 ],
