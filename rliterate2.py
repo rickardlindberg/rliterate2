@@ -365,8 +365,8 @@ class MainArea(RLGuiPanel):
         handlers = {}
         props.update(self.prop('toc.separator'))
         props['cursor'] = 'size_horizontal'
-        sizer["flag"] |= wx.EXPAND
         handlers['drag'] = lambda event: self._on_separator_drag(event)
+        sizer["flag"] |= wx.EXPAND
         self._create_widget(ColumnSeparator, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
