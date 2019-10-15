@@ -273,21 +273,21 @@ class MainFrameView(Observable):
             ),
             "toolbar": {
                 "margin": 4,
+                "border": {
+                    "thickness": 2,
+                    "color": "#aaaaff",
+                },
             },
             "toc": {
                 "background": "#ffeeff",
                 "width": self._toc_width,
                 "set_width": self._set_toc_width,
+                "border": {
+                    "thickness": 3,
+                    "color": "#aaaaaf",
+                },
             },
             "workspace": {
-            },
-            "toolbar_border": {
-                "thickness": 2,
-                "color": "#aaaaff",
-            },
-            "toc_border": {
-                "thickness": 3,
-                "color": "#aaaaaf",
             },
         }
 
@@ -309,21 +309,20 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self._props['toolbar'])
+        props.update(self.prop('toolbar'))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Toolbar, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self._props['toolbar_border'])
+        props.update(self.prop('toolbar.border'))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(HBorder, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props['toc'] = self._props['toc']
-        props['toc_border'] = self._props['toc_border']
-        props['workspace'] = self._props['workspace']
+        props['toc'] = self.prop('toc')
+        props['workspace'] = self.prop('workspace')
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer, handlers)
@@ -342,13 +341,13 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self._props['toc'])
+        props.update(self.prop('toc'))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContents, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self._props['toc_border'])
+        props.update(self.prop('toc.border'))
         props['cursor'] = 'size_horizontal'
         sizer["flag"] |= wx.EXPAND
         handlers['drag'] = lambda event: self._on_border_drag(event)
@@ -356,7 +355,7 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self._props['workspace'])
+        props.update(self.prop('workspace'))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer, handlers)
@@ -378,22 +377,22 @@ class Toolbar(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self._props['margin'])
+        self._create_space(self.prop('margin'))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['icon'] = 'quit'
-        sizer["border"] = self._props['margin']
+        sizer["border"] = self.prop('margin')
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers)
-        self._create_space(self._props['margin'])
+        self._create_space(self.prop('margin'))
 
 class TableOfContents(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'min_size': size(self._props['width'], -1),
+            'min_size': size(self.prop('width'), -1),
         }
 
     def _create_sizer(self):
@@ -418,8 +417,8 @@ class HBorder(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'background': self._props['color'],
-            'min_size': size(-1, self._props['thickness']),
+            'background': self.prop('color'),
+            'min_size': size(-1, self.prop('thickness')),
         }
 
     def _create_sizer(self):
@@ -432,8 +431,8 @@ class VBorder(RLGuiPanel):
 
     def _get_props(self):
         return {
-            'background': self._props['color'],
-            'min_size': size(self._props['thickness'], -1),
+            'background': self.prop('color'),
+            'min_size': size(self.prop('thickness'), -1),
         }
 
     def _create_sizer(self):
