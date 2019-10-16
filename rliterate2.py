@@ -8,18 +8,7 @@ import uuid
 import wx
 
 def main():
-    @profile("create")
-    def create():
-        return view.create()
-    @profile("update")
-    def update(props):
-        frame.update_props(props)
-    app = wx.App()
-    view = MainFrameView(sys.argv[1])
-    view.listen(lambda: update(create()))
-    frame = MainFrame(None, view.create())
-    frame.Show()
-    app.MainLoop()
+    start_app(MainFrame, MainFrameProps(sys.argv[1]))
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -77,14 +66,27 @@ def im_modify(obj, path, modify_fn):
         return new_obj
     return modify_fn(obj)
 
+def start_app(frame_cls, props):
+    @profile("get")
+    def get():
+        return props.get()
+    @profile("update")
+    def update(props):
+        frame.update_props(props)
+    app = wx.App()
+    props.listen(lambda: update(get()))
+    frame = frame_cls(None, props.get())
+    frame.Show()
+    app.MainLoop()
+
 class Observable(object):
 
     def __init__(self):
         self._listeners = []
 
-    def _notify(self):
+    def _notify(self, *args, **kwargs):
         for listener in self._listeners:
-            listener()
+            listener(*args, **kwargs)
 
     def listen(self, listener):
         self._listeners.append(listener)
@@ -266,46 +268,36 @@ class ToolbarButton(wx.BitmapButton, RLGuiMixin):
             ))
         )
 
-class MainFrameView(Observable):
+class Props(Observable):
 
-    def __init__(self, path):
+    def __init__(self, props):
         Observable.__init__(self)
-        self._path = path
-        self._view = {
-            "title": "{} ({}) - RLiterate 2".format(
-                os.path.basename(self._path),
-                os.path.abspath(os.path.dirname(self._path))
-            ),
-            "toolbar": {
-                "margin": 4,
-                "separator": {
-                    "thickness": 2,
-                    "color": "#aaaaff",
-                },
-            },
-            "toc": {
-                "background": "#ffeeff",
-                "width": 230,
-                "set_width": self._set_toc_width,
-                "separator": {
-                    "thickness": 3,
-                    "color": "#aaaaaf",
-                },
-            },
-            "workspace": {
-            },
-        }
+        self._props = props
 
-    def create(self):
-        return self._view
+    def _child(self, name, props):
+        self._props[name] = props.get()
+        props.listen(lambda: self._replace([name], props.get()))
 
-    def _set_toc_width(self, value):
-        self._replace(["toc", "width"], max(50, value))
-        self._notify()
+    def get(self):
+        return self._props
 
     @profile("im_modify")
     def _replace(self, path, value):
-        self._view = im_modify(self._view, path, lambda old: value)
+        self._props = im_modify(self._props, path, lambda old: value)
+        self._notify()
+
+class MainFrameProps(Props):
+
+    def __init__(self, path):
+        Props.__init__(self, {
+            "title": "{} ({}) - RLiterate 2".format(
+                os.path.basename(path),
+                os.path.abspath(os.path.dirname(path))
+            ),
+        })
+        self._child("toolbar", ToolbarProps())
+        self._child("toc", TableOfContentsProps())
+        self._child("workspace", WorkspaceProps())
 
 class MainFrame(RLGuiFrame):
 
@@ -378,6 +370,17 @@ class MainArea(RLGuiPanel):
         else:
             self.prop("toc.set_width")(self._start_width+event.dx)
 
+class ToolbarProps(Props):
+
+    def __init__(self):
+        Props.__init__(self, {
+            "margin": 4,
+            "separator": {
+                "thickness": 2,
+                "color": "#aaaaff",
+            },
+        })
+
 class Toolbar(RLGuiPanel):
 
     def _get_local_props(self):
@@ -400,6 +403,22 @@ class Toolbar(RLGuiPanel):
         self._create_widget(ToolbarButton, props, sizer, handlers)
         self._create_space(self.prop('margin'))
 
+class TableOfContentsProps(Props):
+
+    def __init__(self):
+        Props.__init__(self, {
+            "background": "#ffeeff",
+            "width": 230,
+            "set_width": self._set_width,
+            "separator": {
+                "thickness": 3,
+                "color": "#aaaaaf",
+            },
+        })
+
+    def _set_width(self, value):
+        self._replace(["width"], max(50, value))
+
 class TableOfContents(RLGuiPanel):
 
     def _get_local_props(self):
@@ -412,6 +431,12 @@ class TableOfContents(RLGuiPanel):
 
     def _create_widgets(self):
         pass
+
+class WorkspaceProps(Props):
+
+    def __init__(self):
+        Props.__init__(self, {
+        })
 
 class Workspace(RLGuiPanel):
 

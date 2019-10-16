@@ -14,32 +14,12 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    @profile(\"create\")\n    def create():\n        return view.create()\n    @profile(\"update\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    view = MainFrameView(sys.argv[1])\n    view.listen(lambda: update(create()))\n    frame = MainFrame(None, view.create())\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def main():\n    start_app(MainFrame, MainFrameProps(sys.argv[1]))\n",
 "type":"code"
 }
 ],
 "id":"9e71e85a89e143fe86cb4b90a5eed8a7",
 "type":"code"
-},
-{
-"fragments":[
-{
-"text":"TODO: What is the pattern between the \"view\" and the \"gui\"? Can we clarify it?",
-"type":"strong"
-}
-],
-"id":"f74dd75218d642d2b53e45696e13abdb",
-"type":"text"
-},
-{
-"fragments":[
-{
-"text":"TODO: Move wx related code into framework?",
-"type":"strong"
-}
-],
-"id":"e5c1496c37ab4d52a5ec0a66177334bc",
-"type":"text"
 }
 ],
 "title":"Main"
@@ -59,7 +39,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameView(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._view = {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(self._path),\n                os.path.abspath(os.path.dirname(self._path))\n            ),\n            \"toolbar\": {\n                \"margin\": 4,\n                \"separator\": {\n                    \"thickness\": 2,\n                    \"color\": \"#aaaaff\",\n                },\n            },\n            \"toc\": {\n                \"background\": \"#ffeeff\",\n                \"width\": 230,\n                \"set_width\": self._set_toc_width,\n                \"separator\": {\n                    \"thickness\": 3,\n                    \"color\": \"#aaaaaf\",\n                },\n            },\n            \"workspace\": {\n            },\n        }\n\n    def create(self):\n        return self._view\n\n    def _set_toc_width(self, value):\n        self._replace([\"toc\", \"width\"], max(50, value))\n        self._notify()\n\n    @profile(\"im_modify\")\n    def _replace(self, path, value):\n        self._view = im_modify(self._view, path, lambda old: value)\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n        })\n        self._child(\"toolbar\", ToolbarProps())\n        self._child(\"toc\", TableOfContentsProps())\n        self._child(\"workspace\", WorkspaceProps())\n",
 "type":"code"
 }
 ],
@@ -151,6 +131,22 @@
 ],
 "fragments":[
 {
+"text":"class ToolbarProps(Props):\n\n    def __init__(self):\n        Props.__init__(self, {\n            \"margin\": 4,\n            \"separator\": {\n                \"thickness\": 2,\n                \"color\": \"#aaaaff\",\n            },\n        })\n",
+"type":"code"
+}
+],
+"id":"a2b6e1e17d804033bc21ab32625b15a9",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
 "text":"panel Toolbar %layout_columns {\n  %space[#margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#margin,TOP|BOTTOM]\n  )\n  %space[#margin]\n}\n",
 "type":"code"
 }
@@ -179,6 +175,22 @@
 ],
 "fragments":[
 {
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self):\n        Props.__init__(self, {\n            \"background\": \"#ffeeff\",\n            \"width\": 230,\n            \"set_width\": self._set_width,\n            \"separator\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        })\n\n    def _set_width(self, value):\n        self._replace([\"width\"], max(50, value))\n",
+"type":"code"
+}
+],
+"id":"2a866818635048c794a1a4be3e35509d",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
 "text":"panel TableOfContents %layout_rows {\n  min_size = size(#width -1)\n}\n",
 "type":"code"
 }
@@ -198,6 +210,22 @@
 "children":[],
 "id":"e6a157bbac8842a2b8c625bfa9255159",
 "paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self):\n        Props.__init__(self, {\n        })\n",
+"type":"code"
+}
+],
+"id":"1bd7139b569d41039b4661e345deb68d",
+"type":"code"
+},
 {
 "chunkpath":[
 "classes"
@@ -371,29 +399,6 @@
 }
 ],
 "title":"JSON"
-},
-{
-"children":[],
-"id":"26fd702a01b6461dbe30e5c5b6e77ed6",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Observable(object):\n\n    def __init__(self):\n        self._listeners = []\n\n    def _notify(self):\n        for listener in self._listeners:\n            listener()\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    def unlisten(self, listener):\n        self._listeners.remove(listener)\n",
-"type":"code"
-}
-],
-"id":"ea51c18d2f0b47ccb8b01924564fcdee",
-"type":"code"
-}
-],
-"title":"Observable"
 },
 {
 "children":[],
@@ -841,6 +846,68 @@
 }
 ],
 "title":"WX wrappers"
+},
+{
+"children":[],
+"id":"08bc729869634744b018f65f4d968a49",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace([name], props.get()))\n\n    def get(self):\n        return self._props\n\n    @profile(\"im_modify\")\n    def _replace(self, path, value):\n        self._props = im_modify(self._props, path, lambda old: value)\n        self._notify()\n",
+"type":"code"
+}
+],
+"id":"c46f943de6a340e286c6c6eefe9b61a2",
+"type":"code"
+},
+{
+"chunkpath":[
+"base base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Observable(object):\n\n    def __init__(self):\n        self._listeners = []\n\n    def _notify(self, *args, **kwargs):\n        for listener in self._listeners:\n            listener(*args, **kwargs)\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    def unlisten(self, listener):\n        self._listeners.remove(listener)\n",
+"type":"code"
+}
+],
+"id":"ea51c18d2f0b47ccb8b01924564fcdee",
+"type":"code"
+}
+],
+"title":"Props"
+},
+{
+"children":[],
+"id":"c93f45e47daa41b99164916b4092ec13",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def start_app(frame_cls, props):\n    @profile(\"get\")\n    def get():\n        return props.get()\n    @profile(\"update\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
+"type":"code"
+}
+],
+"id":"557c451273f74393955205d772d86649",
+"type":"code"
+}
+],
+"title":"Start app"
 }
 ],
 "id":"da31b318d9f2479496494b3e56985a07",
@@ -926,6 +993,18 @@
 "blank_lines_before":1,
 "path":[
 "functions"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"base base classes"
 ],
 "prefix":"",
 "type":"chunk"
