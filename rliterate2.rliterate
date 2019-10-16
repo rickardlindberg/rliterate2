@@ -876,7 +876,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    def get(self):\n        return self._props\n\n    @profile(\"replace\")\n    def _replace(self, key, value):\n        self._props = dict(self._props, **{key: value})\n        self._notify()\n",
+"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    def get(self):\n        return self._props\n\n    @profile(\"replace\")\n    def _replace(self, key, value):\n        self._props = dict(self._props)\n        self._props[key] = value\n        self._notify()\n",
 "type":"code"
 }
 ],

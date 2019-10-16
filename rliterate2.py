@@ -283,7 +283,8 @@ class Props(Observable):
 
     @profile("replace")
     def _replace(self, key, value):
-        self._props = dict(self._props, **{key: value})
+        self._props = dict(self._props)
+        self._props[key] = value
         self._notify()
 
 class MainFrame(RLGuiFrame):
