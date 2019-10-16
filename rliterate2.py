@@ -81,9 +81,16 @@ class RLGuiMixin(object):
 
     def __init__(self, props):
         self._props = {}
-        self._update_props(props)
-        self._create_gui()
-        self._update_builtin()
+        self._builtin_handlers = {}
+        self._setup_gui()
+        self.update_props(props, False)
+
+    def _setup_gui(self):
+        self._register_builtin("background", self.SetBackgroundColour)
+        self._register_builtin("min_size", self.SetMinSize)
+        self._register_builtin("cursor", lambda value: self.SetCursor({
+            "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
+        }[value]))
 
     def prop(self, path):
         value = self._props
@@ -91,10 +98,12 @@ class RLGuiMixin(object):
             value = value[part]
         return value
 
-    def update_props(self, props):
+    def update_props(self, props, layout=True):
         if self._update_props(props):
             self._update_gui()
-            self._update_builtin()
+            if layout:
+                self.Layout()
+                self.Refresh()
 
     def _update_props(self, props):
         self._changed_props = []
@@ -105,6 +114,9 @@ class RLGuiMixin(object):
                     self._changed_props.append(key)
         return len(self._changed_props) > 0
 
+    def _get_props(self):
+        return {}
+
     def _prop_differs(self, key, value):
         if key not in self._props:
             return True
@@ -114,40 +126,29 @@ class RLGuiMixin(object):
             return False
         return True
 
-    def _create_gui(self):
-        pass
-
     def _update_gui(self):
-        pass
-
-    def _update_builtin(self):
         for name in self._changed_props:
-            if name == "background":
-                self.SetBackgroundColour(self._props["background"])
-            if name == "min_size":
-                self.SetMinSize(self._props["min_size"])
-            if name == "cursor":
-                self.SetCursor({
-                    "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
-                }.get(self._props["cursor"]))
+            if name in self._builtin_handlers:
+                self._builtin_handlers[name](self._props[name])
 
-    def _get_props(self):
-        return {}
+    def _register_builtin(self, name, fn):
+        self._builtin_handlers[name] = fn
 
 class RLGuiContainerMixin(RLGuiMixin):
 
-    def _create_gui(self):
+    def _setup_gui(self):
+        RLGuiMixin._setup_gui(self)
         self.Sizer = self._create_sizer()
         self._children = []
-        self._create()
 
     def _update_gui(self):
-        self._create()
-
-    def _create(self):
+        RLGuiMixin._update_gui(self)
         self._sizer_index = 0
         self._child_index = 0
         self._create_widgets()
+
+    def _create_widgets(self):
+        raise NotImplementedError()
 
     def _create_widget(self, widget_cls, props, sizer, handlers):
         if self._child_index >= len(self._children):
@@ -158,7 +159,7 @@ class RLGuiContainerMixin(RLGuiMixin):
             self.Sizer.Insert(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, widget)
         else:
-            self._children[self._child_index].update_props(props)
+            self._children[self._child_index].update_props(props, False)
         self._sizer_index += 1
         self._child_index += 1
 
@@ -212,19 +213,9 @@ class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
         wx.Frame.__init__(self, parent)
         RLGuiContainerMixin.__init__(self, props)
 
-    def _create_gui(self):
-        RLGuiContainerMixin._create_gui(self)
-        self.Layout()
-
-    def _update_gui(self):
-        RLGuiContainerMixin._update_gui(self)
-        self.Layout()
-        self.Refresh()
-
-    def _update_builtin(self):
-        RLGuiContainerMixin._update_builtin(self)
-        if "title" in self._changed_props:
-            self.SetTitle(self.prop("title"))
+    def _setup_gui(self):
+        RLGuiContainerMixin._setup_gui(self)
+        self._register_builtin("title", self.SetTitle)
 
 class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
 
