@@ -276,28 +276,15 @@ class Props(Observable):
 
     def _child(self, name, props):
         self._props[name] = props.get()
-        props.listen(lambda: self._replace([name], props.get()))
+        props.listen(lambda: self._replace(name, props.get()))
 
     def get(self):
         return self._props
 
-    @profile("im_modify")
-    def _replace(self, path, value):
-        self._props = im_modify(self._props, path, lambda old: value)
+    @profile("replace")
+    def _replace(self, key, value):
+        self._props = dict(self._props, **{key: value})
         self._notify()
-
-class MainFrameProps(Props):
-
-    def __init__(self, path):
-        Props.__init__(self, {
-            "title": "{} ({}) - RLiterate 2".format(
-                os.path.basename(path),
-                os.path.abspath(os.path.dirname(path))
-            ),
-        })
-        self._child("toolbar", ToolbarProps())
-        self._child("toc", TableOfContentsProps())
-        self._child("workspace", WorkspaceProps())
 
 class MainFrame(RLGuiFrame):
 
@@ -319,17 +306,32 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toolbar.separator'))
+        props.update(self.prop('toolbar_divider'))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(RowSeparator, props, sizer, handlers)
+        self._create_widget(RowDivider, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props['toc'] = self.prop('toc')
-        props['workspace'] = self.prop('workspace')
+        props.update(self.prop('main_area'))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer, handlers)
+
+class MainFrameProps(Props):
+
+    def __init__(self, path):
+        Props.__init__(self, {
+            "title": "{} ({}) - RLiterate 2".format(
+                os.path.basename(path),
+                os.path.abspath(os.path.dirname(path))
+            ),
+            "toolbar_divider": {
+                "thickness": 2,
+                "color": "#aaaaaf",
+            },
+        })
+        self._child("toolbar", ToolbarProps())
+        self._child("main_area", MainAreaProps())
 
 class MainArea(RLGuiPanel):
 
@@ -351,11 +353,11 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toc.separator'))
+        props.update(self.prop('toc_divider'))
         props['cursor'] = 'size_horizontal'
-        handlers['drag'] = lambda event: self._on_separator_drag(event)
+        handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(ColumnSeparator, props, sizer, handlers)
+        self._create_widget(ColumnDivider, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
@@ -364,22 +366,23 @@ class MainArea(RLGuiPanel):
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer, handlers)
 
-    def _on_separator_drag(self, event):
+    def _on_toc_divider_drag(self, event):
         if event.initial:
             self._start_width = self.prop("toc.width")
         else:
             self.prop("toc.set_width")(self._start_width+event.dx)
 
-class ToolbarProps(Props):
+class MainAreaProps(Props):
 
     def __init__(self):
         Props.__init__(self, {
-            "margin": 4,
-            "separator": {
-                "thickness": 2,
+            "toc_divider": {
+                "thickness": 3,
                 "color": "#aaaaff",
             },
         })
+        self._child("toc", TableOfContentsProps())
+        self._child("workspace", WorkspaceProps())
 
 class Toolbar(RLGuiPanel):
 
@@ -403,21 +406,12 @@ class Toolbar(RLGuiPanel):
         self._create_widget(ToolbarButton, props, sizer, handlers)
         self._create_space(self.prop('margin'))
 
-class TableOfContentsProps(Props):
+class ToolbarProps(Props):
 
     def __init__(self):
         Props.__init__(self, {
-            "background": "#ffeeff",
-            "width": 230,
-            "set_width": self._set_width,
-            "separator": {
-                "thickness": 3,
-                "color": "#aaaaaf",
-            },
+            "margin": 4,
         })
-
-    def _set_width(self, value):
-        self._replace(["width"], max(50, value))
 
 class TableOfContents(RLGuiPanel):
 
@@ -432,11 +426,17 @@ class TableOfContents(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class WorkspaceProps(Props):
+class TableOfContentsProps(Props):
 
     def __init__(self):
         Props.__init__(self, {
+            "background": "#ffeeff",
+            "width": 230,
+            "set_width": self._set_width,
         })
+
+    def _set_width(self, value):
+        self._replace("width", max(50, value))
 
 class Workspace(RLGuiPanel):
 
@@ -450,7 +450,13 @@ class Workspace(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class RowSeparator(RLGuiPanel):
+class WorkspaceProps(Props):
+
+    def __init__(self):
+        Props.__init__(self, {
+        })
+
+class RowDivider(RLGuiPanel):
 
     def _get_local_props(self):
         return {
@@ -464,7 +470,7 @@ class RowSeparator(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class ColumnSeparator(RLGuiPanel):
+class ColumnDivider(RLGuiPanel):
 
     def _get_local_props(self):
         return {
