@@ -156,20 +156,22 @@ class RLGuiContainerMixin(RLGuiMixin):
             for handler, fn in handlers.items():
                 if handler == "drag":
                     DragHandler(widget, fn)
-            self.Sizer.Insert(self._sizer_index, widget, **sizer)
-            self._children.insert(self._child_index, widget)
+            sizer_item = self.Sizer.Insert(self._sizer_index, widget, **sizer)
+            self._children.insert(self._child_index, (widget, sizer_item))
         else:
-            self._children[self._child_index].update_props(props, False)
+            widget, sizer_item = self._children[self._child_index]
+            widget.update_props(props, False)
+            sizer_item.SetBorder(sizer["border"])
+            sizer_item.SetProportion(sizer["proportion"])
         self._sizer_index += 1
         self._child_index += 1
 
     def _create_space(self, thickness):
         if self._child_index >= len(self._children):
-            space = self.Sizer.Insert(
+            self._children.insert(self._child_index, self.Sizer.Insert(
                 self._sizer_index,
                 self._get_space_size(thickness)
-            )
-            self._children.insert(self._child_index, space)
+            ))
         else:
             self._children[self._child_index].SetMinSize(
                 self._get_space_size(thickness)
