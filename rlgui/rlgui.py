@@ -996,7 +996,7 @@ class WxCodeGenerator(_Grammar):
         I('POP_STREAM')
         I('MATCH_ANY')
         I('BIND', 'verbatim')
-        I('ACTION', lambda scope: _Builder.create(['class ', scope['name'].eval(), '(', scope['container'].eval(), '):\n\n', _IndentBuilder(), 'def _get_props(self):\n', _IndentBuilder(), 'return {\n', _IndentBuilder(), scope['props'].eval(), _DedentBuilder(), '}\n\n', _DedentBuilder(), 'def _create_sizer(self):\n', _IndentBuilder(), 'return ', scope['sizer'].eval(), '\n\n', _DedentBuilder(), 'def _create_widgets(self):\n', _IndentBuilder(), 'pass\n', scope['inst'].eval(), _DedentBuilder(), scope['verbatim'].eval(), _DedentBuilder()]))
+        I('ACTION', lambda scope: _Builder.create(['class ', scope['name'].eval(), '(', scope['container'].eval(), '):\n\n', _IndentBuilder(), 'def _get_local_props(self):\n', _IndentBuilder(), 'return {\n', _IndentBuilder(), scope['props'].eval(), _DedentBuilder(), '}\n\n', _DedentBuilder(), 'def _create_sizer(self):\n', _IndentBuilder(), 'return ', scope['sizer'].eval(), '\n\n', _DedentBuilder(), 'def _create_widgets(self):\n', _IndentBuilder(), 'pass\n', scope['inst'].eval(), _DedentBuilder(), scope['verbatim'].eval(), _DedentBuilder()]))
         I('POP_SCOPE')
         I('RETURN')
         LABEL('instance')

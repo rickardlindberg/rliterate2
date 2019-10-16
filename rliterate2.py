@@ -77,6 +77,21 @@ def im_modify(obj, path, modify_fn):
         return new_obj
     return modify_fn(obj)
 
+class Observable(object):
+
+    def __init__(self):
+        self._listeners = []
+
+    def _notify(self):
+        for listener in self._listeners:
+            listener()
+
+    def listen(self, listener):
+        self._listeners.append(listener)
+
+    def unlisten(self, listener):
+        self._listeners.remove(listener)
+
 class RLGuiMixin(object):
 
     def __init__(self, props):
@@ -88,9 +103,11 @@ class RLGuiMixin(object):
     def _setup_gui(self):
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
-        self._register_builtin("cursor", lambda value: self.SetCursor({
-            "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
-        }[value]))
+        self._register_builtin("cursor", lambda value:
+            self.SetCursor({
+                "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
+            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
+        )
 
     def prop(self, path):
         value = self._props
@@ -107,14 +124,14 @@ class RLGuiMixin(object):
 
     def _update_props(self, props):
         self._changed_props = []
-        for p in [lambda: props, self._get_props]:
+        for p in [lambda: props, self._get_local_props]:
             for key, value in p().items():
                 if self._prop_differs(key, value):
                     self._props[key] = value
                     self._changed_props.append(key)
         return len(self._changed_props) > 0
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {}
 
     def _prop_differs(self, key, value):
@@ -228,10 +245,13 @@ class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
 class ToolbarButton(wx.BitmapButton, RLGuiMixin):
 
     def __init__(self, parent, props):
-        wx.BitmapButton.__init__(
-            self,
-            parent,
-            bitmap=wx.ArtProvider.GetBitmap(
+        wx.BitmapButton.__init__(self, parent, style=wx.NO_BORDER)
+        RLGuiMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiMixin._setup_gui(self)
+        self._register_builtin("icon", lambda value:
+            self.SetBitmap(wx.ArtProvider.GetBitmap(
                 {
                     "add": wx.ART_ADD_BOOKMARK,
                     "back": wx.ART_GO_BACK,
@@ -240,28 +260,11 @@ class ToolbarButton(wx.BitmapButton, RLGuiMixin):
                     "redo": wx.ART_REDO,
                     "quit": wx.ART_QUIT,
                     "save": wx.ART_FILE_SAVE,
-                }.get(props.get("icon"), wx.ART_QUESTION),
+                }.get(value, wx.ART_QUESTION),
                 wx.ART_BUTTON,
                 (24, 24)
-            ),
-            style=wx.NO_BORDER
+            ))
         )
-        RLGuiMixin.__init__(self, props)
-
-class Observable(object):
-
-    def __init__(self):
-        self._listeners = []
-
-    def _notify(self):
-        for listener in self._listeners:
-            listener()
-
-    def listen(self, listener):
-        self._listeners.append(listener)
-
-    def unlisten(self, listener):
-        self._listeners.remove(listener)
 
 class MainFrameView(Observable):
 
@@ -306,7 +309,7 @@ class MainFrameView(Observable):
 
 class MainFrame(RLGuiFrame):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
         }
 
@@ -338,7 +341,7 @@ class MainFrame(RLGuiFrame):
 
 class MainArea(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
         }
 
@@ -377,7 +380,7 @@ class MainArea(RLGuiPanel):
 
 class Toolbar(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
         }
 
@@ -399,7 +402,7 @@ class Toolbar(RLGuiPanel):
 
 class TableOfContents(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
             'min_size': size(self.prop('width'), -1),
         }
@@ -412,7 +415,7 @@ class TableOfContents(RLGuiPanel):
 
 class Workspace(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
         }
 
@@ -424,7 +427,7 @@ class Workspace(RLGuiPanel):
 
 class RowSeparator(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
             'background': self.prop('color'),
             'min_size': size(-1, self.prop('thickness')),
@@ -438,7 +441,7 @@ class RowSeparator(RLGuiPanel):
 
 class ColumnSeparator(RLGuiPanel):
 
-    def _get_props(self):
+    def _get_local_props(self):
         return {
             'background': self.prop('color'),
             'min_size': size(self.prop('thickness'), -1),
