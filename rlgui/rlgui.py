@@ -329,18 +329,6 @@ def _makeList(items):
         _addItem(depth, item)
     return result
 
-def join(items, sep=""):
-    return sep.join(items)
-
-def partition(values):
-    by_type = defaultdict(list)
-    for x in values:
-        by_type[x[0]].append(x)
-    return by_type
-
-def extract(by_type, name):
-    return by_type[name]
-
 class GuiParser(_Grammar):
 
     def __init__(self):
@@ -1200,6 +1188,18 @@ class WxCodeGenerator(_Grammar):
         I('ACTION', lambda scope: repr(scope['x'].eval()))
         I('POP_SCOPE')
         I('RETURN')
+
+def join(items, sep=""):
+    return sep.join(items)
+
+def partition(values):
+    by_type = defaultdict(list)
+    for x in values:
+        by_type[x[0]].append(x)
+    return by_type
+
+def extract(by_type, name):
+    return by_type[name]
 
 if __name__ == "__main__":
     parser = GuiParser()

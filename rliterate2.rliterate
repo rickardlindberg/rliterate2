@@ -456,6 +456,87 @@
 {
 "children":[
 {
+"children":[],
+"id":"fa9c9667abb14d34b60ec36cc4188b99",
+"paragraphs":[
+{
+"chunkpath":[],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"#!/usr/bin/env python2\n\nfrom collections import defaultdict\nimport sys\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"rlmeta support library"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"grammars"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"support functions"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.stderr.write(e.describe())\n        sys.exit(1)\n",
+"type":"code"
+}
+],
+"id":"e8901611eb4941229bd35edab5f6e8b7",
+"type":"code"
+},
+{
+"chunkpath":[
+"rlmeta support library"
+],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"# Placeholder to generate RLMeta support library\n",
+"type":"code"
+}
+],
+"id":"7f08cdb6050944b98378a4b4106105d9",
+"language":"",
+"post_process":[
+"python",
+"rlmeta/rlmeta.py",
+"--support"
+],
+"type":"code"
+}
+],
+"title":"Compiler"
+},
+{
 "children":[
 {
 "children":[],
@@ -501,7 +582,7 @@
 "type":"code"
 }
 ],
-"title":"Base"
+"title":"Base widget mixin"
 },
 {
 "children":[],
@@ -539,7 +620,7 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"grammars"
 ],
 "filepath":[
 "rlgui",
@@ -561,7 +642,7 @@
 },
 {
 "chunkpath":[
-"support"
+"support functions"
 ],
 "filepath":[
 "rlgui",
@@ -580,7 +661,7 @@
 },
 {
 "chunkpath":[
-"support"
+"support functions"
 ],
 "filepath":[
 "rlgui",
@@ -599,7 +680,7 @@
 },
 {
 "chunkpath":[
-"support"
+"support functions"
 ],
 "filepath":[
 "rlgui",
@@ -688,7 +769,7 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"grammars"
 ],
 "filepath":[
 "rlgui",
@@ -732,7 +813,7 @@
 "type":"code"
 }
 ],
-"title":"Base"
+"title":"Base wxPython mixin"
 },
 {
 "children":[],
@@ -755,7 +836,7 @@
 "type":"code"
 }
 ],
-"title":"Container"
+"title":"Container mixin"
 },
 {
 "children":[],
@@ -810,7 +891,7 @@
 "type":"code"
 }
 ],
-"title":"WX wrappers"
+"title":"Wrappers for native wxPython widgets"
 },
 {
 "children":[],
@@ -868,70 +949,7 @@
 }
 ],
 "id":"f4c7873224fb4dfcbe73180d7afdfd72",
-"paragraphs":[
-{
-"chunkpath":[],
-"filepath":[
-"rlgui",
-"rlgui.py"
-],
-"fragments":[
-{
-"text":"#!/usr/bin/env python2\n\nfrom collections import defaultdict\nimport sys\n\n",
-"type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
-"support"
-],
-"prefix":"",
-"type":"chunk"
-},
-{
-"text":"\n",
-"type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
-"classes"
-],
-"prefix":"",
-"type":"chunk"
-},
-{
-"text":"\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.stderr.write(e.describe())\n        sys.exit(1)\n",
-"type":"code"
-}
-],
-"id":"e8901611eb4941229bd35edab5f6e8b7",
-"type":"code"
-},
-{
-"chunkpath":[
-"support"
-],
-"filepath":[
-"rlgui",
-"rlgui.py"
-],
-"fragments":[
-{
-"text":"# Placeholder to generate support library\n",
-"type":"code"
-}
-],
-"id":"7f08cdb6050944b98378a4b4106105d9",
-"language":"",
-"post_process":[
-"python",
-"rlmeta/rlmeta.py",
-"--support"
-],
-"type":"code"
-}
-],
+"paragraphs":[],
 "title":"GUI framework"
 },
 {
