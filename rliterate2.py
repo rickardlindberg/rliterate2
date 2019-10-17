@@ -103,13 +103,7 @@ class RLGuiMixin(object):
         self.update_props(props, False)
 
     def _setup_gui(self):
-        self._register_builtin("background", self.SetBackgroundColour)
-        self._register_builtin("min_size", self.SetMinSize)
-        self._register_builtin("cursor", lambda value:
-            self.SetCursor({
-                "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
-            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
-        )
+        pass
 
     def prop(self, path):
         value = self._props
@@ -117,12 +111,9 @@ class RLGuiMixin(object):
             value = value[part]
         return value
 
-    def update_props(self, props, layout=True):
+    def update_props(self, props, parent_updated=False):
         if self._update_props(props):
-            self._update_gui()
-            if layout:
-                self.Layout()
-                self.Refresh()
+            self._update_gui(parent_updated)
 
     def _update_props(self, props):
         self._changed_props = []
@@ -145,7 +136,7 @@ class RLGuiMixin(object):
             return False
         return True
 
-    def _update_gui(self):
+    def _update_gui(self, parent_updated):
         for name in self._changed_props:
             if name in self._builtin_handlers:
                 self._builtin_handlers[name](self._props[name])
@@ -153,18 +144,36 @@ class RLGuiMixin(object):
     def _register_builtin(self, name, fn):
         self._builtin_handlers[name] = fn
 
-class RLGuiContainerMixin(RLGuiMixin):
+class RLGuiWxMixin(RLGuiMixin):
 
     def _setup_gui(self):
         RLGuiMixin._setup_gui(self)
+        self._register_builtin("background", self.SetBackgroundColour)
+        self._register_builtin("min_size", self.SetMinSize)
+        self._register_builtin("cursor", lambda value:
+            self.SetCursor({
+                "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
+            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
+        )
+
+    def _update_gui(self, parent_updated):
+        RLGuiMixin._update_gui(self, parent_updated)
+
+class RLGuiContainerMixin(RLGuiWxMixin):
+
+    def _setup_gui(self):
+        RLGuiWxMixin._setup_gui(self)
         self.Sizer = self._create_sizer()
         self._children = []
 
-    def _update_gui(self):
-        RLGuiMixin._update_gui(self)
+    def _update_gui(self, parent_updated):
+        RLGuiWxMixin._update_gui(self, parent_updated)
         self._sizer_index = 0
         self._child_index = 0
         self._create_widgets()
+        if not parent_updated:
+            self.Layout()
+            self.Refresh()
 
     def _create_widgets(self):
         raise NotImplementedError()
@@ -179,7 +188,7 @@ class RLGuiContainerMixin(RLGuiMixin):
             self._children.insert(self._child_index, (widget, sizer_item))
         else:
             widget, sizer_item = self._children[self._child_index]
-            widget.update_props(props, False)
+            widget.update_props(props, parent_updated=True)
             sizer_item.SetBorder(sizer["border"])
             sizer_item.SetProportion(sizer["proportion"])
         self._sizer_index += 1
@@ -204,6 +213,46 @@ class RLGuiContainerMixin(RLGuiMixin):
         else:
             return (1, size)
 
+class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
+
+    def __init__(self, parent, props):
+        wx.Frame.__init__(self, parent)
+        RLGuiContainerMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiContainerMixin._setup_gui(self)
+        self._register_builtin("title", self.SetTitle)
+
+class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
+
+    def __init__(self, parent, props):
+        wx.Panel.__init__(self, parent)
+        RLGuiContainerMixin.__init__(self, props)
+
+class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
+
+    def __init__(self, parent, props):
+        wx.BitmapButton.__init__(self, parent, style=wx.NO_BORDER)
+        RLGuiWxMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiWxMixin._setup_gui(self)
+        self._register_builtin("icon", lambda value:
+            self.SetBitmap(wx.ArtProvider.GetBitmap(
+                {
+                    "add": wx.ART_ADD_BOOKMARK,
+                    "back": wx.ART_GO_BACK,
+                    "forward": wx.ART_GO_FORWARD,
+                    "undo": wx.ART_UNDO,
+                    "redo": wx.ART_REDO,
+                    "quit": wx.ART_QUIT,
+                    "save": wx.ART_FILE_SAVE,
+                }.get(value, wx.ART_QUESTION),
+                wx.ART_BUTTON,
+                (24, 24)
+            ))
+        )
+
 class DragHandler(object):
 
     def __init__(self, widget, handler):
@@ -227,46 +276,6 @@ class DragHandler(object):
             self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
-
-class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
-
-    def __init__(self, parent, props):
-        wx.Frame.__init__(self, parent)
-        RLGuiContainerMixin.__init__(self, props)
-
-    def _setup_gui(self):
-        RLGuiContainerMixin._setup_gui(self)
-        self._register_builtin("title", self.SetTitle)
-
-class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
-
-    def __init__(self, parent, props):
-        wx.Panel.__init__(self, parent)
-        RLGuiContainerMixin.__init__(self, props)
-
-class ToolbarButton(wx.BitmapButton, RLGuiMixin):
-
-    def __init__(self, parent, props):
-        wx.BitmapButton.__init__(self, parent, style=wx.NO_BORDER)
-        RLGuiMixin.__init__(self, props)
-
-    def _setup_gui(self):
-        RLGuiMixin._setup_gui(self)
-        self._register_builtin("icon", lambda value:
-            self.SetBitmap(wx.ArtProvider.GetBitmap(
-                {
-                    "add": wx.ART_ADD_BOOKMARK,
-                    "back": wx.ART_GO_BACK,
-                    "forward": wx.ART_GO_FORWARD,
-                    "undo": wx.ART_UNDO,
-                    "redo": wx.ART_REDO,
-                    "quit": wx.ART_QUIT,
-                    "save": wx.ART_FILE_SAVE,
-                }.get(value, wx.ART_QUESTION),
-                wx.ART_BUTTON,
-                (24, 24)
-            ))
-        )
 
 class Props(Observable):
 
