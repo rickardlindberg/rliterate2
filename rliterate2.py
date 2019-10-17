@@ -33,6 +33,19 @@ def create_new_page():
 def genid():
     return uuid.uuid4().hex
 
+def start_app(frame_cls, props):
+    @profile("get")
+    def get():
+        return props.get()
+    @profile("update")
+    def update(props):
+        frame.update_props(props)
+    app = wx.App()
+    props.listen(lambda: update(get()))
+    frame = frame_cls(None, props.get())
+    frame.Show()
+    app.MainLoop()
+
 def load_json_from_file(path):
     with open(path) as f:
         return json.load(f)
@@ -65,19 +78,6 @@ def im_modify(obj, path, modify_fn):
         new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)
         return new_obj
     return modify_fn(obj)
-
-def start_app(frame_cls, props):
-    @profile("get")
-    def get():
-        return props.get()
-    @profile("update")
-    def update(props):
-        frame.update_props(props)
-    app = wx.App()
-    props.listen(lambda: update(get()))
-    frame = frame_cls(None, props.get())
-    frame.Show()
-    app.MainLoop()
 
 class Observable(object):
 
