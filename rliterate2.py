@@ -144,6 +144,25 @@ class RLGuiMixin(object):
     def _register_builtin(self, name, fn):
         self._builtin_handlers[name] = fn
 
+class Props(Observable):
+
+    def __init__(self, props):
+        Observable.__init__(self)
+        self._props = props
+
+    def _child(self, name, props):
+        self._props[name] = props.get()
+        props.listen(lambda: self._replace(name, props.get()))
+
+    def get(self):
+        return self._props
+
+    @profile("replace")
+    def _replace(self, key, value):
+        self._props = dict(self._props)
+        self._props[key] = value
+        self._notify()
+
 class RLGuiWxMixin(RLGuiMixin):
 
     def _setup_gui(self):
@@ -276,25 +295,6 @@ class DragHandler(object):
             self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
-
-class Props(Observable):
-
-    def __init__(self, props):
-        Observable.__init__(self)
-        self._props = props
-
-    def _child(self, name, props):
-        self._props[name] = props.get()
-        props.listen(lambda: self._replace(name, props.get()))
-
-    def get(self):
-        return self._props
-
-    @profile("replace")
-    def _replace(self, key, value):
-        self._props = dict(self._props)
-        self._props[key] = value
-        self._notify()
 
 class MainFrame(RLGuiFrame):
 
