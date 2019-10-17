@@ -12,7 +12,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\nARGS = {\n    \"profile\": False,\n    \"path\": None,\n}\n\nif __name__ == \"__main__\":\n    script = sys.argv[0]\n    rest = sys.argv[1:]\n    if \"--profile\" in rest:\n        rest.remove(\"--profile\")\n        ARGS[\"profile\"] = True\n    if len(rest) != 1:\n        sys.exit(f\"usage: {script} [--profile] <path>\")\n    ARGS[\"path\"] = rest[0]\n\n",
 "type":"code"
 },
 {
@@ -60,7 +60,7 @@
 "type":"chunk"
 },
 {
-"text":"\nif __name__ == \"__main__\":\n    main()\n",
+"text":"\nif __name__ == \"__main__\":\n    main(ARGS)\n",
 "type":"code"
 }
 ],
@@ -76,7 +76,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    start_app(MainFrame, MainFrameProps(sys.argv[1]))\n",
+"text":"def main(args):\n    start_app(MainFrame, MainFrameProps(args[\"path\"]))\n",
 "type":"code"
 }
 ],
@@ -990,22 +990,12 @@
 ],
 "fragments":[
 {
-"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            print(\"{:<10} = {:.3f}ms\".format(text, 1000*(t2-t1)))\n            return value\n        if \"--profile\" in sys.argv:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            print(\"{:<10} = {:.3f}ms\".format(text, 1000*(t2-t1)))\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
 "id":"e8ff463813034acc97cec36f0ed928eb",
 "type":"code"
-},
-{
-"fragments":[
-{
-"text":"TODO: Make this not dependent on sys.argv. (But still preserve no-overhead-if-not-used behavior.)",
-"type":"strong"
-}
-],
-"id":"1463e3049ca94161b4c98aa4c855f654",
-"type":"text"
 }
 ],
 "title":"Profile"

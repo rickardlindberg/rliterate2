@@ -7,8 +7,23 @@ import time
 import uuid
 import wx
 
-def main():
-    start_app(MainFrame, MainFrameProps(sys.argv[1]))
+ARGS = {
+    "profile": False,
+    "path": None,
+}
+
+if __name__ == "__main__":
+    script = sys.argv[0]
+    rest = sys.argv[1:]
+    if "--profile" in rest:
+        rest.remove("--profile")
+        ARGS["profile"] = True
+    if len(rest) != 1:
+        sys.exit(f"usage: {script} [--profile] <path>")
+    ARGS["path"] = rest[0]
+
+def main(args):
+    start_app(MainFrame, MainFrameProps(args["path"]))
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -58,7 +73,7 @@ def profile(text):
             t2 = time.perf_counter()
             print("{:<10} = {:.3f}ms".format(text, 1000*(t2-t1)))
             return value
-        if "--profile" in sys.argv:
+        if ARGS["profile"]:
             return fn_with_timing
         else:
             return fn
@@ -495,4 +510,4 @@ class ColumnDivider(RLGuiPanel):
         pass
 
 if __name__ == "__main__":
-    main()
+    main(ARGS)
