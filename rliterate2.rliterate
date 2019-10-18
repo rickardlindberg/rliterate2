@@ -883,6 +883,16 @@
 "type":"code"
 },
 {
+"fragments":[
+{
+"text":"TODO: wx.Frame should have only a single panel?",
+"type":"strong"
+}
+],
+"id":"36865e2ba24d4f7ca16241400e2dfc83",
+"type":"text"
+},
+{
 "chunkpath":[
 "base classes"
 ],
