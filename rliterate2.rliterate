@@ -522,7 +522,7 @@
 "type":"chunk"
 },
 {
-"text":"\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.stderr.write(e.describe())\n        sys.exit(1)\n",
+"text":"\nif __name__ == \"__main__\":\n    parser = GuiParser()\n    codegenerator = WxCodeGenerator()\n    try:\n        sys.stdout.write(\n            codegenerator.run(\"ast\", parser.run(\"widget\", sys.stdin.read()))\n        )\n    except _MatchError as e:\n        sys.exit(e.describe())\n",
 "type":"code"
 }
 ],

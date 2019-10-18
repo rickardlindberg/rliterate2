@@ -1209,5 +1209,4 @@ if __name__ == "__main__":
             codegenerator.run("ast", parser.run("widget", sys.stdin.read()))
         )
     except _MatchError as e:
-        sys.stderr.write(e.describe())
-        sys.exit(1)
+        sys.exit(e.describe())
