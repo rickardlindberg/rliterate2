@@ -178,6 +178,8 @@ class RLGuiMixin(object):
     def _register_builtin(self, name, fn):
         self._builtin_handlers[name] = fn
 
+DragEvent = namedtuple("DragEvent", "initial,dx")
+
 class Props(Observable):
 
     def __init__(self, props):
@@ -330,8 +332,6 @@ class DragHandler(object):
         if self._down_pos is not None:
             new_pos = self._widget.ClientToScreen(wx_event.Position)
             self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
-
-DragEvent = namedtuple("DragEvent", "initial,dx")
 
 class MainFrame(RLGuiFrame):
 

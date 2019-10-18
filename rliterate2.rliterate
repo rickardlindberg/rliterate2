@@ -588,6 +588,22 @@
 ],
 "id":"a0987644a69445dea88e612f31f16eba",
 "type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"DragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
+"type":"code"
+}
+],
+"id":"c271e666cf75407b9f4d10b0860cbae8",
+"type":"code"
 }
 ],
 "title":"Base widget mixin"
@@ -919,22 +935,6 @@
 }
 ],
 "id":"0ec8866b29734c2ca5d8699411d5f613",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"DragEvent = namedtuple(\"DragEvent\", \"initial,dx\")\n",
-"type":"code"
-}
-],
-"id":"c271e666cf75407b9f4d10b0860cbae8",
 "type":"code"
 },
 {
