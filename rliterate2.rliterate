@@ -68,6 +68,25 @@
 "type":"code"
 },
 {
+"fragments":[
+{
+"text":"Arguments must be parsed this early because the decorator in ",
+"type":"text"
+},
+{
+"page_id":"fd19abbb3955433fbd490771c1d81314",
+"text":null,
+"type":"reference"
+},
+{
+"text":" depends on it.",
+"type":"text"
+}
+],
+"id":"2255e2ee9e4d4a1fb80825736c57c95a",
+"type":"text"
+},
+{
 "chunkpath":[
 "functions"
 ],
