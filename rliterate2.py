@@ -84,11 +84,15 @@ def profile_reset():
         def fn_with_timing(*args, **kwargs):
             value = fn(*args, **kwargs)
             total = 0
+            TOT = "TOTAL"
+            width = len(TOT)
+            for name in PROFILE:
+                width = max(width, len(name))
             for name, times in PROFILE.items():
                 time = sum(times)*1000
                 total += time
-                print("{:<10} = {:.3f}ms".format(name, time))
-            print("{:<10} = {:.3f}ms".format("TOTAL", total))
+                print("{} = {:.3f}ms".format(name.ljust(width), time))
+            print("{} = {:.3f}ms".format(TOT.ljust(width), total))
             print("")
             PROFILE.clear()
             return value
@@ -213,9 +217,6 @@ class RLGuiWxMixin(RLGuiMixin):
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
-
-    def _update_gui(self, parent_updated):
-        RLGuiMixin._update_gui(self, parent_updated)
 
 class RLGuiContainerMixin(RLGuiWxMixin):
 
