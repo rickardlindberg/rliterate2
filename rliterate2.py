@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import os
 import sys
 import time
@@ -21,6 +21,8 @@ if __name__ == "__main__":
     if len(rest) != 1:
         sys.exit(f"usage: {script} [--profile] <path>")
     ARGS["path"] = rest[0]
+
+PROFILE = defaultdict(list)
 
 def main(args):
     start_app(MainFrame, MainFrameProps(args["path"]))
@@ -49,14 +51,12 @@ def genid():
     return uuid.uuid4().hex
 
 def start_app(frame_cls, props):
-    @profile("get")
-    def get():
-        return props.get()
-    @profile("update")
+    @profile_reset()
+    @profile("render")
     def update(props):
         frame.update_props(props)
     app = wx.App()
-    props.listen(lambda: update(get()))
+    props.listen(lambda: update(props.get()))
     frame = frame_cls(None, props.get())
     frame.Show()
     app.MainLoop()
@@ -71,7 +71,21 @@ def profile(text):
             t1 = time.perf_counter()
             value = fn(*args, **kwargs)
             t2 = time.perf_counter()
-            print("{:<10} = {:.3f}ms".format(text, 1000*(t2-t1)))
+            PROFILE[text].append(t2-t1)
+            return value
+        if ARGS["profile"]:
+            return fn_with_timing
+        else:
+            return fn
+    return wrap
+
+def profile_reset():
+    def wrap(fn):
+        def fn_with_timing(*args, **kwargs):
+            value = fn(*args, **kwargs)
+            for name, times in PROFILE.items():
+                print("{:<10} = {:.3f}ms".format(name, sum(times)*1000))
+            PROFILE.clear()
             return value
         if ARGS["profile"]:
             return fn_with_timing
@@ -169,14 +183,17 @@ class Props(Observable):
         self._props[name] = props.get()
         props.listen(lambda: self._replace(name, props.get()))
 
+    @profile("get")
     def get(self):
         return self._props
 
-    @profile("replace")
     def _replace(self, key, value):
-        self._props = dict(self._props)
-        self._props[key] = value
+        self._modify(key, value)
         self._notify()
+
+    @profile("modify")
+    def _modify(self, key, value):
+        self._props = im_modify(self._props, [key], lambda old: value)
 
 class RLGuiWxMixin(RLGuiMixin):
 

@@ -12,7 +12,19 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\nARGS = {\n    \"profile\": False,\n    \"path\": None,\n}\n\nif __name__ == \"__main__\":\n    script = sys.argv[0]\n    rest = sys.argv[1:]\n    if \"--profile\" in rest:\n        rest.remove(\"--profile\")\n        ARGS[\"profile\"] = True\n    if len(rest) != 1:\n        sys.exit(f\"usage: {script} [--profile] <path>\")\n    ARGS[\"path\"] = rest[0]\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\nARGS = {\n    \"profile\": False,\n    \"path\": None,\n}\n\nif __name__ == \"__main__\":\n    script = sys.argv[0]\n    rest = sys.argv[1:]\n    if \"--profile\" in rest:\n        rest.remove(\"--profile\")\n        ARGS[\"profile\"] = True\n    if len(rest) != 1:\n        sys.exit(f\"usage: {script} [--profile] <path>\")\n    ARGS[\"path\"] = rest[0]\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"globals"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
 "type":"code"
 },
 {
@@ -570,7 +582,7 @@
 ],
 "fragments":[
 {
-"text":"def start_app(frame_cls, props):\n    @profile(\"get\")\n    def get():\n        return props.get()\n    @profile(\"update\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def start_app(frame_cls, props):\n    @profile_reset()\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -616,7 +628,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    def get(self):\n        return self._props\n\n    @profile(\"replace\")\n    def _replace(self, key, value):\n        self._props = dict(self._props)\n        self._props[key] = value\n        self._notify()\n",
+"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    @profile(\"get\")\n    def get(self):\n        return self._props\n\n    def _replace(self, key, value):\n        self._modify(key, value)\n        self._notify()\n\n    @profile(\"modify\")\n    def _modify(self, key, value):\n        self._props = im_modify(self._props, [key], lambda old: value)\n",
 "type":"code"
 }
 ],
@@ -1002,6 +1014,22 @@
 "paragraphs":[
 {
 "chunkpath":[
+"globals"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"PROFILE = defaultdict(list)\n",
+"type":"code"
+}
+],
+"id":"d10d275857934de1bcedb5a066d41483",
+"type":"code"
+},
+{
+"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -1009,12 +1037,38 @@
 ],
 "fragments":[
 {
-"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            print(\"{:<10} = {:.3f}ms\".format(text, 1000*(t2-t1)))\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            PROFILE[text].append(t2-t1)\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
 "id":"e8ff463813034acc97cec36f0ed928eb",
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            for name, times in PROFILE.items():\n                print(\"{:<10} = {:.3f}ms\".format(name, sum(times)*1000))\n            PROFILE.clear()\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"type":"code"
+}
+],
+"id":"79291bdef3a44c8ab71b45faf2b20f31",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Limitation: It is not possible to profile recursive functions.",
+"type":"text"
+}
+],
+"id":"625c841cff624d018c56ab1755f76889",
+"type":"text"
 }
 ],
 "title":"Profile"
