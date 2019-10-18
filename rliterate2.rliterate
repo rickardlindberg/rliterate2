@@ -571,29 +571,6 @@
 "children":[
 {
 "children":[],
-"id":"c93f45e47daa41b99164916b4092ec13",
-"paragraphs":[
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def start_app(frame_cls, props):\n    @profile_reset()\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
-"type":"code"
-}
-],
-"id":"557c451273f74393955205d772d86649",
-"type":"code"
-}
-],
-"title":"Start app"
-},
-{
-"children":[],
 "id":"35d081d36a7546bbb2c4785312fb3a12",
 "paragraphs":[
 {
@@ -972,6 +949,29 @@
 }
 ],
 "title":"Event handling"
+},
+{
+"children":[],
+"id":"c93f45e47daa41b99164916b4092ec13",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def start_app(frame_cls, props):\n    @profile_reset()\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
+"type":"code"
+}
+],
+"id":"557c451273f74393955205d772d86649",
+"type":"code"
+}
+],
+"title":"Start app"
 }
 ],
 "id":"162a73f0d72c4e7ca8d3fe246670c6c5",
