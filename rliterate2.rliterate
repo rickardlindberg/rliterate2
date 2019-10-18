@@ -1053,7 +1053,7 @@
 ],
 "fragments":[
 {
-"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            for name, times in PROFILE.items():\n                print(\"{:<10} = {:.3f}ms\".format(name, sum(times)*1000))\n            PROFILE.clear()\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            total = 0\n            for name, times in PROFILE.items():\n                time = sum(times)*1000\n                total += time\n                print(\"{:<10} = {:.3f}ms\".format(name, time))\n            print(\"{:<10} = {:.3f}ms\".format(\"TOTAL\", total))\n            print(\"\")\n            PROFILE.clear()\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],

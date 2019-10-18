@@ -83,8 +83,13 @@ def profile_reset():
     def wrap(fn):
         def fn_with_timing(*args, **kwargs):
             value = fn(*args, **kwargs)
+            total = 0
             for name, times in PROFILE.items():
-                print("{:<10} = {:.3f}ms".format(name, sum(times)*1000))
+                time = sum(times)*1000
+                total += time
+                print("{:<10} = {:.3f}ms".format(name, time))
+            print("{:<10} = {:.3f}ms".format("TOTAL", total))
+            print("")
             PROFILE.clear()
             return value
         if ARGS["profile"]:
