@@ -259,8 +259,12 @@ class RLGuiContainerMixin(RLGuiWxMixin):
 
     def _setup_gui(self):
         RLGuiWxMixin._setup_gui(self)
-        self.Sizer = self._create_sizer()
+        self._setup_layout()
         self._children = []
+
+    def _setup_layout(self):
+        self.Sizer = self._sizer = self._create_sizer()
+        self._parent = self
 
     def _update_gui(self, parent_updated):
         RLGuiWxMixin._update_gui(self, parent_updated)
@@ -276,10 +280,10 @@ class RLGuiContainerMixin(RLGuiWxMixin):
 
     def _create_widget(self, widget_cls, props, sizer, handlers):
         if self._child_index >= len(self._children):
-            widget = widget_cls(self, props)
+            widget = widget_cls(self._parent, props)
             for name, fn in handlers.items():
                 widget.register_event_handler(name, fn)
-            sizer_item = self.Sizer.Insert(self._sizer_index, widget, **sizer)
+            sizer_item = self._sizer.Insert(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
         else:
             widget, sizer_item = self._children[self._child_index]
@@ -291,7 +295,7 @@ class RLGuiContainerMixin(RLGuiWxMixin):
 
     def _create_space(self, thickness):
         if self._child_index >= len(self._children):
-            self._children.insert(self._child_index, self.Sizer.Insert(
+            self._children.insert(self._child_index, self._sizer.Insert(
                 self._sizer_index,
                 self._get_space_size(thickness)
             ))
@@ -303,7 +307,7 @@ class RLGuiContainerMixin(RLGuiWxMixin):
         self._child_index += 1
 
     def _get_space_size(self, size):
-        if self.Sizer.Orientation == wx.HORIZONTAL:
+        if self._sizer.Orientation == wx.HORIZONTAL:
             return (size, 1)
         else:
             return (1, size)
@@ -317,6 +321,12 @@ class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
     def _setup_gui(self):
         RLGuiContainerMixin._setup_gui(self)
         self._register_builtin("title", self.SetTitle)
+
+    def _setup_layout(self):
+        self._parent = wx.Panel(self)
+        self._parent.Sizer = self._sizer = self._create_sizer()
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.Sizer.Add(self._parent, flag=wx.EXPAND, proportion=1)
 
 class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
 
