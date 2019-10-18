@@ -136,9 +136,17 @@ class RLGuiMixin(object):
 
     def __init__(self, props):
         self._props = {}
-        self._builtin_handlers = {}
+        self._builtin_props = {}
+        self._event_handlers = {}
         self._setup_gui()
         self.update_props(props, False)
+
+    def register_event_handler(self, name, fn):
+        self._event_handlers[name] = fn
+
+    def _call_event_handler(self, name, *args, **kwargs):
+        if name in self._event_handlers:
+            self._event_handlers[name](*args, **kwargs)
 
     def _setup_gui(self):
         pass
@@ -176,11 +184,11 @@ class RLGuiMixin(object):
 
     def _update_gui(self, parent_updated):
         for name in self._changed_props:
-            if name in self._builtin_handlers:
-                self._builtin_handlers[name](self._props[name])
+            if name in self._builtin_props:
+                self._builtin_props[name](self._props[name])
 
     def _register_builtin(self, name, fn):
-        self._builtin_handlers[name] = fn
+        self._builtin_props[name] = fn
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
@@ -210,6 +218,7 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def _setup_gui(self):
         RLGuiMixin._setup_gui(self)
+        self._setup_wx_events()
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
         self._register_builtin("cursor", lambda value:
@@ -217,6 +226,34 @@ class RLGuiWxMixin(RLGuiMixin):
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
+
+    def _setup_wx_events(self):
+        self._wx_event_handlers = set()
+        self._wx_down_pos = None
+
+    def register_event_handler(self, name, fn):
+        RLGuiMixin.register_event_handler(self, name, fn)
+        if name == "drag":
+            self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
+            self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
+            self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
+
+    def _bind_wx_event(self, event, handler):
+        if event not in self._wx_event_handlers:
+            self._wx_event_handlers.add(event)
+            self.Bind(event, handler)
+
+    def _on_wx_left_down(self, wx_event):
+        self._wx_down_pos = self.ClientToScreen(wx_event.Position)
+        self._call_event_handler("drag", DragEvent(True, 0))
+
+    def _on_wx_left_up(self, wx_event):
+        self._wx_down_pos = None
+
+    def _on_wx_motion(self, wx_event):
+        if self._wx_down_pos is not None:
+            new_pos = self.ClientToScreen(wx_event.Position)
+            self._call_event_handler("drag", DragEvent(False, new_pos.x-self._wx_down_pos.x))
 
 class RLGuiContainerMixin(RLGuiWxMixin):
 
@@ -240,9 +277,8 @@ class RLGuiContainerMixin(RLGuiWxMixin):
     def _create_widget(self, widget_cls, props, sizer, handlers):
         if self._child_index >= len(self._children):
             widget = widget_cls(self, props)
-            for handler, fn in handlers.items():
-                if handler == "drag":
-                    DragHandler(widget, fn)
+            for name, fn in handlers.items():
+                widget.register_event_handler(name, fn)
             sizer_item = self.Sizer.Insert(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
         else:
@@ -311,28 +347,6 @@ class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
                 (24, 24)
             ))
         )
-
-class DragHandler(object):
-
-    def __init__(self, widget, handler):
-        self._widget = widget
-        self._handler = handler
-        widget.Bind(wx.EVT_LEFT_DOWN, self._down)
-        widget.Bind(wx.EVT_LEFT_UP, self._up)
-        widget.Bind(wx.EVT_MOTION, self._move)
-        self._down_pos = None
-
-    def _down(self, wx_event):
-        self._down_pos = self._widget.ClientToScreen(wx_event.Position)
-        self._handler(DragEvent(True, 0))
-
-    def _up(self, wx_event):
-        self._down_pos = None
-
-    def _move(self, wx_event):
-        if self._down_pos is not None:
-            new_pos = self._widget.ClientToScreen(wx_event.Position)
-            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))
 
 class MainFrame(RLGuiFrame):
 

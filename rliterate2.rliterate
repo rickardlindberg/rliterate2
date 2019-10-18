@@ -582,7 +582,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._builtin_handlers = {}\n        self._setup_gui()\n        self.update_props(props, False)\n\n    def _setup_gui(self):\n        pass\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props, parent_updated=False):\n        if self._update_props(props):\n            self._update_gui(parent_updated)\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _update_gui(self, parent_updated):\n        for name in self._changed_props:\n            if name in self._builtin_handlers:\n                self._builtin_handlers[name](self._props[name])\n\n    def _register_builtin(self, name, fn):\n        self._builtin_handlers[name] = fn\n",
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_props(props, False)\n\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = fn\n\n    def _call_event_handler(self, name, *args, **kwargs):\n        if name in self._event_handlers:\n            self._event_handlers[name](*args, **kwargs)\n\n    def _setup_gui(self):\n        pass\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props, parent_updated=False):\n        if self._update_props(props):\n            self._update_gui(parent_updated)\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _update_gui(self, parent_updated):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = fn\n",
 "type":"code"
 }
 ],
@@ -829,7 +829,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiWxMixin(RLGuiMixin):\n\n    def _setup_gui(self):\n        RLGuiMixin._setup_gui(self)\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n",
+"text":"class RLGuiWxMixin(RLGuiMixin):\n\n    def _setup_gui(self):\n        RLGuiMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def register_event_handler(self, name, fn):\n        RLGuiMixin.register_event_handler(self, name, fn)\n        if name == \"drag\":\n            self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)\n            self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)\n            self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)\n\n    def _bind_wx_event(self, event, handler):\n        if event not in self._wx_event_handlers:\n            self._wx_event_handlers.add(event)\n            self.Bind(event, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self._call_event_handler(\"drag\", DragEvent(True, 0))\n\n    def _on_wx_left_up(self, wx_event):\n        self._wx_down_pos = None\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            self._call_event_handler(\"drag\", DragEvent(False, new_pos.x-self._wx_down_pos.x))\n",
 "type":"code"
 }
 ],
@@ -852,7 +852,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiContainerMixin(RLGuiWxMixin):\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self.Sizer = self._create_sizer()\n        self._children = []\n\n    def _update_gui(self, parent_updated):\n        RLGuiWxMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n        if not parent_updated:\n            self.Layout()\n            self.Refresh()\n\n    def _create_widgets(self):\n        raise NotImplementedError()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for handler, fn in handlers.items():\n                if handler == \"drag\":\n                    DragHandler(widget, fn)\n            sizer_item = self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        else:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            self._children.insert(self._child_index, self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            ))\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
+"text":"class RLGuiContainerMixin(RLGuiWxMixin):\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self.Sizer = self._create_sizer()\n        self._children = []\n\n    def _update_gui(self, parent_updated):\n        RLGuiWxMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._create_widgets()\n        if not parent_updated:\n            self.Layout()\n            self.Refresh()\n\n    def _create_widgets(self):\n        raise NotImplementedError()\n\n    def _create_widget(self, widget_cls, props, sizer, handlers):\n        if self._child_index >= len(self._children):\n            widget = widget_cls(self, props)\n            for name, fn in handlers.items():\n                widget.register_event_handler(name, fn)\n            sizer_item = self.Sizer.Insert(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        else:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if self._child_index >= len(self._children):\n            self._children.insert(self._child_index, self.Sizer.Insert(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            ))\n        else:\n            self._children[self._child_index].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _get_space_size(self, size):\n        if self.Sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n",
 "type":"code"
 }
 ],
@@ -926,39 +926,6 @@
 }
 ],
 "title":"Wrappers for native wxPython widgets"
-},
-{
-"children":[],
-"id":"e5101e53ceb24575920e4cb52b50298e",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class DragHandler(object):\n\n    def __init__(self, widget, handler):\n        self._widget = widget\n        self._handler = handler\n        widget.Bind(wx.EVT_LEFT_DOWN, self._down)\n        widget.Bind(wx.EVT_LEFT_UP, self._up)\n        widget.Bind(wx.EVT_MOTION, self._move)\n        self._down_pos = None\n\n    def _down(self, wx_event):\n        self._down_pos = self._widget.ClientToScreen(wx_event.Position)\n        self._handler(DragEvent(True, 0))\n\n    def _up(self, wx_event):\n        self._down_pos = None\n\n    def _move(self, wx_event):\n        if self._down_pos is not None:\n            new_pos = self._widget.ClientToScreen(wx_event.Position)\n            self._handler(DragEvent(False, new_pos.x-self._down_pos.x))\n",
-"type":"code"
-}
-],
-"id":"0ec8866b29734c2ca5d8699411d5f613",
-"type":"code"
-},
-{
-"fragments":[
-{
-"text":"TODO: Flesh out better event handling architecture.",
-"type":"strong"
-}
-],
-"id":"09bc24b72d544b65affb2761c3c8b8e9",
-"type":"text"
-}
-],
-"title":"Event handling"
 },
 {
 "children":[],
