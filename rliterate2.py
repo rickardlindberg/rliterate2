@@ -7,22 +7,21 @@ import time
 import uuid
 import wx
 
-ARGS = {
-    "profile": False,
-    "path": None,
-}
+PROFILE = defaultdict(list)
 
-if __name__ == "__main__":
+def parse_args():
+    args = {
+        "path": None,
+    }
     script = sys.argv[0]
     rest = sys.argv[1:]
-    if "--profile" in rest:
-        rest.remove("--profile")
-        ARGS["profile"] = True
     if len(rest) != 1:
-        sys.exit(f"usage: {script} [--profile] <path>")
-    ARGS["path"] = rest[0]
+        usage(script)
+    args["path"] = rest[0]
+    return args
 
-PROFILE = defaultdict(list)
+def usage(script):
+    sys.exit(f"usage: {script} <path>")
 
 def main(args):
     start_app(MainFrame, MainFrameProps(args["path"]))
@@ -73,7 +72,7 @@ def profile(text):
             t2 = time.perf_counter()
             PROFILE[text].append(t2-t1)
             return value
-        if ARGS["profile"]:
+        if os.environ.get("RLITERATE_PROFILE", ""):
             return fn_with_timing
         else:
             return fn
@@ -96,7 +95,7 @@ def profile_reset():
             print("")
             PROFILE.clear()
             return value
-        if ARGS["profile"]:
+        if os.environ.get("RLITERATE_PROFILE", ""):
             return fn_with_timing
         else:
             return fn
@@ -557,4 +556,4 @@ class ColumnDivider(RLGuiPanel):
         pass
 
 if __name__ == "__main__":
-    main(ARGS)
+    main(parse_args())

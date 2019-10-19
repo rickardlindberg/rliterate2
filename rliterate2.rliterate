@@ -12,7 +12,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\nARGS = {\n    \"profile\": False,\n    \"path\": None,\n}\n\nif __name__ == \"__main__\":\n    script = sys.argv[0]\n    rest = sys.argv[1:]\n    if \"--profile\" in rest:\n        rest.remove(\"--profile\")\n        ARGS[\"profile\"] = True\n    if len(rest) != 1:\n        sys.exit(f\"usage: {script} [--profile] <path>\")\n    ARGS[\"path\"] = rest[0]\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -72,7 +72,7 @@
 "type":"chunk"
 },
 {
-"text":"\nif __name__ == \"__main__\":\n    main(ARGS)\n",
+"text":"\nif __name__ == \"__main__\":\n    main(parse_args())\n",
 "type":"code"
 }
 ],
@@ -80,23 +80,36 @@
 "type":"code"
 },
 {
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
 "fragments":[
 {
-"text":"Arguments must be parsed this early because the decorator in ",
-"type":"text"
-},
-{
-"page_id":"fd19abbb3955433fbd490771c1d81314",
-"text":null,
-"type":"reference"
-},
-{
-"text":" depends on it.",
-"type":"text"
+"text":"def parse_args():\n    args = {\n        \"path\": None,\n    }\n    script = sys.argv[0]\n    rest = sys.argv[1:]\n    if len(rest) != 1:\n        usage(script)\n    args[\"path\"] = rest[0]\n    return args\n",
+"type":"code"
 }
 ],
-"id":"2255e2ee9e4d4a1fb80825736c57c95a",
-"type":"text"
+"id":"72a74e2e05dd46639122742c7832a0c1",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def usage(script):\n    sys.exit(f\"usage: {script} <path>\")\n",
+"type":"code"
+}
+],
+"id":"665fd0f19f4f409eab4aa210dd7e61d2",
+"type":"code"
 },
 {
 "chunkpath":[
@@ -1004,7 +1017,7 @@
 ],
 "fragments":[
 {
-"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            PROFILE[text].append(t2-t1)\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            PROFILE[text].append(t2-t1)\n            return value\n        if os.environ.get(\"RLITERATE_PROFILE\", \"\"):\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
@@ -1020,7 +1033,7 @@
 ],
 "fragments":[
 {
-"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            total = 0\n            TOT = \"TOTAL\"\n            width = len(TOT)\n            for name in PROFILE:\n                width = max(width, len(name))\n            for name, times in PROFILE.items():\n                time = sum(times)*1000\n                total += time\n                print(\"{} = {:.3f}ms\".format(name.ljust(width), time))\n            print(\"{} = {:.3f}ms\".format(TOT.ljust(width), total))\n            print(\"\")\n            PROFILE.clear()\n            return value\n        if ARGS[\"profile\"]:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            total = 0\n            TOT = \"TOTAL\"\n            width = len(TOT)\n            for name in PROFILE:\n                width = max(width, len(name))\n            for name, times in PROFILE.items():\n                time = sum(times)*1000\n                total += time\n                print(\"{} = {:.3f}ms\".format(name.ljust(width), time))\n            print(\"{} = {:.3f}ms\".format(TOT.ljust(width), total))\n            print(\"\")\n            PROFILE.clear()\n            return value\n        if os.environ.get(\"RLITERATE_PROFILE\", \"\"):\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
