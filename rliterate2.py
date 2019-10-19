@@ -7,7 +7,7 @@ import time
 import uuid
 import wx
 
-PROFILE = defaultdict(list)
+PROFILE_TIMES = defaultdict(list)
 
 def usage(script):
     sys.exit(f"usage: {script} <path>")
@@ -74,7 +74,7 @@ def profile(text):
             t1 = time.perf_counter()
             value = fn(*args, **kwargs)
             t2 = time.perf_counter()
-            PROFILE[text].append(t2-t1)
+            PROFILE_TIMES[text].append(t2-t1)
             return value
         if os.environ.get("RLITERATE_PROFILE", ""):
             return fn_with_timing
@@ -84,26 +84,29 @@ def profile(text):
 
 def profile_reset():
     def wrap(fn):
-        def fn_with_timing(*args, **kwargs):
+        def fn_with_summary_and_reset(*args, **kwargs):
             value = fn(*args, **kwargs)
-            total = 0
-            TOT = "TOTAL"
-            width = len(TOT)
-            for name in PROFILE:
-                width = max(width, len(name))
-            for name, times in PROFILE.items():
-                time = sum(times)*1000
-                total += time
-                print("{} = {:.3f}ms".format(name.ljust(width), time))
-            print("{} = {:.3f}ms".format(TOT.ljust(width), total))
-            print("")
-            PROFILE.clear()
+            profile_print_summary()
+            PROFILE_TIMES.clear()
             return value
         if os.environ.get("RLITERATE_PROFILE", ""):
-            return fn_with_timing
+            return fn_with_summary_and_reset
         else:
             return fn
     return wrap
+
+def profile_print_summary():
+    TOTAL_TEXT = "TOTAL"
+    total_time = 0
+    text_width = len(TOTAL_TEXT)
+    for name in PROFILE_TIMES:
+        text_width = max(text_width, len(name))
+    for name, times in PROFILE_TIMES.items():
+        time = sum(times)*1000
+        total_time += time
+        print("{} = {:.3f}ms".format(name.ljust(text_width), time))
+    print("{} = {:.3f}ms".format(TOTAL_TEXT.ljust(text_width), total_time))
+    print("")
 
 def size(w, h):
     return (w, h)
