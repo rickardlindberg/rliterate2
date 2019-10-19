@@ -255,7 +255,7 @@ class RLGuiWxMixin(RLGuiMixin):
             new_pos = self.ClientToScreen(wx_event.Position)
             self._call_event_handler("drag", DragEvent(False, new_pos.x-self._wx_down_pos.x))
 
-class RLGuiContainerMixin(RLGuiWxMixin):
+class RLGuiWxContainerMixin(RLGuiWxMixin):
 
     def _setup_gui(self):
         RLGuiWxMixin._setup_gui(self)
@@ -312,14 +312,14 @@ class RLGuiContainerMixin(RLGuiWxMixin):
         else:
             return (1, size)
 
-class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
+class RLGuiFrame(wx.Frame, RLGuiWxContainerMixin):
 
     def __init__(self, parent, props):
         wx.Frame.__init__(self, parent)
-        RLGuiContainerMixin.__init__(self, props)
+        RLGuiWxContainerMixin.__init__(self, props)
 
     def _setup_gui(self):
-        RLGuiContainerMixin._setup_gui(self)
+        RLGuiWxContainerMixin._setup_gui(self)
         self._register_builtin("title", self.SetTitle)
 
     def _setup_layout(self):
@@ -328,11 +328,11 @@ class RLGuiFrame(wx.Frame, RLGuiContainerMixin):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.Sizer.Add(self._parent, flag=wx.EXPAND, proportion=1)
 
-class RLGuiPanel(wx.Panel, RLGuiContainerMixin):
+class RLGuiPanel(wx.Panel, RLGuiWxContainerMixin):
 
     def __init__(self, parent, props):
         wx.Panel.__init__(self, parent)
-        RLGuiContainerMixin.__init__(self, props)
+        RLGuiWxContainerMixin.__init__(self, props)
 
 class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
 
