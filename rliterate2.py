@@ -7,7 +7,9 @@ import time
 import uuid
 import wx
 
-PROFILE_TIMES = defaultdict(list)
+PROFILING_TIMES = defaultdict(list)
+PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
+
 
 def usage(script):
     sys.exit(f"usage: {script} <path>")
@@ -74,9 +76,9 @@ def profile(text):
             t1 = time.perf_counter()
             value = fn(*args, **kwargs)
             t2 = time.perf_counter()
-            PROFILE_TIMES[text].append(t2-t1)
+            PROFILING_TIMES[text].append(t2-t1)
             return value
-        if os.environ.get("RLITERATE_PROFILE", ""):
+        if PROFILING_ENABLED:
             return fn_with_timing
         else:
             return fn
@@ -87,9 +89,9 @@ def profile_reset():
         def fn_with_summary_and_reset(*args, **kwargs):
             value = fn(*args, **kwargs)
             profile_print_summary()
-            PROFILE_TIMES.clear()
+            PROFILING_TIMES.clear()
             return value
-        if os.environ.get("RLITERATE_PROFILE", ""):
+        if PROFILING_ENABLED:
             return fn_with_summary_and_reset
         else:
             return fn
@@ -99,9 +101,9 @@ def profile_print_summary():
     TOTAL_TEXT = "TOTAL"
     total_time = 0
     text_width = len(TOTAL_TEXT)
-    for name in PROFILE_TIMES:
+    for name in PROFILING_TIMES:
         text_width = max(text_width, len(name))
-    for name, times in PROFILE_TIMES.items():
+    for name, times in PROFILING_TIMES.items():
         time = sum(times)*1000
         total_time += time
         print("{} = {:.3f}ms".format(name.ljust(text_width), time))

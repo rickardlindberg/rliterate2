@@ -1018,7 +1018,7 @@
 ],
 "fragments":[
 {
-"text":"PROFILE_TIMES = defaultdict(list)\n",
+"text":"PROFILING_TIMES = defaultdict(list)\nPROFILING_ENABLED = os.environ.get(\"RLITERATE_PROFILE\", \"\") != \"\"\n\n",
 "type":"code"
 }
 ],
@@ -1034,7 +1034,7 @@
 ],
 "fragments":[
 {
-"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            PROFILE_TIMES[text].append(t2-t1)\n            return value\n        if os.environ.get(\"RLITERATE_PROFILE\", \"\"):\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile(text):\n    def wrap(fn):\n        def fn_with_timing(*args, **kwargs):\n            t1 = time.perf_counter()\n            value = fn(*args, **kwargs)\n            t2 = time.perf_counter()\n            PROFILING_TIMES[text].append(t2-t1)\n            return value\n        if PROFILING_ENABLED:\n            return fn_with_timing\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
@@ -1050,7 +1050,7 @@
 ],
 "fragments":[
 {
-"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_summary_and_reset(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            profile_print_summary()\n            PROFILE_TIMES.clear()\n            return value\n        if os.environ.get(\"RLITERATE_PROFILE\", \"\"):\n            return fn_with_summary_and_reset\n        else:\n            return fn\n    return wrap\n",
+"text":"def profile_reset():\n    def wrap(fn):\n        def fn_with_summary_and_reset(*args, **kwargs):\n            value = fn(*args, **kwargs)\n            profile_print_summary()\n            PROFILING_TIMES.clear()\n            return value\n        if PROFILING_ENABLED:\n            return fn_with_summary_and_reset\n        else:\n            return fn\n    return wrap\n",
 "type":"code"
 }
 ],
@@ -1066,7 +1066,7 @@
 ],
 "fragments":[
 {
-"text":"def profile_print_summary():\n    TOTAL_TEXT = \"TOTAL\"\n    total_time = 0\n    text_width = len(TOTAL_TEXT)\n    for name in PROFILE_TIMES:\n        text_width = max(text_width, len(name))\n    for name, times in PROFILE_TIMES.items():\n        time = sum(times)*1000\n        total_time += time\n        print(\"{} = {:.3f}ms\".format(name.ljust(text_width), time))\n    print(\"{} = {:.3f}ms\".format(TOTAL_TEXT.ljust(text_width), total_time))\n    print(\"\")\n",
+"text":"def profile_print_summary():\n    TOTAL_TEXT = \"TOTAL\"\n    total_time = 0\n    text_width = len(TOTAL_TEXT)\n    for name in PROFILING_TIMES:\n        text_width = max(text_width, len(name))\n    for name, times in PROFILING_TIMES.items():\n        time = sum(times)*1000\n        total_time += time\n        print(\"{} = {:.3f}ms\".format(name.ljust(text_width), time))\n    print(\"{} = {:.3f}ms\".format(TOTAL_TEXT.ljust(text_width), total_time))\n    print(\"\")\n",
 "type":"code"
 }
 ],
