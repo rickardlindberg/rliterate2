@@ -72,11 +72,34 @@
 "type":"chunk"
 },
 {
-"text":"\nif __name__ == \"__main__\":\n    main(parse_args())\n",
+"text":"\nif __name__ == \"__main__\":\n    main()\n",
 "type":"code"
 }
 ],
 "id":"264da9dfb5c04b259a001f47538827a8",
+"type":"code"
+}
+],
+"title":"File"
+},
+{
+"children":[],
+"id":"48f01b615cea4ab8a229f1cb1c9b89a3",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def usage(script):\n    sys.exit(f\"usage: {script} <path>\")\n",
+"type":"code"
+}
+],
+"id":"665fd0f19f4f409eab4aa210dd7e61d2",
 "type":"code"
 },
 {
@@ -104,23 +127,7 @@
 ],
 "fragments":[
 {
-"text":"def usage(script):\n    sys.exit(f\"usage: {script} <path>\")\n",
-"type":"code"
-}
-],
-"id":"665fd0f19f4f409eab4aa210dd7e61d2",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def main(args):\n    start_app(MainFrame, MainFrameProps(args[\"path\"]))\n",
+"text":"def main():\n    start_app(\n        MainFrame,\n        MainFrameProps(parse_args()[\"path\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -128,7 +135,7 @@
 "type":"code"
 }
 ],
-"title":"File"
+"title":"Main"
 },
 {
 "children":[

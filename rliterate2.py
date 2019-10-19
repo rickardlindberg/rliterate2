@@ -9,6 +9,9 @@ import wx
 
 PROFILE = defaultdict(list)
 
+def usage(script):
+    sys.exit(f"usage: {script} <path>")
+
 def parse_args():
     args = {
         "path": None,
@@ -20,11 +23,11 @@ def parse_args():
     args["path"] = rest[0]
     return args
 
-def usage(script):
-    sys.exit(f"usage: {script} <path>")
-
-def main(args):
-    start_app(MainFrame, MainFrameProps(args["path"]))
+def main():
+    start_app(
+        MainFrame,
+        MainFrameProps(parse_args()["path"])
+    )
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -556,4 +559,4 @@ class ColumnDivider(RLGuiPanel):
         pass
 
 if __name__ == "__main__":
-    main(parse_args())
+    main()
