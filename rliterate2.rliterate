@@ -127,7 +127,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    start_app(\n        MainFrame,\n        MainFrameProps(parse_args()[\"path\"])\n    )\n",
+"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        MainFrameProps(args[\"path\"])\n    )\n",
 "type":"code"
 }
 ],

@@ -24,9 +24,10 @@ def parse_args():
     return args
 
 def main():
+    args = parse_args()
     start_app(
         MainFrame,
-        MainFrameProps(parse_args()["path"])
+        MainFrameProps(args["path"])
     )
 
 def load_document_from_file(path):
