@@ -1138,7 +1138,7 @@
 {
 "fragments":[
 {
-"text":"Proof of concept of new GUI design. Can resize table of contents by dragging.",
+"text":"Proof of concept of new React-like GUI architecture. Can resize table of contents by dragging.",
 "type":"text"
 }
 ],
