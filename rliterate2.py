@@ -401,7 +401,7 @@ class CompactScrolledWindow(wx.ScrolledWindow):
     def _calc_scroll_pos_vscroll(self, x, y, delta):
         return (x, y-delta*self.step)
 
-class RLGuiRowScroll(CompactScrolledWindow, RLGuiWxContainerMixin):
+class RLGuiVScroll(CompactScrolledWindow, RLGuiWxContainerMixin):
 
     def __init__(self, parent, props):
         CompactScrolledWindow.__init__(self, parent, wx.VERTICAL)
@@ -568,7 +568,7 @@ class ToolbarProps(Props):
             "margin": 4,
         })
 
-class TableOfContents(RLGuiRowScroll):
+class TableOfContents(RLGuiVScroll):
 
     def _get_local_props(self):
         return {
