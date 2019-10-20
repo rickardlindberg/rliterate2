@@ -602,7 +602,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_props(props, False)\n\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = fn\n\n    def _call_event_handler(self, name, *args, **kwargs):\n        if name in self._event_handlers:\n            self._event_handlers[name](*args, **kwargs)\n\n    def _setup_gui(self):\n        pass\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props, parent_updated=False):\n        if self._update_props(props):\n            self._update_gui(parent_updated)\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _update_gui(self, parent_updated):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = fn\n",
+"text":"class RLGuiMixin(object):\n\n    def __init__(self, props):\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_props(props, True)\n\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = fn\n\n    def _call_event_handler(self, name, *args, **kwargs):\n        if name in self._event_handlers:\n            self._event_handlers[name](*args, **kwargs)\n\n    def _setup_gui(self):\n        pass\n\n    def prop(self, path):\n        value = self._props\n        for part in path.split(\".\"):\n            value = value[part]\n        return value\n\n    def update_props(self, props, parent_updated=False):\n        if self._update_props(props):\n            self._update_gui(parent_updated)\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        if self._props[key] is value:\n            return False\n        if self._props[key] == value:\n            return False\n        return True\n\n    def _update_gui(self, parent_updated):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = fn\n",
 "type":"code"
 }
 ],
@@ -641,7 +641,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    @profile(\"get\")\n    def get(self):\n        return self._props\n\n    def _replace(self, key, value):\n        self._modify(key, value)\n        self._notify()\n\n    @profile(\"modify\")\n    def _modify(self, key, value):\n        self._props = im_modify(self._props, [key], lambda old: value)\n",
+"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace(name, props.get()))\n\n    @profile(\"get\")\n    def get(self):\n        return self._props\n\n    def _replace(self, key, value):\n        if self._props[key] != value:\n            self._modify(key, value)\n            self._notify()\n\n    @profile(\"modify\")\n    def _modify(self, key, value):\n        self._props = im_modify(self._props, [key], lambda old: value)\n",
 "type":"code"
 }
 ],
@@ -790,7 +790,7 @@
 ],
 "fragments":[
 {
-"text":"#!/bin/sh\n\nset -e\n\npip install --upgrade --user .\n\n",
+"text":"#!/bin/sh\n\nset -e\n\npip install --upgrade --user .\n",
 "type":"code"
 }
 ],
@@ -950,7 +950,7 @@
 ],
 "fragments":[
 {
-"text":"def start_app(frame_cls, props):\n    @profile_reset()\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Show()\n    app.MainLoop()\n",
+"text":"def start_app(frame_cls, props):\n    @profile_reset()\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Layout()\n    frame.Refresh()\n    frame.Show()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -1018,7 +1018,7 @@
 ],
 "fragments":[
 {
-"text":"PROFILING_TIMES = defaultdict(list)\nPROFILING_ENABLED = os.environ.get(\"RLITERATE_PROFILE\", \"\") != \"\"\n\n",
+"text":"PROFILING_TIMES = defaultdict(list)\nPROFILING_ENABLED = os.environ.get(\"RLITERATE_PROFILE\", \"\") != \"\"\n",
 "type":"code"
 }
 ],

@@ -10,7 +10,6 @@ import wx
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
 
-
 def usage(script):
     sys.exit(f"usage: {script} <path>")
 
@@ -63,6 +62,8 @@ def start_app(frame_cls, props):
     app = wx.App()
     props.listen(lambda: update(props.get()))
     frame = frame_cls(None, props.get())
+    frame.Layout()
+    frame.Refresh()
     frame.Show()
     app.MainLoop()
 
@@ -147,7 +148,7 @@ class RLGuiMixin(object):
         self._builtin_props = {}
         self._event_handlers = {}
         self._setup_gui()
-        self.update_props(props, False)
+        self.update_props(props, True)
 
     def register_event_handler(self, name, fn):
         self._event_handlers[name] = fn
@@ -215,8 +216,9 @@ class Props(Observable):
         return self._props
 
     def _replace(self, key, value):
-        self._modify(key, value)
-        self._notify()
+        if self._props[key] != value:
+            self._modify(key, value)
+            self._notify()
 
     @profile("modify")
     def _modify(self, key, value):

@@ -3,4 +3,3 @@
 set -e
 
 pip install --upgrade --user .
-
