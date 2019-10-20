@@ -210,7 +210,7 @@ class Props(Observable):
 
     def _child(self, name, props):
         self._props[name] = props.get()
-        props.listen(lambda: self._replace(name, props.get()))
+        props.listen(lambda: self._replace_no_check(name, props.get()))
 
     @profile("get")
     def get(self):
@@ -218,8 +218,11 @@ class Props(Observable):
 
     def _replace(self, key, value):
         if self._props[key] != value:
-            self._modify(key, value)
-            self._notify()
+            self._replace_no_check(key, value)
+
+    def _replace_no_check(self, key, value):
+        self._modify(key, value)
+        self._notify()
 
     @profile("modify")
     def _modify(self, key, value):
