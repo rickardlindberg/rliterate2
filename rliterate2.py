@@ -586,8 +586,7 @@ class TableOfContents(RLGuiRowScroll):
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
-                props['indent'] = loopvar['indent']
-                props['title'] = loopvar['title']
+                props.update(loopvar)
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
 
 class TableOfContentsProps(Props):
