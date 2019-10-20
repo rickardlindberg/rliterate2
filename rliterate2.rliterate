@@ -12,7 +12,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nimport json\nimport os\nimport sys\nimport time\nimport uuid\nimport wx\n\n",
 "type":"code"
 },
 {
