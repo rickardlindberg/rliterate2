@@ -149,7 +149,7 @@ class RLGuiMixin(object):
         self._builtin_props = {}
         self._event_handlers = {}
         self._setup_gui()
-        self.update_props(props, True)
+        self.update_props(props, parent_updated=True)
 
     def register_event_handler(self, name, fn):
         self._event_handlers[name] = fn
