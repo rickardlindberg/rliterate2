@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple, defaultdict
+import contextlib
 import json
 import os
 import sys
@@ -275,6 +276,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         RLGuiWxMixin._setup_gui(self)
         self._setup_layout()
         self._children = []
+        self._inside_loop = False
 
     def _setup_layout(self):
         self.Sizer = self._sizer = self._create_sizer()
@@ -291,6 +293,24 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
 
     def _create_widgets(self):
         raise NotImplementedError()
+
+    @contextlib.contextmanager
+    def _loop(self):
+        self._inside_loop = True
+        if self._child_index >= len(self._children):
+            self._children.append([])
+        old_children = self._children
+        next_index = self._child_index + 1
+        self._children = self._children[self._child_index]
+        self._child_index = 0
+        try:
+            yield
+        finally:
+            while self._child_index < len(self._children):
+                self._children.pop(-1)[0].Destroy()
+            self._children = old_children
+            self._child_index = next_index
+            self._inside_loop = False
 
     def _create_widget(self, widget_cls, props, sizer, handlers):
         if self._child_index >= len(self._children):
@@ -348,6 +368,45 @@ class RLGuiPanel(wx.Panel, RLGuiWxContainerMixin):
         wx.Panel.__init__(self, parent)
         RLGuiWxContainerMixin.__init__(self, props)
 
+class CompactScrolledWindow(wx.ScrolledWindow):
+
+    MIN_WIDTH = 200
+    MIN_HEIGHT = 200
+
+    def __init__(self, parent, style=0, size=wx.DefaultSize, step=100):
+        w, h = size
+        size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))
+        wx.ScrolledWindow.__init__(self, parent, style=style, size=size)
+        self.Size = size
+        if style == wx.HSCROLL:
+            self.SetScrollRate(1, 0)
+            self._calc_scroll_pos = self._calc_scroll_pos_hscroll
+        elif style == wx.VSCROLL:
+            self.SetScrollRate(0, 1)
+            self._calc_scroll_pos = self._calc_scroll_pos_vscroll
+        else:
+            self.SetScrollRate(1, 1)
+            self._calc_scroll_pos = self._calc_scroll_pos_vscroll
+        self.step = step
+        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)
+
+    def _on_mousewheel(self, event):
+        x, y = self.GetViewStart()
+        delta = event.GetWheelRotation() / event.GetWheelDelta()
+        self.Scroll(*self._calc_scroll_pos(x, y, delta))
+
+    def _calc_scroll_pos_hscroll(self, x, y, delta):
+        return (x+delta*self.step, y)
+
+    def _calc_scroll_pos_vscroll(self, x, y, delta):
+        return (x, y-delta*self.step)
+
+class RLGuiRowScroll(CompactScrolledWindow, RLGuiWxContainerMixin):
+
+    def __init__(self, parent, props):
+        CompactScrolledWindow.__init__(self, parent, wx.VERTICAL)
+        RLGuiWxContainerMixin.__init__(self, props)
+
 class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
 
     def __init__(self, parent, props):
@@ -371,6 +430,16 @@ class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
                 (24, 24)
             ))
         )
+
+class Button(wx.Button, RLGuiWxMixin):
+
+    def __init__(self, parent, props):
+        wx.Button.__init__(self, parent)
+        RLGuiWxMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiWxMixin._setup_gui(self)
+        self._register_builtin("label", self.SetLabel)
 
 class MainFrame(RLGuiFrame):
 
@@ -417,7 +486,7 @@ class MainFrameProps(Props):
             },
         })
         self._child("toolbar", ToolbarProps())
-        self._child("main_area", MainAreaProps())
+        self._child("main_area", MainAreaProps(Document(path)))
 
 class MainArea(RLGuiPanel):
 
@@ -460,14 +529,14 @@ class MainArea(RLGuiPanel):
 
 class MainAreaProps(Props):
 
-    def __init__(self):
+    def __init__(self, document):
         Props.__init__(self, {
             "toc_divider": {
                 "thickness": 3,
                 "color": "#aaaaff",
             },
         })
-        self._child("toc", TableOfContentsProps())
+        self._child("toc", TableOfContentsProps(document))
         self._child("workspace", WorkspaceProps())
 
 class Toolbar(RLGuiPanel):
@@ -499,7 +568,7 @@ class ToolbarProps(Props):
             "margin": 4,
         })
 
-class TableOfContents(RLGuiPanel):
+class TableOfContents(RLGuiRowScroll):
 
     def _get_local_props(self):
         return {
@@ -511,18 +580,57 @@ class TableOfContents(RLGuiPanel):
 
     def _create_widgets(self):
         pass
+        with self._loop():
+            for loopvar in self.prop('rows'):
+                pass
+                props = {}
+                sizer = {"flag": 0, "border": 0, "proportion": 0}
+                handlers = {}
+                props['indent'] = loopvar['indent']
+                props['title'] = loopvar['title']
+                self._create_widget(TableOfContentsRow, props, sizer, handlers)
 
 class TableOfContentsProps(Props):
 
-    def __init__(self):
+    def __init__(self, document):
+        self._document = document
+        self._document.listen(lambda: self._replace("rows", self._generate_rows()))
         Props.__init__(self, {
             "background": "#ffeeff",
             "width": 230,
             "set_width": self._set_width,
+            "rows": self._generate_rows(),
         })
 
     def _set_width(self, value):
         self._replace("width", max(50, value))
+
+    def _generate_rows(self):
+        def inner(rows, page, level=0):
+            rows.append({"indent": level*16, "title": page["title"]})
+            for child in page["children"]:
+                inner(rows, child, level+1)
+        rows = []
+        inner(rows, self._document.get_page())
+        return rows
+
+class TableOfContentsRow(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop('indent'))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
+        props['label'] = self.prop('title')
+        self._create_widget(Button, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
 
@@ -569,6 +677,16 @@ class ColumnDivider(RLGuiPanel):
 
     def _create_widgets(self):
         pass
+
+class Document(Observable):
+
+    def __init__(self, path):
+        Observable.__init__(self)
+        self._path = path
+        self._doc = load_json_from_file(path)
+
+    def get_page(self):
+        return self._doc["root_page"]
 
 if __name__ == "__main__":
     main()
