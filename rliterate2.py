@@ -60,13 +60,17 @@ def start_app(frame_cls, props):
     @profile("render")
     def update(props):
         frame.update_props(props)
+    @profile_reset()
+    @profile("show frame")
+    def show_frame():
+        props.listen(lambda: update(props.get()))
+        frame = frame_cls(None, props.get())
+        frame.Layout()
+        frame.Refresh()
+        frame.Show()
+        return frame
     app = wx.App()
-    props.listen(lambda: update(props.get()))
-    frame = frame_cls(None, props.get())
-    frame.Layout()
-    frame.Refresh()
-    frame.Show()
-    profile_reset()(lambda: None)()
+    frame = show_frame()
     app.MainLoop()
 
 def load_json_from_file(path):

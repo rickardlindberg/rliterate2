@@ -1585,7 +1585,7 @@
 ],
 "fragments":[
 {
-"text":"def start_app(frame_cls, props):\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    app = wx.App()\n    props.listen(lambda: update(props.get()))\n    frame = frame_cls(None, props.get())\n    frame.Layout()\n    frame.Refresh()\n    frame.Show()\n    profile_reset()(lambda: None)()\n    app.MainLoop()\n",
+"text":"def start_app(frame_cls, props):\n    @profile(\"render\")\n    def update(props):\n        frame.update_props(props)\n    @profile_reset()\n    @profile(\"show frame\")\n    def show_frame():\n        props.listen(lambda: update(props.get()))\n        frame = frame_cls(None, props.get())\n        frame.Layout()\n        frame.Refresh()\n        frame.Show()\n        return frame\n    app = wx.App()\n    frame = show_frame()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
