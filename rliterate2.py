@@ -57,7 +57,6 @@ def genid():
     return uuid.uuid4().hex
 
 def start_app(frame_cls, props):
-    @profile_reset()
     @profile("render")
     def update(props):
         frame.update_props(props)
@@ -101,16 +100,15 @@ def profile_reset():
     return wrap
 
 def profile_print_summary():
-    TOTAL_TEXT = "TOTAL"
-    total_time = 0
-    text_width = len(TOTAL_TEXT)
-    for name in PROFILING_TIMES:
-        text_width = max(text_width, len(name))
+    text_width = 0
+    for name, times in PROFILING_TIMES.items():
+        text_width = max(text_width, len(f"{name} ({len(times)})"))
     for name, times in PROFILING_TIMES.items():
         time = sum(times)*1000
-        total_time += time
-        print("{} = {:.3f}ms".format(name.ljust(text_width), time))
-    print("{} = {:.3f}ms".format(TOTAL_TEXT.ljust(text_width), total_time))
+        print("{} = {:.3f}ms".format(
+            f"{name} ({len(times)})".ljust(text_width),
+            time
+        ))
     print("")
 
 def size(w, h):
@@ -153,7 +151,7 @@ class RLGuiMixin(object):
         self.update_props(props, parent_updated=True)
 
     def register_event_handler(self, name, fn):
-        self._event_handlers[name] = fn
+        self._event_handlers[name] = profile_reset()(profile(f"on_{name}")(fn))
 
     def _call_event_handler(self, name, *args, **kwargs):
         if name in self._event_handlers:
