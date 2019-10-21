@@ -325,7 +325,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document):\n        self._document = document\n        self._document.listen(lambda: self._replace(\"rows\", self._generate_rows()))\n        Props.__init__(self, {\n            \"background\": \"#ffeeff\",\n            \"width\": 230,\n            \"set_width\": self._set_width,\n            \"rows\": self._generate_rows(),\n        })\n\n    def _set_width(self, value):\n        self._replace(\"width\", max(50, value))\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"title\": page[\"title\"],\n                \"indent\": level*16,\n                \"has_children\": len(page[\"children\"]) > 0,\n            })\n            for child in page[\"children\"]:\n                inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document):\n        self._collapsed = set()\n        self._document = document\n        self._document.listen(self._update_rows)\n        Props.__init__(self, {\n            \"background\": \"#ffeeff\",\n            \"width\": 230,\n            \"set_width\": self._set_width,\n            \"rows\": self._generate_rows(),\n        })\n\n    def _set_width(self, value):\n        self._replace(\"width\", max(50, value))\n\n    def _update_rows(self):\n        self._replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._toggle,\n                \"title\": page[\"title\"],\n                \"indent\": level*16,\n                \"has_children\": len(page[\"children\"]) > 0,\n            })\n            if page[\"id\"] not in self._collapsed:\n                for child in page[\"children\"]:\n                    inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n\n    def _toggle(self, page_id):\n        if page_id in self._collapsed:\n            self._collapsed.remove(page_id)\n        else:\n            self._collapsed.add(page_id)\n        self._update_rows()\n",
 "type":"code"
 }
 ],
@@ -341,7 +341,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_columns {\n  %space[#indent]\n  Button(label=#title)\n  if (#has_children) {\n    Button(label=\"/\")\n  }\n}\n",
+"text":"panel TableOfContentsRow %layout_columns {\n  %space[#indent]\n  Button(label=#title)\n  if (#has_children) {\n    Button(\n      label   = \"/\"\n      @button = #toggle(#id)\n    )\n  }\n}\n",
 "type":"code"
 }
 ],
@@ -1557,7 +1557,7 @@
 ],
 "fragments":[
 {
-"text":"class Button(wx.Button, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Button.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"label\", self.SetLabel)\n",
+"text":"class Button(wx.Button, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Button.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"label\", self.SetLabel)\n\n    def register_event_handler(self, name, fn):\n        RLGuiWxMixin.register_event_handler(self, name, fn)\n        if name == \"button\":\n            self._bind_wx_event(wx.EVT_BUTTON, self._on_wx_button)\n\n    def _on_wx_button(self, wx_event):\n        self._call_event_handler(\"button\", None)\n",
 "type":"code"
 }
 ],

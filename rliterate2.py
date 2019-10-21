@@ -450,6 +450,14 @@ class Button(wx.Button, RLGuiWxMixin):
         RLGuiWxMixin._setup_gui(self)
         self._register_builtin("label", self.SetLabel)
 
+    def register_event_handler(self, name, fn):
+        RLGuiWxMixin.register_event_handler(self, name, fn)
+        if name == "button":
+            self._bind_wx_event(wx.EVT_BUTTON, self._on_wx_button)
+
+    def _on_wx_button(self, wx_event):
+        self._call_event_handler("button", None)
+
 class MainFrame(RLGuiFrame):
 
     def _get_local_props(self):
@@ -601,8 +609,9 @@ class TableOfContents(RLGuiVScroll):
 class TableOfContentsProps(Props):
 
     def __init__(self, document):
+        self._collapsed = set()
         self._document = document
-        self._document.listen(lambda: self._replace("rows", self._generate_rows()))
+        self._document.listen(self._update_rows)
         Props.__init__(self, {
             "background": "#ffeeff",
             "width": 230,
@@ -613,18 +622,31 @@ class TableOfContentsProps(Props):
     def _set_width(self, value):
         self._replace("width", max(50, value))
 
+    def _update_rows(self):
+        self._replace("rows", self._generate_rows())
+
     def _generate_rows(self):
         def inner(rows, page, level=0):
             rows.append({
+                "id": page["id"],
+                "toggle": self._toggle,
                 "title": page["title"],
                 "indent": level*16,
                 "has_children": len(page["children"]) > 0,
             })
-            for child in page["children"]:
-                inner(rows, child, level+1)
+            if page["id"] not in self._collapsed:
+                for child in page["children"]:
+                    inner(rows, child, level+1)
         rows = []
         inner(rows, self._document.get_page())
         return rows
+
+    def _toggle(self, page_id):
+        if page_id in self._collapsed:
+            self._collapsed.remove(page_id)
+        else:
+            self._collapsed.add(page_id)
+        self._update_rows()
 
 class TableOfContentsRow(RLGuiPanel):
 
@@ -650,6 +672,7 @@ class TableOfContentsRow(RLGuiPanel):
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props['label'] = '/'
+                handlers['button'] = lambda event: self.prop('toggle')(self.prop('id'))
                 self._create_widget(Button, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
