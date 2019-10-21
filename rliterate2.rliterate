@@ -709,11 +709,518 @@
 ],
 "fragments":[
 {
-"text":"GuiParser {\n  widget =\n    container:container WS NAME:name layout:layout\n    WS '{' widgetBody:body WS '}' ' '* '\\n'? .*:verbatim -> [\n      \"widget\"\n      name\n      container\n      layout\n      extract(body \"prop\")\n      extract(body \"instance\")\n      join(verbatim)\n    ]\n  container =\n    WS (\n      | 'frame'\n      | 'panel'\n      | 'vscroll'\n    ):x !NameChar -> [\"container\" x]\n  layout =\n    WS (\n      | '%layout_rows'\n      | '%layout_columns'\n    ):x !NameChar -> [\"layout\" x]\n  widgetBody =\n    (\n      | instanceWithLoop\n      | prop\n    )*:xs -> partition(xs)\n  instanceWithLoop =\n    | WS 'loop' WS '(' expr:x WS ')' WS '{' instanceWithoutLoop*:xs WS '}' -> [\"instance\" \"%loop\" x ~xs]\n    | instanceWithoutLoop\n  instanceWithoutLoop =\n    | WS '%space' !NameChar WS '[' expr:x WS ']' -> [\"instance\" \"%space\" x]\n    | WS NAME:x '(' instanceBody*:xs WS ')' -> [\"instance\" x xs]\n  instanceBody =\n    | layoutAttribute\n    | loopvarExplode\n    | propExplode\n    | propAssign\n    | handler\n  layoutAttribute =\n    | WS '%proportion[' number:x WS ']'             -> [\"layoutAttribute\" \"proportion\" x]\n    | WS '%align[' WS 'EXPAND' WS ']'               -> [\"layoutAttribute\" \"align\" \"expand\"]\n    | WS '%margin[' expr:x ',' marginSides:y WS ']' -> [\"layoutAttribute\" \"margin\" x ~y]\n  marginSides = marginSide:x ('|' marginSide)*:xs -> [x ~xs]\n  marginSide = (\n    | 'TOP'\n    | 'BOTTOM'\n    ):x -> [\"marginSide\" x]\n  propExplode = WS PropChain:x          -> [\"propExplode\" x]\n  propAssign = WS NAME:x WS '=' expr:y -> [\"propAssign\" x y]\n  handler = WS '@' NAME:x WS '=' expr:y -> [\"handler\" x y]\n  expr = expr1:x ('.' expr1)*:xs -> [\"chain\" x ~xs]\n  expr1 = (string | call | number | propRef | identifier | loopvarRef)\n  string      = WS STRING:x             -> [\"string\" x]\n  call        = (identifier|propRef):x '(' expr*:xs WS ')' -> [\"call\" x ~xs]\n  number      = WS NUMBER:x             -> [\"number\" x]\n  propRef     = WS PropChain:x          -> [\"propRef\" x]\n  identifier  = WS NAME:x               -> [\"identifier\" x]\n  loopvarRef  = '$' NAME:x              -> [\"loopvarRef\" x]\n  loopvarExplode  = '$' (NAME | -> \"\"):x  -> [\"loopvarExplode\" x]\n  prop        = WS NAME:x WS '=' expr:y -> [\"prop\" x y]\n  PropChain   = '#' NAME:x ('.' NAME)*:xs !NameChar -> join([x ~xs] \".\")\n  NUMBER      = ('-' | -> \"\"):x Digit:y Digit*:ys   -> int(join([x y ~ys]))\n  Digit       = '0'-'9'\n  NAME        = NameStart:x NameChar*:xs            -> join([x ~xs])\n  NameStart   = 'a'-'z' | 'A'-'Z' | '_'\n  NameChar    = NameStart | '0'-'9'\n  STRING      = '\"' (!'\"' .)*:xs '\"'                -> join(xs)\n  WS          = (' ' | '\\n')*\n}\n",
+"text":"GuiParser {\n  widget ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    container:container WS NAME:name layout:layout\n    WS '{' widgetBody:body WS '}' ' '* '\\n'? .*:verbatim -> [\n      \"widget\"\n      name\n      container\n      layout\n      extract(body \"prop\")\n      extract(body \"instance\")\n      join(verbatim)\n    ]\n  container ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    WS (\n      | 'frame'\n      | 'panel'\n      | 'vscroll'\n    ):x WB ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"container\" x]\n  layout ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    WS (\n      | '%layout_rows'\n      | '%layout_columns'\n    ):x WB ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"layout\" x]\n  widgetBody ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    (\n      | instance\n      | prop\n    )*:xs ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> partition(xs)\n  instance ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    | WS 'loop' WS '(' expr:x WS ')'\n      WS '{' instanceLoop*:xs WS '}' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"instance\" \"%loop\" x ~xs]\n    | instanceLoop\n  instanceLoop ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    | WS '%space' WB WS '[' expr:x WS ']' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"instance\" \"%space\" x]\n    | WS NAME:x '(' instanceBody*:xs WS ')' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"instance\" x xs]\n  instanceBody ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    | layoutAttribute\n    | loopvarExplode\n    | propExplode\n    | propAssign\n    | handler\n  layoutAttribute ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    | WS '%proportion[' number:x WS ']' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"layoutAttribute\" \"proportion\" x]\n    | WS '%align[' WS 'EXPAND' WS ']' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"layoutAttribute\" \"align\" \"expand\"]\n    | WS '%margin[' expr:x ',' margins:y WS ']' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"layoutAttribute\" \"margin\" x ~y]\n  margins ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= margin:x ('|' margin)*:xs ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [x ~xs]\n  margin ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= (\n    | 'TOP'\n    | 'BOTTOM'\n  ):x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"marginSide\" x]\n  propExplode ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS PropChain:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"propExplode\" x]\n  propAssign ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS NAME:x WS '=' expr:y ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"propAssign\" x y]\n  handler ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS '@' NAME:x WS '=' expr:y ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"handler\" x y]\n  expr ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= expr1:x ('.' expr1)*:xs ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"chain\" x ~xs]\n  expr1 ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= (string | call | number | propRef | identifier | loopvarRef)\n  string ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS STRING:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"string\" x]\n  call ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"=\n    (identifier|propRef):x '(' expr*:xs WS ')' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"call\" x ~xs]\n  number ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS NUMBER:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"number\" x]\n  propRef ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS PropChain:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"propRef\" x]\n  identifier ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS NAME:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"identifier\" x]\n  loopvarRef ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= '$' NAME:x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"loopvarRef\" x]\n  loopvarExplode ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= '$' (NAME | -> \"\"):x ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"loopvarExplode\" x]\n  prop ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= WS NAME:x WS '=' expr:y ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"prop\" x y]\n  PropChain ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= '#' NAME:x ('.' NAME)*:xs WB ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> join([x ~xs] \".\")\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"GuiParser"
+],
+"prefix":"  ",
+"type":"chunk"
+},
+{
+"text":"}\n",
 "type":"code"
 }
 ],
 "id":"d69da27c0c3046f08ad2347433cdaaf3",
+"language":"rlmeta",
+"post_process":[
+"python",
+"rlmeta/rlmeta.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"grammars",
+"GuiParser"
+],
+"filepath":[
+"rlgui",
+"rlgui.py"
+],
+"fragments":[
+{
+"text":"NUMBER ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= ('-' | -> \"\"):x DIGIT:y DIGIT*:ys ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> int(join([x y ~ys]))\nDIGIT ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= '0'-'9'\nNAME ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= NAMESTART:x NAMECHAR*:xs ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> join([x ~xs])\nNAMESTART ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= 'a'-'z' | 'A'-'Z' | '_'\nNAMECHAR ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= NAMESTART | '0'-'9'\nSTRING ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= '\"' (!'\"' .)*:xs '\"' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> join(xs)\nWS ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= (' ' | '\\n')*\nWB ",
+"type":"code"
+},
+{
+"index":10,
+"type":"tabstop"
+},
+{
+"text":"= !NAMECHAR\n",
+"type":"code"
+}
+],
+"id":"bd877f114acc489a93f3088e4fd98358",
 "language":"rlmeta",
 "post_process":[
 "python",
