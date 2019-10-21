@@ -197,7 +197,7 @@ class RLGuiMixin(object):
                 self._builtin_props[name](self._props[name])
 
     def _register_builtin(self, name, fn):
-        self._builtin_props[name] = fn
+        self._builtin_props[name] = profile(f"builtin {name}")(fn)
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
