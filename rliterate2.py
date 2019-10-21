@@ -293,8 +293,12 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         self._child_index = 0
         self._create_widgets()
         if not parent_updated:
-            self.Layout()
-            self.Refresh()
+            self._layout()
+
+    @profile("layout")
+    def _layout(self):
+        self.Layout()
+        self.Refresh()
 
     def _create_widgets(self):
         raise NotImplementedError()
