@@ -66,6 +66,7 @@ def start_app(frame_cls, props):
     frame.Layout()
     frame.Refresh()
     frame.Show()
+    profile_reset()(lambda: None)()
     app.MainLoop()
 
 def load_json_from_file(path):
@@ -105,9 +106,17 @@ def profile_print_summary():
         text_width = max(text_width, len(f"{name} ({len(times)})"))
     for name, times in PROFILING_TIMES.items():
         time = sum(times)*1000
-        print("{} = {:.3f}ms".format(
+        if time > 10:
+            color = "\033[31m"
+        elif time > 5:
+            color = "\033[33m"
+        else:
+            color = "\033[0m"
+        print("{}{} = {:.3f}ms{}".format(
+            color,
             f"{name} ({len(times)})".ljust(text_width),
-            time
+            time,
+            "\033[0m"
         ))
     print("")
 
