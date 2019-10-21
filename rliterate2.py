@@ -216,8 +216,15 @@ class Props(Observable):
         return self._props
 
     def _replace(self, key, value):
+        if self._replace_if_needed(key, value):
+            self._notify()
+
+    @profile("modify")
+    def _replace_if_needed(self, key, value):
         if self._props[key] != value:
-            self._replace_no_check(key, value)
+            self._modify(key, value)
+            return True
+        return False
 
     def _replace_no_check(self, key, value):
         self._modify(key, value)
