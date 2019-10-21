@@ -615,7 +615,11 @@ class TableOfContentsProps(Props):
 
     def _generate_rows(self):
         def inner(rows, page, level=0):
-            rows.append({"indent": level*16, "title": page["title"]})
+            rows.append({
+                "title": page["title"],
+                "indent": level*16,
+                "has_children": len(page["children"]) > 0,
+            })
             for child in page["children"]:
                 inner(rows, child, level+1)
         rows = []
@@ -639,6 +643,14 @@ class TableOfContentsRow(RLGuiPanel):
         handlers = {}
         props['label'] = self.prop('title')
         self._create_widget(Button, props, sizer, handlers)
+        with self._loop():
+            for loopvar in ([None] if (self.prop('has_children')) else []):
+                pass
+                props = {}
+                sizer = {"flag": 0, "border": 0, "proportion": 0}
+                handlers = {}
+                props['label'] = '/'
+                self._create_widget(Button, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
 
