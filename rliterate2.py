@@ -289,6 +289,9 @@ class RLGuiWxMixin(RLGuiMixin):
             self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
             self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
             self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
+        if name == "click":
+            self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
+            self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
 
     def _bind_wx_event(self, event, handler):
         if event not in self._wx_event_handlers:
@@ -300,6 +303,8 @@ class RLGuiWxMixin(RLGuiMixin):
         self._call_event_handler("drag", DragEvent(True, 0))
 
     def _on_wx_left_up(self, wx_event):
+        if self._wx_down_pos is not None:
+            self._call_event_handler("click", None)
         self._wx_down_pos = None
 
     def _on_wx_motion(self, wx_event):
@@ -537,6 +542,30 @@ class Button(wx.Button, RLGuiWxMixin):
     def _on_wx_button(self, wx_event):
         self._call_event_handler("button", None)
 
+class ExpandCollapse(wx.Panel, RLGuiWxMixin):
+
+    def __init__(self, parent, props):
+        wx.Panel.__init__(self, parent)
+        RLGuiWxMixin.__init__(self, props)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def _get_local_props(self):
+        return {
+            "min_size": (self.prop("size")+1, -1),
+        }
+
+    def _on_paint(self, event):
+        dc = wx.GCDC(wx.PaintDC(self))
+        dc.SetBrush(wx.BLACK_BRUSH)
+        render = wx.RendererNative.Get()
+        (w, h) = self.Size
+        render.DrawTreeItemButton(
+            self,
+            dc,
+            (0, (h-self.prop("size"))/2, self.prop("size"), self.prop("size")),
+            flags=0 if self.prop("collapsed") else wx.CONTROL_EXPANDED
+        )
+
 class MainFrame(RLGuiFrame):
 
     def _get_local_props(self):
@@ -714,6 +743,7 @@ class TableOfContentsProps(Props):
                 "title": page["title"],
                 "indent": level*16,
                 "has_children": len(page["children"]) > 0,
+                "collapsed": page["id"] in self._collapsed,
             })
             if page["id"] not in self._collapsed:
                 for child in page["children"]:
@@ -741,20 +771,28 @@ class TableOfContentsRow(RLGuiPanel):
     def _create_widgets(self):
         pass
         self._create_space(self.prop('indent'))
+        if_condition = self.prop('has_children')
+        with self._loop():
+            for loopvar in ([None] if (if_condition) else []):
+                pass
+                props = {}
+                sizer = {"flag": 0, "border": 0, "proportion": 0}
+                handlers = {}
+                props['cursor'] = 'hand'
+                props['size'] = 16
+                props['collapsed'] = self.prop('collapsed')
+                handlers['click'] = lambda event: self.prop('toggle')(self.prop('id'))
+                sizer["flag"] |= wx.EXPAND
+                self._create_widget(ExpandCollapse, props, sizer, handlers)
+        with self._loop():
+            for loopvar in ([None] if (not if_condition) else []):
+                pass
+                self._create_space(16)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['label'] = self.prop('title')
         self._create_widget(Button, props, sizer, handlers)
-        with self._loop():
-            for loopvar in ([None] if (self.prop('has_children')) else []):
-                pass
-                props = {}
-                sizer = {"flag": 0, "border": 0, "proportion": 0}
-                handlers = {}
-                props['label'] = '/'
-                handlers['button'] = lambda event: self.prop('toggle')(self.prop('id'))
-                self._create_widget(Button, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
 
