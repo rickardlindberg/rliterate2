@@ -341,7 +341,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_columns {\n  %space[#indent]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = 16\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[16]\n  }\n  Button(label=#title)\n}\n",
+"text":"panel TableOfContentsRow %layout_columns {\n  %space[#indent]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = 16\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[16]\n  }\n  Text(text=#title)\n}\n",
 "type":"code"
 }
 ],
@@ -1602,6 +1602,29 @@
 }
 ],
 "title":"Expand/Collapse"
+},
+{
+"children":[],
+"id":"427ca7e37015483fa5ef63e1dd5979d3",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Text(wx.StaticText, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"text\", self.SetLabel)\n",
+"type":"code"
+}
+],
+"id":"f3d592134f1846c787df29b547b4de51",
+"type":"code"
+}
+],
+"title":"Text"
 },
 {
 "children":[],

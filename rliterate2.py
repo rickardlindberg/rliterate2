@@ -566,6 +566,16 @@ class ExpandCollapse(wx.Panel, RLGuiWxMixin):
             flags=0 if self.prop("collapsed") else wx.CONTROL_EXPANDED
         )
 
+class Text(wx.StaticText, RLGuiWxMixin):
+
+    def __init__(self, parent, props):
+        wx.Panel.__init__(self, parent)
+        RLGuiWxMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiWxMixin._setup_gui(self)
+        self._register_builtin("text", self.SetLabel)
+
 class MainFrame(RLGuiFrame):
 
     def _get_local_props(self):
@@ -791,8 +801,8 @@ class TableOfContentsRow(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props['label'] = self.prop('title')
-        self._create_widget(Button, props, sizer, handlers)
+        props['text'] = self.prop('title')
+        self._create_widget(Text, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
 
