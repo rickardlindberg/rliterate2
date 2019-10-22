@@ -185,6 +185,12 @@ class RLGuiMixin(object):
     def _setup_gui(self):
         pass
 
+    def prop_with_default(self, path, default):
+        try:
+            return self.prop(path)
+        except IndexError:
+            return default
+
     def prop(self, path):
         value = self._props
         for part in path.split("."):
@@ -341,39 +347,74 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         try:
             yield
         finally:
-            while self._child_index < len(self._children):
-                self._children.pop(-1)[0].Destroy()
+            self._clear_leftovers()
             self._children = old_children
             self._child_index = next_index
             self._inside_loop = False
 
+    def _clear_leftovers(self):
+        child_index = self._child_index
+        sizer_index = self._sizer_index
+        while child_index < len(self._children):
+            widget, sizer_item = self._children[child_index]
+            if widget is not None and widget.prop_with_default("__cache", False):
+                sizer_item.Show(False)
+                child_index += 1
+                sizer_index += 1
+            else:
+                self._sizer.Remove(sizer_index)
+                self._children.pop(child_index)
+
     def _create_widget(self, widget_cls, props, sizer, handlers):
-        if self._child_index >= len(self._children):
-            widget = widget_cls(self._parent, props)
-            for name, fn in handlers.items():
-                widget.register_event_handler(name, fn)
-            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
-            self._children.insert(self._child_index, (widget, sizer_item))
-        else:
+        def re_use_condition(widget):
+            if type(widget) != widget_cls:
+                return False
+            if "__reuse" in props and widget.prop("__reuse") != props["__reuse"]:
+                return False
+            return True
+        re_use_offset = self._reuse(re_use_condition)
+        if re_use_offset == 0:
             widget, sizer_item = self._children[self._child_index]
             widget.update_props(props, parent_updated=True)
             sizer_item.SetBorder(sizer["border"])
             sizer_item.SetProportion(sizer["proportion"])
+        else:
+            if re_use_offset is None:
+                widget = widget_cls(self._parent, props)
+                for name, fn in handlers.items():
+                    widget.register_event_handler(name, fn)
+            else:
+                widget = self._children.pop(self._child_index+re_use_offset)[0]
+                self._sizer.Detach(self._sizer_index+re_use_offset)
+            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
+            self._children.insert(self._child_index, (widget, sizer_item))
+        sizer_item.Show(True)
         self._sizer_index += 1
         self._child_index += 1
 
     def _create_space(self, thickness):
-        if self._child_index >= len(self._children):
-            self._children.insert(self._child_index, self._insert_sizer(
-                self._sizer_index,
-                self._get_space_size(thickness)
-            ))
-        else:
-            self._children[self._child_index].SetMinSize(
+        if (self._child_index < len(self._children) and
+            self._children[self._child_index][0] is None):
+            self._children[self._child_index][1].SetMinSize(
                 self._get_space_size(thickness)
             )
+        else:
+            self._children.insert(self._child_index, (None, self._insert_sizer(
+                self._sizer_index,
+                self._get_space_size(thickness)
+            )))
         self._sizer_index += 1
         self._child_index += 1
+
+    def _reuse(self, condition):
+        index = 0
+        while (self._child_index+index) < len(self._children):
+            widget = self._children[self._child_index+index][0]
+            if widget is not None and condition(widget):
+                return index
+            else:
+                index += 1
+        return None
 
     @profile_sub("insert sizer")
     def _insert_sizer(self, *args, **kwargs):
@@ -634,6 +675,8 @@ class TableOfContents(RLGuiVScroll):
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props.update(loopvar)
+                props['__reuse'] = loopvar['id']
+                props['__cache'] = 'yes'
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
 
 class TableOfContentsProps(Props):
