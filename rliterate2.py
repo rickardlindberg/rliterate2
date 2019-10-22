@@ -2,9 +2,13 @@
 
 from collections import namedtuple, defaultdict
 import contextlib
+import cProfile
+import io
 import json
 import os
+import pstats
 import sys
+import textwrap
 import time
 import uuid
 import wx
@@ -57,10 +61,9 @@ def genid():
     return uuid.uuid4().hex
 
 def start_app(frame_cls, props):
-    @profile("render")
+    @profile_sub("render")
     def update(props):
         frame.update_props(props)
-    @profile_reset()
     @profile("show frame")
     def show_frame():
         props.listen(lambda: update(props.get()))
@@ -77,7 +80,7 @@ def load_json_from_file(path):
     with open(path) as f:
         return json.load(f)
 
-def profile(text):
+def profile_sub(text):
     def wrap(fn):
         def fn_with_timing(*args, **kwargs):
             t1 = time.perf_counter()
@@ -91,23 +94,32 @@ def profile(text):
             return fn
     return wrap
 
-def profile_reset():
+def profile(text):
     def wrap(fn):
-        def fn_with_summary_and_reset(*args, **kwargs):
+        def fn_with_cprofile(*args, **kwargs):
+            pr = cProfile.Profile()
+            pr.enable()
             value = fn(*args, **kwargs)
-            profile_print_summary()
+            pr.disable()
+            s = io.StringIO()
+            ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
+            ps.print_stats(10)
+            profile_print_summary(text, s.getvalue())
             PROFILING_TIMES.clear()
             return value
         if PROFILING_ENABLED:
-            return fn_with_summary_and_reset
+            return fn_with_cprofile
         else:
             return fn
     return wrap
 
-def profile_print_summary():
+def profile_print_summary(text, cprofile_out):
     text_width = 0
     for name, times in PROFILING_TIMES.items():
         text_width = max(text_width, len(f"{name} ({len(times)})"))
+    print(f"=== {text} {'='*60}")
+    print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
+    print(f"--- {text} {'-'*60}")
     for name, times in PROFILING_TIMES.items():
         time = sum(times)*1000
         if time > 10:
@@ -116,13 +128,12 @@ def profile_print_summary():
             color = "\033[33m"
         else:
             color = "\033[0m"
-        print("{}{} = {:.3f}ms{}".format(
+        print("    {}{} = {:.3f}ms{}".format(
             color,
             f"{name} ({len(times)})".ljust(text_width),
             time,
             "\033[0m"
         ))
-    print("")
 
 def size(w, h):
     return (w, h)
@@ -163,8 +174,9 @@ class RLGuiMixin(object):
         self._setup_gui()
         self.update_props(props, parent_updated=True)
 
+    @profile_sub("register event")
     def register_event_handler(self, name, fn):
-        self._event_handlers[name] = profile_reset()(profile(f"on_{name}")(fn))
+        self._event_handlers[name] = profile(f"on_{name}")(profile_sub(f"on_{name}")(fn))
 
     def _call_event_handler(self, name, *args, **kwargs):
         if name in self._event_handlers:
@@ -209,8 +221,9 @@ class RLGuiMixin(object):
             if name in self._builtin_props:
                 self._builtin_props[name](self._props[name])
 
+    @profile_sub("register builtin")
     def _register_builtin(self, name, fn):
-        self._builtin_props[name] = profile(f"builtin {name}")(fn)
+        self._builtin_props[name] = profile_sub(f"builtin {name}")(fn)
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
@@ -224,7 +237,7 @@ class Props(Observable):
         self._props[name] = props.get()
         props.listen(lambda: self._replace_no_check(name, props.get()))
 
-    @profile("get")
+    @profile_sub("get")
     def get(self):
         return self._props
 
@@ -232,7 +245,7 @@ class Props(Observable):
         if self._replace_if_needed(key, value):
             self._notify()
 
-    @profile("modify")
+    @profile_sub("modify")
     def _replace_if_needed(self, key, value):
         if self._props[key] != value:
             self._modify(key, value)
@@ -243,7 +256,7 @@ class Props(Observable):
         self._modify(key, value)
         self._notify()
 
-    @profile("modify")
+    @profile_sub("modify")
     def _modify(self, key, value):
         self._props = im_modify(self._props, [key], lambda old: value)
 
@@ -308,7 +321,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         if not parent_updated:
             self._layout()
 
-    @profile("layout")
+    @profile_sub("layout")
     def _layout(self):
         self.Layout()
         self.Refresh()
@@ -339,7 +352,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
             widget = widget_cls(self._parent, props)
             for name, fn in handlers.items():
                 widget.register_event_handler(name, fn)
-            sizer_item = self._sizer.Insert(self._sizer_index, widget, **sizer)
+            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
         else:
             widget, sizer_item = self._children[self._child_index]
@@ -351,7 +364,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
 
     def _create_space(self, thickness):
         if self._child_index >= len(self._children):
-            self._children.insert(self._child_index, self._sizer.Insert(
+            self._children.insert(self._child_index, self._insert_sizer(
                 self._sizer_index,
                 self._get_space_size(thickness)
             ))
@@ -361,6 +374,10 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
             )
         self._sizer_index += 1
         self._child_index += 1
+
+    @profile_sub("insert sizer")
+    def _insert_sizer(self, *args, **kwargs):
+        return self._sizer.Insert(*args, **kwargs)
 
     def _get_space_size(self, size):
         if self._sizer.Orientation == wx.HORIZONTAL:
