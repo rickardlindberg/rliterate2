@@ -381,7 +381,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
 
     def _create_widget(self, widget_cls, props, sizer, handlers):
         def re_use_condition(widget):
-            if type(widget) != widget_cls:
+            if type(widget) is not widget_cls:
                 return False
             if "__reuse" in props and widget.prop("__reuse") != props["__reuse"]:
                 return False
@@ -725,7 +725,17 @@ class TableOfContents(RLGuiVScroll):
                 props.update(loopvar)
                 props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
+                props['border'] = 2
+                sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
+                props = {}
+                sizer = {"flag": 0, "border": 0, "proportion": 0}
+                handlers = {}
+                props['thickness'] = 2
+                props['color'] = '#f0f0ff'
+                props['__cache'] = 'yes'
+                sizer["flag"] |= wx.EXPAND
+                self._create_widget(RowDivider, props, sizer, handlers)
 
 class TableOfContentsProps(Props):
 
@@ -781,6 +791,7 @@ class TableOfContentsRow(RLGuiPanel):
 
     def _create_widgets(self):
         pass
+        self._create_space(self.prop('border'))
         self._create_space(self.prop('indent'))
         if_condition = self.prop('has_children')
         with self._loop():
@@ -799,10 +810,16 @@ class TableOfContentsRow(RLGuiPanel):
             for loopvar in ([None] if (not if_condition) else []):
                 pass
                 self._create_space(16)
+        self._create_space(self.prop('border'))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['text'] = self.prop('title')
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop('border')
+        sizer["flag"] |= wx.TOP
+        sizer["flag"] |= wx.BOTTOM
+        sizer["flag"] |= wx.RIGHT
         self._create_widget(Text, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
