@@ -188,7 +188,7 @@ class RLGuiMixin(object):
     def prop_with_default(self, path, default):
         try:
             return self.prop(path)
-        except IndexError:
+        except (KeyError, IndexError):
             return default
 
     def prop(self, path):
@@ -355,14 +355,22 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
     def _clear_leftovers(self):
         child_index = self._child_index
         sizer_index = self._sizer_index
+        num_cached = 0
+        cache_limit = self.prop_with_default("__cache_limit", -1)
         while child_index < len(self._children):
             widget, sizer_item = self._children[child_index]
-            if widget is not None and widget.prop_with_default("__cache", False):
+            if (widget is not None and
+                widget.prop_with_default("__cache", False) and
+                (cache_limit < 0 or num_cached < cache_limit)):
                 sizer_item.Show(False)
                 child_index += 1
                 sizer_index += 1
+                num_cached += 1
             else:
-                self._sizer.Remove(sizer_index)
+                if widget is None:
+                    self._sizer.Remove(sizer_index)
+                else:
+                    widget.Destroy()
                 self._children.pop(child_index)
 
     def _create_widget(self, widget_cls, props, sizer, handlers):
