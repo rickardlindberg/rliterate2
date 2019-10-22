@@ -60,6 +60,9 @@ def create_new_page():
 def genid():
     return uuid.uuid4().hex
 
+def default_color():
+    return None
+
 def start_app(frame_cls, props):
     @profile_sub("render")
     def update(props):
@@ -617,7 +620,7 @@ class MainFrameProps(Props):
                 os.path.abspath(os.path.dirname(path))
             ),
             "toolbar_divider": {
-                "thickness": 2,
+                "thickness": 1,
                 "color": "#aaaaaf",
             },
         })
@@ -669,7 +672,7 @@ class MainAreaProps(Props):
         Props.__init__(self, {
             "toc_divider": {
                 "thickness": 3,
-                "color": "#aaaaff",
+                "color": "#aaaaaf",
             },
         })
         self._child("toc", TableOfContentsProps(document))
@@ -732,7 +735,7 @@ class TableOfContents(RLGuiVScroll):
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props['thickness'] = 2
-                props['color'] = '#f0f0ff'
+                props['color'] = default_color()
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(RowDivider, props, sizer, handlers)
@@ -744,7 +747,7 @@ class TableOfContentsProps(Props):
         self._document = document
         self._document.listen(self._update_rows)
         Props.__init__(self, {
-            "background": "#ffeeff",
+            "background": "#ffffff",
             "width": 230,
             "set_width": self._set_width,
             "rows": self._generate_rows(),
