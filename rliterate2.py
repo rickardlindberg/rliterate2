@@ -276,6 +276,7 @@ class RLGuiWxMixin(RLGuiMixin):
         self._register_builtin("cursor", lambda value:
             self.SetCursor({
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
+                "hand": wx.Cursor(wx.CURSOR_HAND),
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
 
