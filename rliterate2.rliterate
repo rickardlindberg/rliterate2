@@ -724,6 +724,22 @@
 ],
 "id":"c271e666cf75407b9f4d10b0860cbae8",
 "type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"SliderEvent = namedtuple(\"SliderEvent\", \"value\")\n",
+"type":"code"
+}
+],
+"id":"b1c7ca14119b4dd4ad86f666c81806b3",
+"type":"code"
 }
 ],
 "title":"Base widget mixin"
@@ -1671,6 +1687,29 @@
 }
 ],
 "title":"Button"
+},
+{
+"children":[],
+"id":"21cad2ea45404fc18b9f7f080fc6c509",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Slider(wx.Slider, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Slider.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"min\", self.SetMin)\n        self._register_builtin(\"max\", self.SetMax)\n\n    def register_event_handler(self, name, fn):\n        RLGuiWxMixin.register_event_handler(self, name, fn)\n        if name == \"slider\":\n            self._bind_wx_event(wx.EVT_SLIDER, self._on_wx_slider)\n\n    def _on_wx_slider(self, wx_event):\n        self._call_event_handler(\"slider\", SliderEvent(self.Value))\n",
+"type":"code"
+}
+],
+"id":"697a875ffd764a32b2b96dfa3ff039a1",
+"type":"code"
+}
+],
+"title":"Slider"
 }
 ],
 "id":"bf2fd902b8794da3851327a2a97f4939",

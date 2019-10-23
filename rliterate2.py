@@ -278,6 +278,8 @@ class RLGuiMixin(object):
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
+SliderEvent = namedtuple("SliderEvent", "value")
+
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
@@ -578,6 +580,25 @@ class Button(wx.Button, RLGuiWxMixin):
 
     def _on_wx_button(self, wx_event):
         self._call_event_handler("button", None)
+
+class Slider(wx.Slider, RLGuiWxMixin):
+
+    def __init__(self, parent, props):
+        wx.Slider.__init__(self, parent)
+        RLGuiWxMixin.__init__(self, props)
+
+    def _setup_gui(self):
+        RLGuiWxMixin._setup_gui(self)
+        self._register_builtin("min", self.SetMin)
+        self._register_builtin("max", self.SetMax)
+
+    def register_event_handler(self, name, fn):
+        RLGuiWxMixin.register_event_handler(self, name, fn)
+        if name == "slider":
+            self._bind_wx_event(wx.EVT_SLIDER, self._on_wx_slider)
+
+    def _on_wx_slider(self, wx_event):
+        self._call_event_handler("slider", SliderEvent(self.Value))
 
 class ExpandCollapse(wx.Panel, RLGuiWxMixin):
 
