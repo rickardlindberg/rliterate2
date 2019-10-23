@@ -237,7 +237,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document):\n        Props.__init__(self, {\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        })\n        self._child(\"toc\", TableOfContentsProps(document))\n        self._child(\"workspace\", WorkspaceProps())\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document):\n        Props.__init__(self, {\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        })\n        self._child(\"toc\", TableOfContentsProps(document, Theme()))\n        self._child(\"workspace\", WorkspaceProps())\n",
 "type":"code"
 }
 ],
@@ -346,7 +346,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document):\n        self._collapsed = set()\n        self._document = document\n        self._document.listen(self._update_rows)\n        Props.__init__(self, {\n            \"background\": \"#ffffff\",\n            \"width\": 230,\n            \"set_width\": self._set_width,\n            \"rows\": self._generate_rows(),\n        })\n\n    def _set_width(self, value):\n        self._replace(\"width\", max(50, value))\n\n    def _update_rows(self):\n        self._replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._toggle,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": page[\"id\"] in self._collapsed,\n                \"indent_size\": 20,\n            })\n            if page[\"id\"] not in self._collapsed:\n                for child in page[\"children\"]:\n                    inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n\n    def _toggle(self, page_id):\n        if page_id in self._collapsed:\n            self._collapsed.remove(page_id)\n        else:\n            self._collapsed.add(page_id)\n        self._update_rows()\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, theme):\n        self._collapsed = set()\n        self._document = document\n        self._document.listen(self._update_rows)\n        self._theme = theme\n        self._theme.listen(self._on_theme_changed)\n        Props.__init__(self, {\n            \"background\": self._theme.get(\"toc.background\"),\n            \"width\": 230,\n            \"set_width\": self._set_width,\n            \"rows\": self._generate_rows(),\n        })\n\n    def _on_theme_changed(self):\n        self._replace(\"background\", self._theme.get(\"toc.background\"))\n        self._update_rows()\n\n    def _set_width(self, value):\n        self._replace(\"width\", max(50, value))\n\n    def _update_rows(self):\n        self._replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._toggle,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": page[\"id\"] in self._collapsed,\n                \"indent_size\": self._theme.get(\"toc.indent_size\"),\n            })\n            if page[\"id\"] not in self._collapsed:\n                for child in page[\"children\"]:\n                    inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n\n    def _toggle(self, page_id):\n        if page_id in self._collapsed:\n            self._collapsed.remove(page_id)\n        else:\n            self._collapsed.add(page_id)\n        self._update_rows()\n",
 "type":"code"
 }
 ],
@@ -540,6 +540,29 @@
 }
 ],
 "title":"Document"
+},
+{
+"children":[],
+"id":"2bdaa3b1373945e0bb8ae77a1735df50",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Theme(Observable):\n\n    def __init__(self):\n        Observable.__init__(self)\n        self._values = {\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n            },\n        }\n\n    def get(self, path):\n        value = self._values\n        for x in path.split(\".\"):\n            value = value[x]\n        return value\n",
+"type":"code"
+}
+],
+"id":"fd85c4b0d0e34d6ea885dd572220e7ad",
+"type":"code"
+}
+],
+"title":"Theme"
 },
 {
 "children":[

@@ -675,7 +675,7 @@ class MainAreaProps(Props):
                 "color": "#aaaaaf",
             },
         })
-        self._child("toc", TableOfContentsProps(document))
+        self._child("toc", TableOfContentsProps(document, Theme()))
         self._child("workspace", WorkspaceProps())
 
 class Toolbar(RLGuiPanel):
@@ -780,16 +780,22 @@ class TableOfContentsRow(RLGuiPanel):
 
 class TableOfContentsProps(Props):
 
-    def __init__(self, document):
+    def __init__(self, document, theme):
         self._collapsed = set()
         self._document = document
         self._document.listen(self._update_rows)
+        self._theme = theme
+        self._theme.listen(self._on_theme_changed)
         Props.__init__(self, {
-            "background": "#ffffff",
+            "background": self._theme.get("toc.background"),
             "width": 230,
             "set_width": self._set_width,
             "rows": self._generate_rows(),
         })
+
+    def _on_theme_changed(self):
+        self._replace("background", self._theme.get("toc.background"))
+        self._update_rows()
 
     def _set_width(self, value):
         self._replace("width", max(50, value))
@@ -806,7 +812,7 @@ class TableOfContentsProps(Props):
                 "level": level,
                 "has_children": len(page["children"]) > 0,
                 "collapsed": page["id"] in self._collapsed,
-                "indent_size": 20,
+                "indent_size": self._theme.get("toc.indent_size"),
             })
             if page["id"] not in self._collapsed:
                 for child in page["children"]:
@@ -877,6 +883,23 @@ class Document(Observable):
 
     def get_page(self):
         return self._doc["root_page"]
+
+class Theme(Observable):
+
+    def __init__(self):
+        Observable.__init__(self)
+        self._values = {
+            "toc": {
+                "background": "#ffffff",
+                "indent_size": 20,
+            },
+        }
+
+    def get(self, path):
+        value = self._values
+        for x in path.split("."):
+            value = value[x]
+        return value
 
 if __name__ == "__main__":
     main()
