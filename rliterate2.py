@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple, defaultdict
+from operator import add, mul
 import contextlib
 import cProfile
 import io
@@ -727,7 +728,7 @@ class TableOfContents(RLGuiVScroll):
                 props.update(loopvar)
                 props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
-                props['border'] = 2
+                props['margin'] = 2
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
@@ -738,6 +739,44 @@ class TableOfContents(RLGuiVScroll):
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(RowDivider, props, sizer, handlers)
+
+class TableOfContentsRow(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(add(self.prop('margin'), mul(self.prop('level'), self.prop('indent_size'))))
+        if_condition = self.prop('has_children')
+        with self._loop():
+            for loopvar in ([None] if (if_condition) else []):
+                pass
+                props = {}
+                sizer = {"flag": 0, "border": 0, "proportion": 0}
+                handlers = {}
+                props['cursor'] = 'hand'
+                props['size'] = self.prop('indent_size')
+                props['collapsed'] = self.prop('collapsed')
+                handlers['click'] = lambda event: self.prop('toggle')(self.prop('id'))
+                sizer["flag"] |= wx.EXPAND
+                self._create_widget(ExpandCollapse, props, sizer, handlers)
+        with self._loop():
+            for loopvar in ([None] if (not if_condition) else []):
+                pass
+                self._create_space(self.prop('indent_size'))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
+        props['text'] = self.prop('title')
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop('margin')
+        sizer["flag"] |= wx.ALL
+        self._create_widget(Text, props, sizer, handlers)
 
 class TableOfContentsProps(Props):
 
@@ -764,9 +803,10 @@ class TableOfContentsProps(Props):
                 "id": page["id"],
                 "toggle": self._toggle,
                 "title": page["title"],
-                "indent": level*16,
+                "level": level,
                 "has_children": len(page["children"]) > 0,
                 "collapsed": page["id"] in self._collapsed,
+                "indent_size": 20,
             })
             if page["id"] not in self._collapsed:
                 for child in page["children"]:
@@ -781,48 +821,6 @@ class TableOfContentsProps(Props):
         else:
             self._collapsed.add(page_id)
         self._update_rows()
-
-class TableOfContentsRow(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-        self._create_space(self.prop('border'))
-        self._create_space(self.prop('indent'))
-        if_condition = self.prop('has_children')
-        with self._loop():
-            for loopvar in ([None] if (if_condition) else []):
-                pass
-                props = {}
-                sizer = {"flag": 0, "border": 0, "proportion": 0}
-                handlers = {}
-                props['cursor'] = 'hand'
-                props['size'] = 16
-                props['collapsed'] = self.prop('collapsed')
-                handlers['click'] = lambda event: self.prop('toggle')(self.prop('id'))
-                sizer["flag"] |= wx.EXPAND
-                self._create_widget(ExpandCollapse, props, sizer, handlers)
-        with self._loop():
-            for loopvar in ([None] if (not if_condition) else []):
-                pass
-                self._create_space(16)
-        self._create_space(self.prop('border'))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        handlers = {}
-        props['text'] = self.prop('title')
-        sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop('border')
-        sizer["flag"] |= wx.TOP
-        sizer["flag"] |= wx.BOTTOM
-        sizer["flag"] |= wx.RIGHT
-        self._create_widget(Text, props, sizer, handlers)
 
 class Workspace(RLGuiPanel):
 
