@@ -788,7 +788,6 @@ class TableOfContentsRow(RLGuiPanel):
 class TableOfContentsProps(Props):
 
     def __init__(self, document, theme, session):
-        self._collapsed = set()
         self._document = document
         self._document.listen(self._update_rows)
         self._theme = theme
@@ -817,26 +816,19 @@ class TableOfContentsProps(Props):
         def inner(rows, page, level=0):
             rows.append({
                 "id": page["id"],
-                "toggle": self._toggle,
+                "toggle": self._session.toggle_collapsed,
                 "title": page["title"],
                 "level": level,
                 "has_children": len(page["children"]) > 0,
-                "collapsed": page["id"] in self._collapsed,
+                "collapsed": self._session.is_collapsed(page["id"]),
                 "indent_size": self._theme.get("toc.indent_size"),
             })
-            if page["id"] not in self._collapsed:
+            if not self._session.is_collapsed(page["id"]):
                 for child in page["children"]:
                     inner(rows, child, level+1)
         rows = []
         inner(rows, self._document.get_page())
         return rows
-
-    def _toggle(self, page_id):
-        if page_id in self._collapsed:
-            self._collapsed.remove(page_id)
-        else:
-            self._collapsed.add(page_id)
-        self._update_rows()
 
 class Workspace(RLGuiPanel):
 
@@ -910,8 +902,19 @@ class Session(JsonData):
         JsonData.__init__(self, {
             "toc": {
                 "width": 230,
+                "collapsed": set(),
             },
         })
+
+    def is_collapsed(self, page_id):
+        return page_id in self.get("toc.collapsed")
+
+    def toggle_collapsed(self, page_id):
+        if self.is_collapsed(page_id):
+            self.replace("toc.collapsed", self.get("toc.collapsed")^set([page_id]))
+        else:
+            self.replace("toc.collapsed", self.get("toc.collapsed")|set([page_id]))
+
 
 if __name__ == "__main__":
     main()
