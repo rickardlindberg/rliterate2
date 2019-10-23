@@ -675,7 +675,7 @@ class MainAreaProps(Props):
                 "color": "#aaaaaf",
             },
         })
-        self._child("toc", TableOfContentsProps(document, Theme()))
+        self._child("toc", TableOfContentsProps(document, Theme(), Session()))
         self._child("workspace", WorkspaceProps())
 
 class Toolbar(RLGuiPanel):
@@ -780,16 +780,18 @@ class TableOfContentsRow(RLGuiPanel):
 
 class TableOfContentsProps(Props):
 
-    def __init__(self, document, theme):
+    def __init__(self, document, theme, session):
         self._collapsed = set()
         self._document = document
         self._document.listen(self._update_rows)
         self._theme = theme
         self._theme.listen(self._on_theme_changed)
+        self._session = session
+        self._session.listen(self._on_session_changed)
         Props.__init__(self, {
             "background": self._theme.get("toc.background"),
-            "width": 230,
-            "set_width": self._set_width,
+            "width": self._session.get("toc.width"),
+            "set_width": lambda value: self._session.set("toc.width", value),
             "rows": self._generate_rows(),
         })
 
@@ -797,8 +799,9 @@ class TableOfContentsProps(Props):
         self._replace("background", self._theme.get("toc.background"))
         self._update_rows()
 
-    def _set_width(self, value):
-        self._replace("width", max(50, value))
+    def _on_session_changed(self):
+        self._replace("width", self._session.get("toc.width"))
+        self._update_rows()
 
     def _update_rows(self):
         self._replace("rows", self._generate_rows())
@@ -900,6 +903,26 @@ class Theme(Observable):
         for x in path.split("."):
             value = value[x]
         return value
+
+class Session(Observable):
+
+    def __init__(self):
+        Observable.__init__(self)
+        self._values = {
+            "toc": {
+                "width": 230,
+            },
+        }
+
+    def get(self, path):
+        value = self._values
+        for x in path.split("."):
+            value = value[x]
+        return value
+
+    def set(self, path, value):
+        self._values = im_modify(self._values, path.split("."), lambda old: value)
+        self._notify()
 
 if __name__ == "__main__":
     main()
