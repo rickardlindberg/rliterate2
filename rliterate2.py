@@ -69,6 +69,7 @@ def start_app(frame_cls, props):
     def update(props):
         frame.update_props(props)
     @profile("show frame")
+    @profile_sub("show frame")
     def show_frame():
         props.listen(lambda: update(props.get()))
         frame = frame_cls(None, props.get())
@@ -169,6 +170,39 @@ class Observable(object):
     def unlisten(self, listener):
         self._listeners.remove(listener)
 
+class JsonData(Observable):
+
+    def __init__(self, data):
+        Observable.__init__(self)
+        self._data = data
+
+    @profile_sub("get")
+    def get(self, path=None):
+        value = self._data
+        if path is not None:
+            for part in path.split("."):
+                value = value[part]
+        return value
+
+    def replace(self, key, value):
+        if self._replace_if_needed(key, value):
+            self._notify()
+
+    def force_replace(self, key, value):
+        self._replace(key, value)
+        self._notify()
+
+    @profile_sub("replace")
+    def _replace_if_needed(self, key, value):
+        if self.get(key) != value:
+            self._replace(key, value)
+            return True
+        return False
+
+    @profile_sub("replace")
+    def _replace(self, key, value):
+        self._data = im_modify(self._data, key.split("."), lambda old: value)
+
 class RLGuiMixin(object):
 
     def __init__(self, props):
@@ -237,38 +271,11 @@ class RLGuiMixin(object):
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
-class Props(Observable):
-
-    def __init__(self, props):
-        Observable.__init__(self)
-        self._props = props
+class Props(JsonData):
 
     def _child(self, name, props):
-        self._props[name] = props.get()
-        props.listen(lambda: self._replace_no_check(name, props.get()))
-
-    @profile_sub("get")
-    def get(self):
-        return self._props
-
-    def _replace(self, key, value):
-        if self._replace_if_needed(key, value):
-            self._notify()
-
-    @profile_sub("modify")
-    def _replace_if_needed(self, key, value):
-        if self._props[key] != value:
-            self._modify(key, value)
-            return True
-        return False
-
-    def _replace_no_check(self, key, value):
-        self._modify(key, value)
-        self._notify()
-
-    @profile_sub("modify")
-    def _modify(self, key, value):
-        self._props = im_modify(self._props, [key], lambda old: value)
+        self._data[name] = props.get()
+        props.listen(lambda: self.force_replace(name, props.get()))
 
 class RLGuiWxMixin(RLGuiMixin):
 
@@ -791,20 +798,20 @@ class TableOfContentsProps(Props):
         Props.__init__(self, {
             "background": self._theme.get("toc.background"),
             "width": self._session.get("toc.width"),
-            "set_width": lambda value: self._session.set("toc.width", value),
+            "set_width": lambda value: self._session.replace("toc.width", value),
             "rows": self._generate_rows(),
         })
 
     def _on_theme_changed(self):
-        self._replace("background", self._theme.get("toc.background"))
+        self.replace("background", self._theme.get("toc.background"))
         self._update_rows()
 
     def _on_session_changed(self):
-        self._replace("width", self._session.get("toc.width"))
+        self.replace("width", self._session.get("toc.width"))
         self._update_rows()
 
     def _update_rows(self):
-        self._replace("rows", self._generate_rows())
+        self.replace("rows", self._generate_rows())
 
     def _generate_rows(self):
         def inner(rows, page, level=0):
@@ -887,42 +894,24 @@ class Document(Observable):
     def get_page(self):
         return self._doc["root_page"]
 
-class Theme(Observable):
+class Theme(JsonData):
 
     def __init__(self):
-        Observable.__init__(self)
-        self._values = {
+        JsonData.__init__(self, {
             "toc": {
                 "background": "#ffffff",
                 "indent_size": 20,
             },
-        }
+        })
 
-    def get(self, path):
-        value = self._values
-        for x in path.split("."):
-            value = value[x]
-        return value
-
-class Session(Observable):
+class Session(JsonData):
 
     def __init__(self):
-        Observable.__init__(self)
-        self._values = {
+        JsonData.__init__(self, {
             "toc": {
                 "width": 230,
             },
-        }
-
-    def get(self, path):
-        value = self._values
-        for x in path.split("."):
-            value = value[x]
-        return value
-
-    def set(self, path, value):
-        self._values = im_modify(self._values, path.split("."), lambda old: value)
-        self._notify()
+        })
 
 if __name__ == "__main__":
     main()

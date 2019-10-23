@@ -346,7 +346,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, theme, session):\n        self._collapsed = set()\n        self._document = document\n        self._document.listen(self._update_rows)\n        self._theme = theme\n        self._theme.listen(self._on_theme_changed)\n        self._session = session\n        self._session.listen(self._on_session_changed)\n        Props.__init__(self, {\n            \"background\": self._theme.get(\"toc.background\"),\n            \"width\": self._session.get(\"toc.width\"),\n            \"set_width\": lambda value: self._session.set(\"toc.width\", value),\n            \"rows\": self._generate_rows(),\n        })\n\n    def _on_theme_changed(self):\n        self._replace(\"background\", self._theme.get(\"toc.background\"))\n        self._update_rows()\n\n    def _on_session_changed(self):\n        self._replace(\"width\", self._session.get(\"toc.width\"))\n        self._update_rows()\n\n    def _update_rows(self):\n        self._replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._toggle,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": page[\"id\"] in self._collapsed,\n                \"indent_size\": self._theme.get(\"toc.indent_size\"),\n            })\n            if page[\"id\"] not in self._collapsed:\n                for child in page[\"children\"]:\n                    inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n\n    def _toggle(self, page_id):\n        if page_id in self._collapsed:\n            self._collapsed.remove(page_id)\n        else:\n            self._collapsed.add(page_id)\n        self._update_rows()\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, theme, session):\n        self._collapsed = set()\n        self._document = document\n        self._document.listen(self._update_rows)\n        self._theme = theme\n        self._theme.listen(self._on_theme_changed)\n        self._session = session\n        self._session.listen(self._on_session_changed)\n        Props.__init__(self, {\n            \"background\": self._theme.get(\"toc.background\"),\n            \"width\": self._session.get(\"toc.width\"),\n            \"set_width\": lambda value: self._session.replace(\"toc.width\", value),\n            \"rows\": self._generate_rows(),\n        })\n\n    def _on_theme_changed(self):\n        self.replace(\"background\", self._theme.get(\"toc.background\"))\n        self._update_rows()\n\n    def _on_session_changed(self):\n        self.replace(\"width\", self._session.get(\"toc.width\"))\n        self._update_rows()\n\n    def _update_rows(self):\n        self.replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(rows, page, level=0):\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._toggle,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": page[\"id\"] in self._collapsed,\n                \"indent_size\": self._theme.get(\"toc.indent_size\"),\n            })\n            if page[\"id\"] not in self._collapsed:\n                for child in page[\"children\"]:\n                    inner(rows, child, level+1)\n        rows = []\n        inner(rows, self._document.get_page())\n        return rows\n\n    def _toggle(self, page_id):\n        if page_id in self._collapsed:\n            self._collapsed.remove(page_id)\n        else:\n            self._collapsed.add(page_id)\n        self._update_rows()\n",
 "type":"code"
 }
 ],
@@ -554,7 +554,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Observable):\n\n    def __init__(self):\n        Observable.__init__(self)\n        self._values = {\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n            },\n        }\n\n    def get(self, path):\n        value = self._values\n        for x in path.split(\".\"):\n            value = value[x]\n        return value\n",
+"text":"class Theme(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -577,7 +577,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Observable):\n\n    def __init__(self):\n        Observable.__init__(self)\n        self._values = {\n            \"toc\": {\n                \"width\": 230,\n            },\n        }\n\n    def get(self, path):\n        value = self._values\n        for x in path.split(\".\"):\n            value = value[x]\n        return value\n\n    def set(self, path, value):\n        self._values = im_modify(self._values, path.split(\".\"), lambda old: value)\n        self._notify()\n",
+"text":"class Session(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -724,7 +724,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Observable):\n\n    def __init__(self, props):\n        Observable.__init__(self)\n        self._props = props\n\n    def _child(self, name, props):\n        self._props[name] = props.get()\n        props.listen(lambda: self._replace_no_check(name, props.get()))\n\n    @profile_sub(\"get\")\n    def get(self):\n        return self._props\n\n    def _replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    @profile_sub(\"modify\")\n    def _replace_if_needed(self, key, value):\n        if self._props[key] != value:\n            self._modify(key, value)\n            return True\n        return False\n\n    def _replace_no_check(self, key, value):\n        self._modify(key, value)\n        self._notify()\n\n    @profile_sub(\"modify\")\n    def _modify(self, key, value):\n        self._props = im_modify(self._props, [key], lambda old: value)\n",
+"text":"class Props(JsonData):\n\n    def _child(self, name, props):\n        self._data[name] = props.get()\n        props.listen(lambda: self.force_replace(name, props.get()))\n",
 "type":"code"
 }
 ],
@@ -1703,7 +1703,7 @@
 ],
 "fragments":[
 {
-"text":"def start_app(frame_cls, props):\n    @profile_sub(\"render\")\n    def update(props):\n        frame.update_props(props)\n    @profile(\"show frame\")\n    def show_frame():\n        props.listen(lambda: update(props.get()))\n        frame = frame_cls(None, props.get())\n        frame.Layout()\n        frame.Refresh()\n        frame.Show()\n        return frame\n    app = wx.App()\n    frame = show_frame()\n    app.MainLoop()\n",
+"text":"def start_app(frame_cls, props):\n    @profile_sub(\"render\")\n    def update(props):\n        frame.update_props(props)\n    @profile(\"show frame\")\n    @profile_sub(\"show frame\")\n    def show_frame():\n        props.listen(lambda: update(props.get()))\n        frame = frame_cls(None, props.get())\n        frame.Layout()\n        frame.Refresh()\n        frame.Show()\n        return frame\n    app = wx.App()\n    frame = show_frame()\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -1901,6 +1901,29 @@
 }
 ],
 "title":"Observable"
+},
+{
+"children":[],
+"id":"6bd31a6be9b142feb21de78504dc942a",
+"paragraphs":[
+{
+"chunkpath":[
+"base base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class JsonData(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
+"type":"code"
+}
+],
+"id":"3a72a7fbda6a4099864ce0d1ac7ac146",
+"type":"code"
+}
+],
+"title":"JSON data"
 }
 ],
 "id":"f0ec3620177047238aaecb5777a789db",
