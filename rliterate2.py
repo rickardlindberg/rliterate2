@@ -170,7 +170,7 @@ class Observable(object):
     def unlisten(self, listener):
         self._listeners.remove(listener)
 
-class JsonData(Observable):
+class Immutable(Observable):
 
     def __init__(self, data):
         Observable.__init__(self)
@@ -275,11 +275,19 @@ class RLGuiMixin(object):
 
 DragEvent = namedtuple("DragEvent", "initial,dx")
 
-class Props(JsonData):
+class Props(Immutable):
 
-    def _child(self, name, props):
-        self._data[name] = props.get()
-        props.listen(lambda: self.force_replace(name, props.get()))
+    def __init__(self, data, child_props={}):
+        data = dict(data)
+        for name, props in child_props.items():
+            data[name] = props.get()
+            props.listen(self._create_handler(name, props))
+        Immutable.__init__(self, data)
+
+    def _create_handler(self, name, props):
+        def handler():
+            self.force_replace(name, props.get())
+        return handler
 
 class RLGuiWxMixin(RLGuiMixin):
 
@@ -634,9 +642,10 @@ class MainFrameProps(Props):
                 "thickness": 1,
                 "color": "#aaaaaf",
             },
+        }, child_props={
+            "toolbar": ToolbarProps(),
+            "main_area": MainAreaProps(Document(path)),
         })
-        self._child("toolbar", ToolbarProps())
-        self._child("main_area", MainAreaProps(Document(path)))
 
 class MainArea(RLGuiPanel):
 
@@ -685,9 +694,10 @@ class MainAreaProps(Props):
                 "thickness": 3,
                 "color": "#aaaaaf",
             },
+        }, child_props={
+            "toc": TableOfContentsProps(document, Theme(), Session()),
+            "workspace": WorkspaceProps(),
         })
-        self._child("toc", TableOfContentsProps(document, Theme(), Session()))
-        self._child("workspace", WorkspaceProps())
 
 class Toolbar(RLGuiPanel):
 
@@ -892,20 +902,20 @@ class Document(Observable):
     def get_page(self):
         return self._doc["root_page"]
 
-class Theme(JsonData):
+class Theme(Immutable):
 
     def __init__(self):
-        JsonData.__init__(self, {
+        Immutable.__init__(self, {
             "toc": {
                 "background": "#ffffff",
                 "indent_size": 20,
             },
         })
 
-class Session(JsonData):
+class Session(Immutable):
 
     def __init__(self):
-        JsonData.__init__(self, {
+        Immutable.__init__(self, {
             "toc": {
                 "width": 230,
                 "collapsed": set(),

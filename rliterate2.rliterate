@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n        })\n        self._child(\"toolbar\", ToolbarProps())\n        self._child(\"main_area\", MainAreaProps(Document(path)))\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n        }, child_props={\n            \"toolbar\": ToolbarProps(),\n            \"main_area\": MainAreaProps(Document(path)),\n        })\n",
 "type":"code"
 }
 ],
@@ -237,7 +237,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document):\n        Props.__init__(self, {\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        })\n        self._child(\"toc\", TableOfContentsProps(document, Theme(), Session()))\n        self._child(\"workspace\", WorkspaceProps())\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document):\n        Props.__init__(self, {\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n        }, child_props={\n            \"toc\": TableOfContentsProps(document, Theme(), Session()),\n            \"workspace\": WorkspaceProps(),\n        })\n",
 "type":"code"
 }
 ],
@@ -554,7 +554,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n            },\n        })\n",
+"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -577,7 +577,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": set(),\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get(\"toc.collapsed\")\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return collapsed - set([page_id])\n            else:\n                return collapsed | set([page_id])\n        self.modify(\"toc.collapsed\", toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": set(),\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get(\"toc.collapsed\")\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return collapsed - set([page_id])\n            else:\n                return collapsed | set([page_id])\n        self.modify(\"toc.collapsed\", toggle)\n",
 "type":"code"
 }
 ],
@@ -734,7 +734,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(JsonData):\n\n    def _child(self, name, props):\n        self._data[name] = props.get()\n        props.listen(lambda: self.force_replace(name, props.get()))\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, data, child_props={}):\n        data = dict(data)\n        for name, props in child_props.items():\n            data[name] = props.get()\n            props.listen(self._create_handler(name, props))\n        Immutable.__init__(self, data)\n\n    def _create_handler(self, name, props):\n        def handler():\n            self.force_replace(name, props.get())\n        return handler\n",
 "type":"code"
 }
 ],
@@ -1866,31 +1866,6 @@
 },
 {
 "children":[],
-"id":"ececc958dff648909493062a2283a5ae",
-"paragraphs":[
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def im_modify(obj, path, modify_fn):\n    if path:\n        if isinstance(obj, list):\n            new_obj = list(obj)\n        elif isinstance(obj, dict):\n            new_obj = dict(obj)\n        else:\n            raise ValueError(\"unknown type\")\n        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)\n        return new_obj\n    return modify_fn(obj)\n",
-"type":"code"
-}
-],
-"id":"95dd623524c84e72a68d55645dc7dbca",
-"language":"",
-"post_process":[],
-"type":"code"
-}
-],
-"title":"Immutable"
-},
-{
-"children":[],
 "id":"8ad33ab3d75240afb87f93c0601bbb9f",
 "paragraphs":[
 {
@@ -1914,7 +1889,7 @@
 },
 {
 "children":[],
-"id":"6bd31a6be9b142feb21de78504dc942a",
+"id":"ececc958dff648909493062a2283a5ae",
 "paragraphs":[
 {
 "chunkpath":[
@@ -1925,15 +1900,33 @@
 ],
 "fragments":[
 {
-"text":"class JsonData(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def modify(self, key, fn):\n        self._data = im_modify(self._data, key.split(\".\"), fn)\n        self._notify()\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
+"text":"class Immutable(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def modify(self, key, fn):\n        self._data = im_modify(self._data, key.split(\".\"), fn)\n        self._notify()\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
 "type":"code"
 }
 ],
 "id":"3a72a7fbda6a4099864ce0d1ac7ac146",
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def im_modify(obj, path, modify_fn):\n    if path:\n        if isinstance(obj, list):\n            new_obj = list(obj)\n        elif isinstance(obj, dict):\n            new_obj = dict(obj)\n        else:\n            raise ValueError(\"unknown type\")\n        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)\n        return new_obj\n    return modify_fn(obj)\n",
+"type":"code"
 }
 ],
-"title":"JSON data"
+"id":"95dd623524c84e72a68d55645dc7dbca",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Immutable"
 }
 ],
 "id":"f0ec3620177047238aaecb5777a789db",
