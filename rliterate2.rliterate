@@ -1892,7 +1892,7 @@
 ],
 "fragments":[
 {
-"text":"class Observable(object):\n\n    def __init__(self):\n        self._listeners = []\n\n    def _notify(self, *args, **kwargs):\n        for listener in self._listeners:\n            listener(*args, **kwargs)\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    def unlisten(self, listener):\n        self._listeners.remove(listener)\n",
+"text":"class Observable(object):\n\n    def __init__(self):\n        self._listeners = []\n\n    def _notify(self):\n        for listener in self._listeners:\n            listener()\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    def unlisten(self, listener):\n        self._listeners.remove(listener)\n",
 "type":"code"
 }
 ],

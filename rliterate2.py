@@ -160,9 +160,9 @@ class Observable(object):
     def __init__(self):
         self._listeners = []
 
-    def _notify(self, *args, **kwargs):
+    def _notify(self):
         for listener in self._listeners:
-            listener(*args, **kwargs)
+            listener()
 
     def listen(self, listener):
         self._listeners.append(listener)
