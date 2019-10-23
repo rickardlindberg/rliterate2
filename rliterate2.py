@@ -278,12 +278,23 @@ DragEvent = namedtuple("DragEvent", "initial,dx")
 
 class Props(Immutable):
 
-    def __init__(self, data, child_props={}):
-        data = dict(data)
-        for name, props in child_props.items():
-            data[name] = props.get()
-            props.listen(self._create_handler(name, props))
+    def __init__(self, props, child_props={}):
+        self._updates = []
+        data = {}
+        for name, value in props.items():
+            if isinstance(value, Props):
+                data[name] = value.get()
+                value.listen(self._create_handler(name, value))
+            elif isinstance(value, PropUpdate):
+                data[name] = value.fn()
+                self._updates.append((name, value.fn))
+            else:
+                data[name] = value
         Immutable.__init__(self, data)
+
+    def _update(self):
+        for name, fn in self._updates:
+            self.replace(name, fn())
 
     def _create_handler(self, name, props):
         def handler():
@@ -642,14 +653,12 @@ class MainFrameProps(Props):
                 os.path.basename(path),
                 os.path.abspath(os.path.dirname(path))
             ),
-            "toolbar_divider": self._theme.get("toolbar_divider"),
-        }, child_props={
+            "toolbar_divider": PropUpdate(
+                lambda: self._theme.get("toolbar_divider")
+            ),
             "toolbar": ToolbarProps(),
             "main_area": MainAreaProps(self._document, self._session, self._theme),
         })
-
-    def _update(self):
-        self.replace("toolbar_divider", self._theme.get("toolbar_divider"))
 
 class MainArea(RLGuiPanel):
 
@@ -695,14 +704,12 @@ class MainAreaProps(Props):
     def __init__(self, document, session, theme):
         self._theme = theme.listen(self._update)
         Props.__init__(self, {
-            "toc_divider": self._theme.get("toc_divider"),
-        }, child_props={
+            "toc_divider": PropUpdate(
+                lambda: self._theme.get("toc_divider")
+            ),
             "toc": TableOfContentsProps(document, session, theme),
             "workspace": WorkspaceProps(),
         })
-
-    def _update(self):
-        self.replace("toc_divider", self._theme.get("toc_divider"))
 
 class Toolbar(RLGuiPanel):
 
@@ -811,16 +818,19 @@ class TableOfContentsProps(Props):
         self._session = session.listen(self._update)
         self._theme = theme.listen(self._update)
         Props.__init__(self, {
-            "background": self._theme.get("toc.background"),
-            "width": self._session.get("toc.width"),
-            "rows": self._generate_rows(),
-            "set_width": lambda value: self._session.replace("toc.width", value),
+            "background": PropUpdate(
+                lambda: self._theme.get("toc.background")
+            ),
+            "width": PropUpdate(
+                lambda: self._session.get("toc.width")
+            ),
+            "rows": PropUpdate(
+                lambda: self._generate_rows()
+            ),
+            "set_width": (
+                lambda value: self._session.replace("toc.width", value)
+            ),
         })
-
-    def _update(self):
-        self.replace("background", self._theme.get("toc.background"))
-        self.replace("width", self._session.get("toc.width"))
-        self.replace("rows", self._generate_rows())
 
     def _generate_rows(self):
         def inner(page, level=0):
@@ -936,6 +946,11 @@ class Session(Immutable):
             else:
                 return collapsed | set([page_id])
         self.modify("toc.collapsed", toggle)
+
+class PropUpdate(object):
+
+    def __init__(self, fn):
+        self.fn = fn
 
 if __name__ == "__main__":
     main()

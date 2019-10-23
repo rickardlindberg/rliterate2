@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        self._document = Document(path).listen(self._update)\n        self._session = Session().listen(self._update)\n        self._theme = Theme().listen(self._update)\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n            \"toolbar_divider\": self._theme.get(\"toolbar_divider\"),\n        }, child_props={\n            \"toolbar\": ToolbarProps(),\n            \"main_area\": MainAreaProps(self._document, self._session, self._theme),\n        })\n\n    def _update(self):\n        self.replace(\"toolbar_divider\", self._theme.get(\"toolbar_divider\"))\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        self._document = Document(path).listen(self._update)\n        self._session = Session().listen(self._update)\n        self._theme = Theme().listen(self._update)\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n            \"toolbar_divider\": PropUpdate(\n                lambda: self._theme.get(\"toolbar_divider\")\n            ),\n            \"toolbar\": ToolbarProps(),\n            \"main_area\": MainAreaProps(self._document, self._session, self._theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -237,7 +237,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._theme = theme.listen(self._update)\n        Props.__init__(self, {\n            \"toc_divider\": self._theme.get(\"toc_divider\"),\n        }, child_props={\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"workspace\": WorkspaceProps(),\n        })\n\n    def _update(self):\n        self.replace(\"toc_divider\", self._theme.get(\"toc_divider\"))\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._theme = theme.listen(self._update)\n        Props.__init__(self, {\n            \"toc_divider\": PropUpdate(\n                lambda: self._theme.get(\"toc_divider\")\n            ),\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"workspace\": WorkspaceProps(),\n        })\n",
 "type":"code"
 }
 ],
@@ -346,7 +346,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._document = document.listen(self._update)\n        self._session = session.listen(self._update)\n        self._theme = theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": self._theme.get(\"toc.background\"),\n            \"width\": self._session.get(\"toc.width\"),\n            \"rows\": self._generate_rows(),\n            \"set_width\": lambda value: self._session.replace(\"toc.width\", value),\n        })\n\n    def _update(self):\n        self.replace(\"background\", self._theme.get(\"toc.background\"))\n        self.replace(\"width\", self._session.get(\"toc.width\"))\n        self.replace(\"rows\", self._generate_rows())\n\n    def _generate_rows(self):\n        def inner(page, level=0):\n            is_collapsed = self._session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = self._theme.get(\"toc.indent_size\")\n        rows = []\n        inner(self._document.get_page())\n        return rows\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._document = document.listen(self._update)\n        self._session = session.listen(self._update)\n        self._theme = theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                lambda: self._theme.get(\"toc.background\")\n            ),\n            \"width\": PropUpdate(\n                lambda: self._session.get(\"toc.width\")\n            ),\n            \"rows\": PropUpdate(\n                lambda: self._generate_rows()\n            ),\n            \"set_width\": (\n                lambda value: self._session.replace(\"toc.width\", value)\n            ),\n        })\n\n    def _generate_rows(self):\n        def inner(page, level=0):\n            is_collapsed = self._session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": self._session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = self._theme.get(\"toc.indent_size\")\n        rows = []\n        inner(self._document.get_page())\n        return rows\n",
 "type":"code"
 }
 ],
@@ -734,11 +734,27 @@
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, data, child_props={}):\n        data = dict(data)\n        for name, props in child_props.items():\n            data[name] = props.get()\n            props.listen(self._create_handler(name, props))\n        Immutable.__init__(self, data)\n\n    def _create_handler(self, name, props):\n        def handler():\n            self.force_replace(name, props.get())\n        return handler\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self._updates = []\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                data[name] = value.get()\n                value.listen(self._create_handler(name, value))\n            elif isinstance(value, PropUpdate):\n                data[name] = value.fn()\n                self._updates.append((name, value.fn))\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _update(self):\n        for name, fn in self._updates:\n            self.replace(name, fn())\n\n    def _create_handler(self, name, props):\n        def handler():\n            self.force_replace(name, props.get())\n        return handler\n",
 "type":"code"
 }
 ],
 "id":"c46f943de6a340e286c6c6eefe9b61a2",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class PropUpdate(object):\n\n    def __init__(self, fn):\n        self.fn = fn\n",
+"type":"code"
+}
+],
+"id":"ea68520c1a57480dba1151de9685cac4",
 "type":"code"
 }
 ],
