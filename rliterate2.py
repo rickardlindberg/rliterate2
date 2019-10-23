@@ -657,9 +657,9 @@ class MainFrameProps(Props):
                     os.path.abspath(os.path.dirname(document.path))
                 )
             ),
-            "toolbar": ToolbarProps(),
-            "toolbar_divider": PropUpdate(
-                lambda: theme.get("toolbar_divider")
+            "toolbar": ToolbarProps(theme),
+            "toolbar_divider": PropUpdate(lambda:
+                theme.get("toolbar_divider")
             ),
             "main_area": MainAreaProps(document, session, theme),
         })
@@ -709,10 +709,10 @@ class MainAreaProps(Props):
         theme.listen(self._update)
         Props.__init__(self, {
             "toc": TableOfContentsProps(document, session, theme),
-            "toc_divider": PropUpdate(
-                lambda: theme.get("toc_divider")
+            "toc_divider": PropUpdate(lambda:
+                theme.get("toc_divider")
             ),
-            "workspace": WorkspaceProps(),
+            "workspace": WorkspaceProps(theme),
         })
 
 class Toolbar(RLGuiPanel):
@@ -739,9 +739,15 @@ class Toolbar(RLGuiPanel):
 
 class ToolbarProps(Props):
 
-    def __init__(self):
+    def __init__(self, theme):
+        theme.listen(self._update)
         Props.__init__(self, {
-            "margin": 4,
+            "background": PropUpdate(lambda:
+                theme.get("toolbar.background")
+            ),
+            "margin": PropUpdate(lambda:
+                theme.get("toolbar.margin")
+            ),
         })
 
 class TableOfContents(RLGuiVScroll):
@@ -765,13 +771,13 @@ class TableOfContents(RLGuiVScroll):
                 props.update(loopvar)
                 props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
-                props['margin'] = 2
+                props['margin'] = self.prop('row_margin')
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
-                props['thickness'] = 2
+                props['thickness'] = self.prop('divider_thickness')
                 props['color'] = default_color()
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
@@ -822,17 +828,23 @@ class TableOfContentsProps(Props):
         session.listen(self._update)
         theme.listen(self._update)
         Props.__init__(self, {
-            "background": PropUpdate(
-                lambda: theme.get("toc.background")
+            "background": PropUpdate(lambda:
+                theme.get("toc.background")
             ),
-            "width": PropUpdate(
-                lambda: session.get("toc.width")
+            "row_margin": PropUpdate(lambda:
+                theme.get("toc.row_margin")
             ),
-            "rows": PropUpdate(
-                lambda: self._generate_rows(document, session, theme)
+            "divider_thickness": PropUpdate(lambda:
+                theme.get("toc.divider_thickness")
             ),
-            "set_width": (
-                lambda value: session.replace("toc.width", value)
+            "width": PropUpdate(lambda:
+                session.get("toc.width")
+            ),
+            "set_width": (lambda value:
+                session.replace("toc.width", value)
+            ),
+            "rows": PropUpdate(lambda:
+                self._generate_rows(document, session, theme)
             ),
         })
 
@@ -870,8 +882,12 @@ class Workspace(RLGuiPanel):
 
 class WorkspaceProps(Props):
 
-    def __init__(self):
+    def __init__(self, theme):
+        theme.listen(self._update)
         Props.__init__(self, {
+            "background": PropUpdate(lambda:
+                theme.get("workspace.background")
+            ),
         })
 
 class RowDivider(RLGuiPanel):
@@ -916,17 +932,26 @@ class Theme(Immutable):
 
     def __init__(self):
         Immutable.__init__(self, {
-            "toc": {
-                "background": "#ffffff",
-                "indent_size": 20,
+            "toolbar": {
+                "margin": 4,
+                "background": None,
             },
             "toolbar_divider": {
                 "thickness": 1,
                 "color": "#aaaaaf",
             },
+            "toc": {
+                "background": "#ffffff",
+                "indent_size": 20,
+                "row_margin": 2,
+                "divider_thickness": 2,
+            },
             "toc_divider": {
                 "thickness": 3,
                 "color": "#aaaaaf",
+            },
+            "workspace": {
+                "background": "#cccccc",
             },
         })
 
