@@ -817,21 +817,23 @@ class TableOfContentsProps(Props):
         self.replace("rows", self._generate_rows())
 
     def _generate_rows(self):
-        def inner(rows, page, level=0):
+        def inner(page, level=0):
+            is_collapsed = self._session.is_collapsed(page["id"])
             rows.append({
                 "id": page["id"],
                 "toggle": self._session.toggle_collapsed,
                 "title": page["title"],
                 "level": level,
                 "has_children": len(page["children"]) > 0,
-                "collapsed": self._session.is_collapsed(page["id"]),
-                "indent_size": self._theme.get("toc.indent_size"),
+                "collapsed": is_collapsed,
+                "indent_size": indent_size,
             })
-            if not self._session.is_collapsed(page["id"]):
+            if not is_collapsed:
                 for child in page["children"]:
-                    inner(rows, child, level+1)
+                    inner(child, level+1)
+        indent_size = self._theme.get("toc.indent_size")
         rows = []
-        inner(rows, self._document.get_page())
+        inner(self._document.get_page())
         return rows
 
 class Workspace(RLGuiPanel):
