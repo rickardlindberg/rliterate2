@@ -633,6 +633,9 @@ class MainFrame(RLGuiFrame):
 class MainFrameProps(Props):
 
     def __init__(self, path):
+        document = Document(path)
+        session = Session()
+        theme = Theme()
         Props.__init__(self, {
             "title": "{} ({}) - RLiterate 2".format(
                 os.path.basename(path),
@@ -644,7 +647,7 @@ class MainFrameProps(Props):
             },
         }, child_props={
             "toolbar": ToolbarProps(),
-            "main_area": MainAreaProps(Document(path)),
+            "main_area": MainAreaProps(document, session, theme),
         })
 
 class MainArea(RLGuiPanel):
@@ -688,14 +691,14 @@ class MainArea(RLGuiPanel):
 
 class MainAreaProps(Props):
 
-    def __init__(self, document):
+    def __init__(self, document, session, theme):
         Props.__init__(self, {
             "toc_divider": {
                 "thickness": 3,
                 "color": "#aaaaaf",
             },
         }, child_props={
-            "toc": TableOfContentsProps(document, Theme(), Session()),
+            "toc": TableOfContentsProps(document, session, theme),
             "workspace": WorkspaceProps(),
         })
 
@@ -801,13 +804,13 @@ class TableOfContentsRow(RLGuiPanel):
 
 class TableOfContentsProps(Props):
 
-    def __init__(self, document, theme, session):
+    def __init__(self, document, session, theme):
         self._document = document
         self._document.listen(self._update_rows)
-        self._theme = theme
-        self._theme.listen(self._on_theme_changed)
         self._session = session
         self._session.listen(self._on_session_changed)
+        self._theme = theme
+        self._theme.listen(self._on_theme_changed)
         Props.__init__(self, {
             "background": self._theme.get("toc.background"),
             "width": self._session.get("toc.width"),
