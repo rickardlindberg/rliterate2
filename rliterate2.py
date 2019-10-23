@@ -634,22 +634,22 @@ class MainFrame(RLGuiFrame):
 class MainFrameProps(Props):
 
     def __init__(self, path):
-        document = Document(path)
-        session = Session()
-        theme = Theme()
+        self._document = Document(path).listen(self._update)
+        self._session = Session().listen(self._update)
+        self._theme = Theme().listen(self._update)
         Props.__init__(self, {
             "title": "{} ({}) - RLiterate 2".format(
                 os.path.basename(path),
                 os.path.abspath(os.path.dirname(path))
             ),
-            "toolbar_divider": {
-                "thickness": 1,
-                "color": "#aaaaaf",
-            },
+            "toolbar_divider": self._theme.get("toolbar_divider"),
         }, child_props={
             "toolbar": ToolbarProps(),
-            "main_area": MainAreaProps(document, session, theme),
+            "main_area": MainAreaProps(self._document, self._session, self._theme),
         })
+
+    def _update(self):
+        self.replace("toolbar_divider", self._theme.get("toolbar_divider"))
 
 class MainArea(RLGuiPanel):
 
@@ -693,15 +693,16 @@ class MainArea(RLGuiPanel):
 class MainAreaProps(Props):
 
     def __init__(self, document, session, theme):
+        self._theme = theme.listen(self._update)
         Props.__init__(self, {
-            "toc_divider": {
-                "thickness": 3,
-                "color": "#aaaaaf",
-            },
+            "toc_divider": self._theme.get("toc_divider"),
         }, child_props={
             "toc": TableOfContentsProps(document, session, theme),
             "workspace": WorkspaceProps(),
         })
+
+    def _update(self):
+        self.replace("toc_divider", self._theme.get("toc_divider"))
 
 class Toolbar(RLGuiPanel):
 
@@ -904,6 +905,14 @@ class Theme(Immutable):
             "toc": {
                 "background": "#ffffff",
                 "indent_size": 20,
+            },
+            "toolbar_divider": {
+                "thickness": 1,
+                "color": "#aaaaaf",
+            },
+            "toc_divider": {
+                "thickness": 3,
+                "color": "#aaaaaf",
             },
         })
 
