@@ -645,19 +645,19 @@ class MainFrame(RLGuiFrame):
 class MainFrameProps(Props):
 
     def __init__(self, path):
-        self._document = Document(path).listen(self._update)
-        self._session = Session().listen(self._update)
-        self._theme = Theme().listen(self._update)
+        document = Document(path).listen(self._update)
+        session = Session().listen(self._update)
+        theme = Theme().listen(self._update)
         Props.__init__(self, {
             "title": "{} ({}) - RLiterate 2".format(
                 os.path.basename(path),
                 os.path.abspath(os.path.dirname(path))
             ),
-            "toolbar_divider": PropUpdate(
-                lambda: self._theme.get("toolbar_divider")
-            ),
             "toolbar": ToolbarProps(),
-            "main_area": MainAreaProps(self._document, self._session, self._theme),
+            "toolbar_divider": PropUpdate(
+                lambda: theme.get("toolbar_divider")
+            ),
+            "main_area": MainAreaProps(document, session, theme),
         })
 
 class MainArea(RLGuiPanel):
@@ -702,12 +702,12 @@ class MainArea(RLGuiPanel):
 class MainAreaProps(Props):
 
     def __init__(self, document, session, theme):
-        self._theme = theme.listen(self._update)
+        theme.listen(self._update)
         Props.__init__(self, {
-            "toc_divider": PropUpdate(
-                lambda: self._theme.get("toc_divider")
-            ),
             "toc": TableOfContentsProps(document, session, theme),
+            "toc_divider": PropUpdate(
+                lambda: theme.get("toc_divider")
+            ),
             "workspace": WorkspaceProps(),
         })
 
@@ -814,30 +814,30 @@ class TableOfContentsRow(RLGuiPanel):
 class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
-        self._document = document.listen(self._update)
-        self._session = session.listen(self._update)
-        self._theme = theme.listen(self._update)
+        document.listen(self._update)
+        session.listen(self._update)
+        theme.listen(self._update)
         Props.__init__(self, {
             "background": PropUpdate(
-                lambda: self._theme.get("toc.background")
+                lambda: theme.get("toc.background")
             ),
             "width": PropUpdate(
-                lambda: self._session.get("toc.width")
+                lambda: session.get("toc.width")
             ),
             "rows": PropUpdate(
-                lambda: self._generate_rows()
+                lambda: self._generate_rows(document, session, theme)
             ),
             "set_width": (
-                lambda value: self._session.replace("toc.width", value)
+                lambda value: session.replace("toc.width", value)
             ),
         })
 
-    def _generate_rows(self):
+    def _generate_rows(self, document, session, theme):
         def inner(page, level=0):
-            is_collapsed = self._session.is_collapsed(page["id"])
+            is_collapsed = session.is_collapsed(page["id"])
             rows.append({
                 "id": page["id"],
-                "toggle": self._session.toggle_collapsed,
+                "toggle": session.toggle_collapsed,
                 "title": page["title"],
                 "level": level,
                 "has_children": len(page["children"]) > 0,
@@ -847,9 +847,9 @@ class TableOfContentsProps(Props):
             if not is_collapsed:
                 for child in page["children"]:
                     inner(child, level+1)
-        indent_size = self._theme.get("toc.indent_size")
+        indent_size = theme.get("toc.indent_size")
         rows = []
-        inner(self._document.get_page())
+        inner(document.get_page())
         return rows
 
 class Workspace(RLGuiPanel):
