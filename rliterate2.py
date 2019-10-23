@@ -33,9 +33,12 @@ def parse_args():
 
 def main():
     args = parse_args()
+    document = Document(args["path"])
+    session = Session()
+    theme = Theme()
     start_app(
         MainFrame,
-        MainFrameProps(args["path"])
+        MainFrameProps(document, session, theme)
     )
 
 def load_document_from_file(path):
@@ -644,14 +647,15 @@ class MainFrame(RLGuiFrame):
 
 class MainFrameProps(Props):
 
-    def __init__(self, path):
-        document = Document(path).listen(self._update)
-        session = Session().listen(self._update)
-        theme = Theme().listen(self._update)
+    def __init__(self, document, session, theme):
+        document.listen(self._update)
+        theme.listen(self._update)
         Props.__init__(self, {
-            "title": "{} ({}) - RLiterate 2".format(
-                os.path.basename(path),
-                os.path.abspath(os.path.dirname(path))
+            "title": PropUpdate(lambda:
+                "{} ({}) - RLiterate 2".format(
+                    os.path.basename(document.path),
+                    os.path.abspath(os.path.dirname(document.path))
+                )
             ),
             "toolbar": ToolbarProps(),
             "toolbar_divider": PropUpdate(
@@ -902,7 +906,7 @@ class Document(Observable):
 
     def __init__(self, path):
         Observable.__init__(self)
-        self._path = path
+        self.path = path
         self._doc = load_json_from_file(path)
 
     def get_page(self):

@@ -127,7 +127,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        MainFrameProps(args[\"path\"])\n    )\n",
+"text":"def main():\n    args = parse_args()\n    document = Document(args[\"path\"])\n    session = Session()\n    theme = Theme()\n    start_app(\n        MainFrame,\n        MainFrameProps(document, session, theme)\n    )\n",
 "type":"code"
 }
 ],
@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, path):\n        document = Document(path).listen(self._update)\n        session = Session().listen(self._update)\n        theme = Theme().listen(self._update)\n        Props.__init__(self, {\n            \"title\": \"{} ({}) - RLiterate 2\".format(\n                os.path.basename(path),\n                os.path.abspath(os.path.dirname(path))\n            ),\n            \"toolbar\": ToolbarProps(),\n            \"toolbar_divider\": PropUpdate(\n                lambda: theme.get(\"toolbar_divider\")\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"title\": PropUpdate(lambda:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(document.path),\n                    os.path.abspath(os.path.dirname(document.path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(),\n            \"toolbar_divider\": PropUpdate(\n                lambda: theme.get(\"toolbar_divider\")\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -474,7 +474,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self._path = path\n        self._doc = load_json_from_file(path)\n\n    def get_page(self):\n        return self._doc[\"root_page\"]\n",
+"text":"class Document(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self.path = path\n        self._doc = load_json_from_file(path)\n\n    def get_page(self):\n        return self._doc[\"root_page\"]\n",
 "type":"code"
 }
 ],
