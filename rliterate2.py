@@ -184,6 +184,10 @@ class JsonData(Observable):
                 value = value[part]
         return value
 
+    def modify(self, key, fn):
+        self._data = im_modify(self._data, key.split("."), fn)
+        self._notify()
+
     def replace(self, key, value):
         if self._replace_if_needed(key, value):
             self._notify()
@@ -910,11 +914,12 @@ class Session(JsonData):
         return page_id in self.get("toc.collapsed")
 
     def toggle_collapsed(self, page_id):
-        if self.is_collapsed(page_id):
-            self.replace("toc.collapsed", self.get("toc.collapsed")^set([page_id]))
-        else:
-            self.replace("toc.collapsed", self.get("toc.collapsed")|set([page_id]))
-
+        def toggle(collapsed):
+            if page_id in collapsed:
+                return collapsed - set([page_id])
+            else:
+                return collapsed | set([page_id])
+        self.modify("toc.collapsed", toggle)
 
 if __name__ == "__main__":
     main()

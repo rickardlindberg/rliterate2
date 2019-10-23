@@ -577,7 +577,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": set(),\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get(\"toc.collapsed\")\n\n    def toggle_collapsed(self, page_id):\n        if self.is_collapsed(page_id):\n            self.replace(\"toc.collapsed\", self.get(\"toc.collapsed\")^set([page_id]))\n        else:\n            self.replace(\"toc.collapsed\", self.get(\"toc.collapsed\")|set([page_id]))\n\n",
+"text":"class Session(JsonData):\n\n    def __init__(self):\n        JsonData.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": set(),\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get(\"toc.collapsed\")\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return collapsed - set([page_id])\n            else:\n                return collapsed | set([page_id])\n        self.modify(\"toc.collapsed\", toggle)\n",
 "type":"code"
 }
 ],
@@ -1915,7 +1915,7 @@
 ],
 "fragments":[
 {
-"text":"class JsonData(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
+"text":"class JsonData(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def modify(self, key, fn):\n        self._data = im_modify(self._data, key.split(\".\"), fn)\n        self._notify()\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
 "type":"code"
 }
 ],
