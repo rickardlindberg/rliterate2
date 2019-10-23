@@ -166,6 +166,7 @@ class Observable(object):
 
     def listen(self, listener):
         self._listeners.append(listener)
+        return self
 
     def unlisten(self, listener):
         self._listeners.remove(listener)
@@ -805,28 +806,19 @@ class TableOfContentsRow(RLGuiPanel):
 class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
-        self._document = document
-        self._document.listen(self._update_rows)
-        self._session = session
-        self._session.listen(self._on_session_changed)
-        self._theme = theme
-        self._theme.listen(self._on_theme_changed)
+        self._document = document.listen(self._update)
+        self._session = session.listen(self._update)
+        self._theme = theme.listen(self._update)
         Props.__init__(self, {
             "background": self._theme.get("toc.background"),
             "width": self._session.get("toc.width"),
-            "set_width": lambda value: self._session.replace("toc.width", value),
             "rows": self._generate_rows(),
+            "set_width": lambda value: self._session.replace("toc.width", value),
         })
 
-    def _on_theme_changed(self):
+    def _update(self):
         self.replace("background", self._theme.get("toc.background"))
-        self._update_rows()
-
-    def _on_session_changed(self):
         self.replace("width", self._session.get("toc.width"))
-        self._update_rows()
-
-    def _update_rows(self):
         self.replace("rows", self._generate_rows())
 
     def _generate_rows(self):
