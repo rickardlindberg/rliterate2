@@ -961,7 +961,7 @@ class Session(Immutable):
         Immutable.__init__(self, {
             "toc": {
                 "width": 230,
-                "collapsed": set(),
+                "collapsed": [],
             },
         })
 
@@ -971,9 +971,9 @@ class Session(Immutable):
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
             if page_id in collapsed:
-                return collapsed - set([page_id])
+                return [x for x in collapsed if x != page_id]
             else:
-                return collapsed | set([page_id])
+                return collapsed+[page_id]
         self.modify("toc.collapsed", toggle)
 
 class PropUpdate(object):
