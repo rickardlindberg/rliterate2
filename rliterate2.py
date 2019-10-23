@@ -181,35 +181,34 @@ class Immutable(Observable):
         self._data = data
 
     @profile_sub("get")
-    def get(self, path=None):
+    def get(self, path=[]):
         value = self._data
-        if path is not None:
-            for part in path.split("."):
-                value = value[part]
+        for part in path:
+            value = value[part]
         return value
 
-    def modify(self, key, fn):
-        self._data = im_modify(self._data, key.split("."), fn)
+    def modify(self, path, fn):
+        self._data = im_modify(self._data, path, fn)
         self._notify()
 
-    def replace(self, key, value):
-        if self._replace_if_needed(key, value):
+    def replace(self, path, value):
+        if self._replace_if_needed(path, value):
             self._notify()
 
-    def force_replace(self, key, value):
-        self._replace(key, value)
+    def force_replace(self, path, value):
+        self._replace(path, value)
         self._notify()
 
     @profile_sub("replace")
-    def _replace_if_needed(self, key, value):
-        if self.get(key) != value:
-            self._replace(key, value)
+    def _replace_if_needed(self, path, value):
+        if self.get(path) != value:
+            self._replace(path, value)
             return True
         return False
 
     @profile_sub("replace")
-    def _replace(self, key, value):
-        self._data = im_modify(self._data, key.split("."), lambda old: value)
+    def _replace(self, path, value):
+        self._data = im_modify(self._data, path, lambda old: value)
 
 class RLGuiMixin(object):
 
@@ -297,11 +296,11 @@ class Props(Immutable):
 
     def _update(self):
         for name, fn in self._updates:
-            self.replace(name, fn())
+            self.replace([name], fn())
 
     def _create_handler(self, name, props):
         def handler():
-            self.force_replace(name, props.get())
+            self.force_replace([name], props.get())
         return handler
 
 class RLGuiWxMixin(RLGuiMixin):
@@ -659,7 +658,7 @@ class MainFrameProps(Props):
             ),
             "toolbar": ToolbarProps(theme),
             "toolbar_divider": PropUpdate(lambda:
-                theme.get("toolbar_divider")
+                theme.get(["toolbar_divider"])
             ),
             "main_area": MainAreaProps(document, session, theme),
         })
@@ -710,7 +709,7 @@ class MainAreaProps(Props):
         Props.__init__(self, {
             "toc": TableOfContentsProps(document, session, theme),
             "toc_divider": PropUpdate(lambda:
-                theme.get("toc_divider")
+                theme.get(["toc_divider"])
             ),
             "workspace": WorkspaceProps(theme),
         })
@@ -743,10 +742,10 @@ class ToolbarProps(Props):
         theme.listen(self._update)
         Props.__init__(self, {
             "background": PropUpdate(lambda:
-                theme.get("toolbar.background")
+                theme.get(["toolbar", "background"])
             ),
             "margin": PropUpdate(lambda:
-                theme.get("toolbar.margin")
+                theme.get(["toolbar", "margin"])
             ),
         })
 
@@ -829,19 +828,19 @@ class TableOfContentsProps(Props):
         theme.listen(self._update)
         Props.__init__(self, {
             "background": PropUpdate(lambda:
-                theme.get("toc.background")
+                theme.get(["toc", "background"])
             ),
             "row_margin": PropUpdate(lambda:
-                theme.get("toc.row_margin")
+                theme.get(["toc", "row_margin"])
             ),
             "divider_thickness": PropUpdate(lambda:
-                theme.get("toc.divider_thickness")
+                theme.get(["toc", "divider_thickness"])
             ),
             "width": PropUpdate(lambda:
-                session.get("toc.width")
+                session.get(["toc", "width"])
             ),
             "set_width": (lambda value:
-                session.replace("toc.width", value)
+                session.replace(["toc", "width"], value)
             ),
             "rows": PropUpdate(lambda:
                 self._generate_rows(document, session, theme)
@@ -863,7 +862,7 @@ class TableOfContentsProps(Props):
             if not is_collapsed:
                 for child in page["children"]:
                     inner(child, level+1)
-        indent_size = theme.get("toc.indent_size")
+        indent_size = theme.get(["toc", "indent_size"])
         rows = []
         inner(document.get_page())
         return rows
@@ -886,7 +885,7 @@ class WorkspaceProps(Props):
         theme.listen(self._update)
         Props.__init__(self, {
             "background": PropUpdate(lambda:
-                theme.get("workspace.background")
+                theme.get(["workspace", "background"])
             ),
         })
 
@@ -966,15 +965,15 @@ class Session(Immutable):
         })
 
     def is_collapsed(self, page_id):
-        return page_id in self.get("toc.collapsed")
+        return page_id in self.get(["toc", "collapsed"])
 
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
             if page_id in collapsed:
                 return [x for x in collapsed if x != page_id]
             else:
-                return collapsed+[page_id]
-        self.modify("toc.collapsed", toggle)
+                return collapsed + [page_id]
+        self.modify(["toc", "collapsed"], toggle)
 
 class PropUpdate(object):
 

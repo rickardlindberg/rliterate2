@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"title\": PropUpdate(lambda:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(document.path),\n                    os.path.abspath(os.path.dirname(document.path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"toolbar_divider\": PropUpdate(lambda:\n                theme.get(\"toolbar_divider\")\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"title\": PropUpdate(lambda:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(document.path),\n                    os.path.abspath(os.path.dirname(document.path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"toolbar_divider\": PropUpdate(lambda:\n                theme.get([\"toolbar_divider\"])\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -244,7 +244,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"toc_divider\": PropUpdate(lambda:\n                theme.get(\"toc_divider\")\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"toc_divider\": PropUpdate(lambda:\n                theme.get([\"toc_divider\"])\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -288,7 +288,7 @@
 ],
 "fragments":[
 {
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get(\"toolbar.background\")\n            ),\n            \"margin\": PropUpdate(lambda:\n                theme.get(\"toolbar.margin\")\n            ),\n        })\n",
+"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get([\"toolbar\", \"background\"])\n            ),\n            \"margin\": PropUpdate(lambda:\n                theme.get([\"toolbar\", \"margin\"])\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -353,7 +353,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        session.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get(\"toc.background\")\n            ),\n            \"row_margin\": PropUpdate(lambda:\n                theme.get(\"toc.row_margin\")\n            ),\n            \"divider_thickness\": PropUpdate(lambda:\n                theme.get(\"toc.divider_thickness\")\n            ),\n            \"width\": PropUpdate(lambda:\n                session.get(\"toc.width\")\n            ),\n            \"set_width\": (lambda value:\n                session.replace(\"toc.width\", value)\n            ),\n            \"rows\": PropUpdate(lambda:\n                self._generate_rows(document, session, theme)\n            ),\n        })\n\n    def _generate_rows(self, document, session, theme):\n        def inner(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = theme.get(\"toc.indent_size\")\n        rows = []\n        inner(document.get_page())\n        return rows\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        session.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get([\"toc\", \"background\"])\n            ),\n            \"row_margin\": PropUpdate(lambda:\n                theme.get([\"toc\", \"row_margin\"])\n            ),\n            \"divider_thickness\": PropUpdate(lambda:\n                theme.get([\"toc\", \"divider_thickness\"])\n            ),\n            \"width\": PropUpdate(lambda:\n                session.get([\"toc\", \"width\"])\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"rows\": PropUpdate(lambda:\n                self._generate_rows(document, session, theme)\n            ),\n        })\n\n    def _generate_rows(self, document, session, theme):\n        def inner(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = theme.get([\"toc\", \"indent_size\"])\n        rows = []\n        inner(document.get_page())\n        return rows\n",
 "type":"code"
 }
 ],
@@ -397,7 +397,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get(\"workspace.background\")\n            ),\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get([\"workspace\", \"background\"])\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -584,7 +584,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get(\"toc.collapsed\")\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed+[page_id]\n        self.modify(\"toc.collapsed\", toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get([\"toc\", \"collapsed\"])\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],
@@ -741,7 +741,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self._updates = []\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                data[name] = value.get()\n                value.listen(self._create_handler(name, value))\n            elif isinstance(value, PropUpdate):\n                data[name] = value.fn()\n                self._updates.append((name, value.fn))\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _update(self):\n        for name, fn in self._updates:\n            self.replace(name, fn())\n\n    def _create_handler(self, name, props):\n        def handler():\n            self.force_replace(name, props.get())\n        return handler\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self._updates = []\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                data[name] = value.get()\n                value.listen(self._create_handler(name, value))\n            elif isinstance(value, PropUpdate):\n                data[name] = value.fn()\n                self._updates.append((name, value.fn))\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _update(self):\n        for name, fn in self._updates:\n            self.replace([name], fn())\n\n    def _create_handler(self, name, props):\n        def handler():\n            self.force_replace([name], props.get())\n        return handler\n",
 "type":"code"
 }
 ],
@@ -1923,7 +1923,7 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=None):\n        value = self._data\n        if path is not None:\n            for part in path.split(\".\"):\n                value = value[part]\n        return value\n\n    def modify(self, key, fn):\n        self._data = im_modify(self._data, key.split(\".\"), fn)\n        self._notify()\n\n    def replace(self, key, value):\n        if self._replace_if_needed(key, value):\n            self._notify()\n\n    def force_replace(self, key, value):\n        self._replace(key, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, key, value):\n        if self.get(key) != value:\n            self._replace(key, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, key, value):\n        self._data = im_modify(self._data, key.split(\".\"), lambda old: value)\n",
+"text":"class Immutable(Observable):\n\n    def __init__(self, data):\n        Observable.__init__(self)\n        self._data = data\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._data\n        for part in path:\n            value = value[part]\n        return value\n\n    def modify(self, path, fn):\n        self._data = im_modify(self._data, path, fn)\n        self._notify()\n\n    def replace(self, path, value):\n        if self._replace_if_needed(path, value):\n            self._notify()\n\n    def force_replace(self, path, value):\n        self._replace(path, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, path, value):\n        if self.get(path) != value:\n            self._replace(path, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, path, value):\n        self._data = im_modify(self._data, path, lambda old: value)\n",
 "type":"code"
 }
 ],
