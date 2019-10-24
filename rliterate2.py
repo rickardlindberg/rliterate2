@@ -64,9 +64,6 @@ def create_new_page():
 def genid():
     return uuid.uuid4().hex
 
-def default_color():
-    return None
-
 def start_app(frame_cls, props):
     @profile_sub("render")
     def update(props):
@@ -798,7 +795,7 @@ class TableOfContents(RLGuiVScroll):
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props['thickness'] = self.prop('divider_thickness')
-                props['color'] = default_color()
+                props['color'] = self.prop('dragdrop_color')
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(RowDivider, props, sizer, handlers)
@@ -856,6 +853,9 @@ class TableOfContentsProps(Props):
             ),
             "divider_thickness": PropUpdate(lambda:
                 theme.get(["toc", "divider_thickness"])
+            ),
+            "dragdrop_color": PropUpdate(lambda:
+                theme.get(["dragdrop_color"])
             ),
             "width": PropUpdate(lambda:
                 session.get(["toc", "width"])
@@ -973,6 +973,7 @@ class Theme(Immutable):
             "workspace": {
                 "background": "#cccccc",
             },
+            "dragdrop_color": "#ffffff",
         })
 
 class Session(Immutable):

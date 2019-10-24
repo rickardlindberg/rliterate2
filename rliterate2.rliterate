@@ -311,7 +311,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContents %layout_rows {\n  min_size = size(#width -1)\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse = $id\n      __cache = \"yes\"\n      margin  = #row_margin\n      %align[EXPAND]\n    )\n    RowDivider(\n      thickness = #divider_thickness\n      color     = default_color()\n      __cache   = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
+"text":"vscroll TableOfContents %layout_rows {\n  min_size = size(#width -1)\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse = $id\n      __cache = \"yes\"\n      margin  = #row_margin\n      %align[EXPAND]\n    )\n    RowDivider(\n      thickness = #divider_thickness\n      color     = #dragdrop_color\n      __cache   = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
 "type":"code"
 }
 ],
@@ -353,7 +353,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        session.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get([\"toc\", \"background\"])\n            ),\n            \"row_margin\": PropUpdate(lambda:\n                theme.get([\"toc\", \"row_margin\"])\n            ),\n            \"divider_thickness\": PropUpdate(lambda:\n                theme.get([\"toc\", \"divider_thickness\"])\n            ),\n            \"width\": PropUpdate(lambda:\n                session.get([\"toc\", \"width\"])\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"rows\": PropUpdate(lambda:\n                self._generate_rows(document, session, theme)\n            ),\n        })\n\n    def _generate_rows(self, document, session, theme):\n        def inner(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = theme.get([\"toc\", \"indent_size\"])\n        rows = []\n        inner(document.get_page())\n        return rows\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        session.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"background\": PropUpdate(lambda:\n                theme.get([\"toc\", \"background\"])\n            ),\n            \"row_margin\": PropUpdate(lambda:\n                theme.get([\"toc\", \"row_margin\"])\n            ),\n            \"divider_thickness\": PropUpdate(lambda:\n                theme.get([\"toc\", \"divider_thickness\"])\n            ),\n            \"dragdrop_color\": PropUpdate(lambda:\n                theme.get([\"dragdrop_color\"])\n            ),\n            \"width\": PropUpdate(lambda:\n                session.get([\"toc\", \"width\"])\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"rows\": PropUpdate(lambda:\n                self._generate_rows(document, session, theme)\n            ),\n        })\n\n    def _generate_rows(self, document, session, theme):\n        def inner(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": len(page[\"children\"]) > 0,\n                \"collapsed\": is_collapsed,\n                \"indent_size\": indent_size,\n            })\n            if not is_collapsed:\n                for child in page[\"children\"]:\n                    inner(child, level+1)\n        indent_size = theme.get([\"toc\", \"indent_size\"])\n        rows = []\n        inner(document.get_page())\n        return rows\n",
 "type":"code"
 }
 ],
@@ -561,7 +561,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n        })\n",
+"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n            \"dragdrop_color\": \"#ffffff\",\n        })\n",
 "type":"code"
 }
 ],
@@ -1509,24 +1509,6 @@
 }
 ],
 "id":"b1beaccda0d04dd28ece317b5f5d8c55",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def default_color():\n    return None\n",
-"type":"code"
-}
-],
-"id":"ce857c89c68645dd89d5e1deb55d3c64",
-"language":"",
-"post_process":[],
 "type":"code"
 }
 ],
