@@ -273,10 +273,6 @@ class RLGuiMixin(object):
     def _register_builtin(self, name, fn):
         self._builtin_props[name] = profile_sub(f"builtin {name}")(fn)
 
-DragEvent = namedtuple("DragEvent", "initial,dx")
-
-SliderEvent = namedtuple("SliderEvent", "value")
-
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
@@ -1023,6 +1019,10 @@ class Session(Immutable):
             else:
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
+
+DragEvent = namedtuple("DragEvent", "initial,dx")
+
+SliderEvent = namedtuple("SliderEvent", "value")
 
 class PropUpdate(object):
 
