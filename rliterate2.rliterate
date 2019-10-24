@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"title\": PropUpdate(lambda:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(document.path),\n                    os.path.abspath(os.path.dirname(document.path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"toolbar_divider\": PropUpdate(lambda:\n                theme.get([\"toolbar_divider\"])\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        document.listen(self._update)\n        theme.listen(self._update)\n        Props.__init__(self, {\n            \"title\": PropUpdate(lambda:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(document.get([\"path\"])),\n                    os.path.abspath(os.path.dirname(document.get([\"path\"])))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"toolbar_divider\": PropUpdate(lambda:\n                theme.get([\"toolbar_divider\"])\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -522,7 +522,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Observable):\n\n    def __init__(self, path):\n        Observable.__init__(self)\n        self.path = path\n        self._doc = load_json_from_file(path)\n\n    def get_page(self):\n        return self._doc[\"root_page\"]\n",
+"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_json_from_file(path),\n        })\n\n    def get_page(self):\n        return self.get([\"doc\", \"root_page\"])\n",
 "type":"code"
 }
 ],

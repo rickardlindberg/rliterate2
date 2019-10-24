@@ -663,8 +663,8 @@ class MainFrameProps(Props):
         Props.__init__(self, {
             "title": PropUpdate(lambda:
                 "{} ({}) - RLiterate 2".format(
-                    os.path.basename(document.path),
-                    os.path.abspath(os.path.dirname(document.path))
+                    os.path.basename(document.get(["path"])),
+                    os.path.abspath(os.path.dirname(document.get(["path"])))
                 )
             ),
             "toolbar": ToolbarProps(theme),
@@ -961,15 +961,16 @@ class ColumnDivider(RLGuiPanel):
     def _create_widgets(self):
         pass
 
-class Document(Observable):
+class Document(Immutable):
 
     def __init__(self, path):
-        Observable.__init__(self)
-        self.path = path
-        self._doc = load_json_from_file(path)
+        Immutable.__init__(self, {
+            "path": path,
+            "doc": load_json_from_file(path),
+        })
 
     def get_page(self):
-        return self._doc["root_page"]
+        return self.get(["doc", "root_page"])
 
 class Theme(Immutable):
 
