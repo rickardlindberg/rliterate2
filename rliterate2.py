@@ -354,7 +354,6 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         RLGuiWxMixin._setup_gui(self)
         self._setup_layout()
         self._children = []
-        self._inside_loop = False
 
     def _setup_layout(self):
         self.Sizer = self._sizer = self._create_sizer()
@@ -378,7 +377,6 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
 
     @contextlib.contextmanager
     def _loop(self):
-        self._inside_loop = True
         if self._child_index >= len(self._children):
             self._children.append([])
         old_children = self._children
@@ -391,7 +389,6 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
             self._clear_leftovers()
             self._children = old_children
             self._child_index = next_index
-            self._inside_loop = False
 
     def _clear_leftovers(self):
         child_index = self._child_index
