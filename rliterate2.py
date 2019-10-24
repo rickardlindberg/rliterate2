@@ -173,19 +173,19 @@ class Observable(object):
 
 class Immutable(Observable):
 
-    def __init__(self, data):
+    def __init__(self, value):
         Observable.__init__(self)
-        self._data = data
+        self._value = value
 
     @profile_sub("get")
     def get(self, path=[]):
-        value = self._data
+        value = self._value
         for part in path:
             value = value[part]
         return value
 
     def modify(self, path, fn):
-        self._data = im_modify(self._data, path, fn)
+        self._value = im_modify(self._value, path, fn)
         self._notify()
 
     def replace(self, path, value):
@@ -205,7 +205,7 @@ class Immutable(Observable):
 
     @profile_sub("replace")
     def _replace(self, path, value):
-        self._data = im_modify(self._data, path, lambda old: value)
+        self._value = im_modify(self._value, path, lambda old: value)
 
 class RLGuiMixin(object):
 
