@@ -721,16 +721,6 @@
 "--support"
 ],
 "type":"code"
-},
-{
-"fragments":[
-{
-"text":"TODO: This should be rendered before rliterate2.py.",
-"type":"strong"
-}
-],
-"id":"55d932b234e04a0bb53737495d812b5d",
-"type":"text"
 }
 ],
 "title":"Compiler"
@@ -2136,6 +2126,39 @@
 "id":"359aefc7fbb54cb4b8e43182efb241a0",
 "paragraphs":[],
 "title":"History"
+},
+{
+"children":[],
+"id":"6d92bc9005724ecdad6856ba67ec2121",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"Figure out rendering order of files automatically so that ",
+"type":"text"
+},
+{
+"text":"rlgui.py",
+"type":"code"
+},
+{
+"text":" is rendered before ",
+"type":"text"
+},
+{
+"text":"rliterate2.py",
+"type":"code"
+},
+{
+"text":" since the later depends on the former.",
+"type":"text"
+}
+],
+"id":"55d932b234e04a0bb53737495d812b5d",
+"type":"text"
+}
+],
+"title":"Ideas for new features"
 }
 ],
 "id":"46533f3be0674d1cae08ff281edbc37d",
