@@ -326,7 +326,7 @@ class RLGuiWxMixin(RLGuiMixin):
             self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
             self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
             self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
-        if name == "click":
+        elif name == "click":
             self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
 
     def _bind_wx_event(self, event, handler):
