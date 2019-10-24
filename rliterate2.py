@@ -235,7 +235,7 @@ class RLGuiMixin(object):
 
     def prop(self, path):
         value = self._props
-        for part in path.split("."):
+        for part in path:
             value = value[part]
         return value
 
@@ -390,11 +390,11 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         child_index = self._child_index
         sizer_index = self._sizer_index
         num_cached = 0
-        cache_limit = self.prop_with_default("__cache_limit", -1)
+        cache_limit = self.prop_with_default(["__cache_limit"], -1)
         while child_index < len(self._children):
             widget, sizer_item = self._children[child_index]
             if (widget is not None and
-                widget.prop_with_default("__cache", False) and
+                widget.prop_with_default(["__cache"], False) and
                 (cache_limit < 0 or num_cached < cache_limit)):
                 sizer_item.Show(False)
                 child_index += 1
@@ -411,7 +411,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         def re_use_condition(widget):
             if type(widget) is not widget_cls:
                 return False
-            if "__reuse" in props and widget.prop("__reuse") != props["__reuse"]:
+            if "__reuse" in props and widget.prop(["__reuse"]) != props["__reuse"]:
                 return False
             return True
         re_use_offset = self._reuse(re_use_condition)
@@ -599,7 +599,7 @@ class ExpandCollapse(wx.Panel, RLGuiWxMixin):
 
     def _get_local_props(self):
         return {
-            "min_size": (self.prop("size")+1, -1),
+            "min_size": (self.prop(["size"])+1, -1),
         }
 
     def _on_paint(self, event):
@@ -610,8 +610,8 @@ class ExpandCollapse(wx.Panel, RLGuiWxMixin):
         render.DrawTreeItemButton(
             self,
             dc,
-            (0, (h-self.prop("size"))/2, self.prop("size"), self.prop("size")),
-            flags=0 if self.prop("collapsed") else wx.CONTROL_EXPANDED
+            (0, (h-self.prop(["size"]))/2, self.prop(["size"]), self.prop(["size"])),
+            flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
         )
 
 class Text(wx.StaticText, RLGuiWxMixin):
@@ -638,19 +638,19 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toolbar'))
+        props.update(self.prop(['toolbar']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Toolbar, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toolbar_divider'))
+        props.update(self.prop(['toolbar_divider']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(RowDivider, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('main_area'))
+        props.update(self.prop(['main_area']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer, handlers)
@@ -688,13 +688,13 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toc'))
+        props.update(self.prop(['toc']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContents, props, sizer, handlers)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('toc_divider'))
+        props.update(self.prop(['toc_divider']))
         props['cursor'] = 'size_horizontal'
         handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
@@ -702,16 +702,16 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop('workspace'))
+        props.update(self.prop(['workspace']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Workspace, props, sizer, handlers)
 
     def _on_toc_divider_drag(self, event):
         if event.initial:
-            self._start_width = self.prop("toc.width")
+            self._start_width = self.prop(["toc", "width"])
         else:
-            self.prop("toc.set_width")(self._start_width+event.dx)
+            self.prop(["toc", "set_width"])(self._start_width+event.dx)
 
 class MainAreaProps(Props):
 
@@ -736,16 +736,16 @@ class Toolbar(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop('margin'))
+        self._create_space(self.prop(['margin']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['icon'] = 'quit'
-        sizer["border"] = self.prop('margin')
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers)
-        self._create_space(self.prop('margin'))
+        self._create_space(self.prop(['margin']))
 
 class ToolbarProps(Props):
 
@@ -764,7 +764,7 @@ class TableOfContents(RLGuiVScroll):
 
     def _get_local_props(self):
         return {
-            'min_size': size(self.prop('width'), -1),
+            'min_size': size(self.prop(['width']), -1),
         }
 
     def _create_sizer(self):
@@ -773,7 +773,7 @@ class TableOfContents(RLGuiVScroll):
     def _create_widgets(self):
         pass
         with self._loop():
-            for loopvar in self.prop('rows'):
+            for loopvar in self.prop(['rows']):
                 pass
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
@@ -781,7 +781,7 @@ class TableOfContents(RLGuiVScroll):
                 props.update(loopvar)
                 props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
-                props['margin'] = self.prop('row_margin')
+                props['margin'] = self.prop(['row_margin'])
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
@@ -789,8 +789,8 @@ class TableOfContents(RLGuiVScroll):
                 handlers = {}
                 props['indent'] = 0
                 props['active'] = bool(0)
-                props['thickness'] = self.prop('divider_thickness')
-                props['color'] = self.prop('dragdrop_color')
+                props['thickness'] = self.prop(['divider_thickness'])
+                props['color'] = self.prop(['dragdrop_color'])
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
@@ -806,13 +806,13 @@ class TableOfContentsDropLine(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop('indent'))
+        self._create_space(self.prop(['indent']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props['thickness'] = self.prop('thickness')
-        props['color'] = self._get_color(self.prop('active'), self.prop('color'))
-        props['visible'] = self.prop('active')
+        props['thickness'] = self.prop(['thickness'])
+        props['color'] = self._get_color(self.prop(['active']), self.prop(['color']))
+        props['visible'] = self.prop(['active'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(RowDivider, props, sizer, handlers)
@@ -834,8 +834,8 @@ class TableOfContentsRow(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(add(self.prop('margin'), mul(self.prop('level'), self.prop('indent_size'))))
-        if_condition = self.prop('has_children')
+        self._create_space(add(self.prop(['margin']), mul(self.prop(['level']), self.prop(['indent_size']))))
+        if_condition = self.prop(['has_children'])
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 pass
@@ -843,21 +843,21 @@ class TableOfContentsRow(RLGuiPanel):
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props['cursor'] = 'hand'
-                props['size'] = self.prop('indent_size')
-                props['collapsed'] = self.prop('collapsed')
-                handlers['click'] = lambda event: self.prop('toggle')(self.prop('id'))
+                props['size'] = self.prop(['indent_size'])
+                props['collapsed'] = self.prop(['collapsed'])
+                handlers['click'] = lambda event: self.prop(['toggle'])(self.prop(['id']))
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(ExpandCollapse, props, sizer, handlers)
         with self._loop():
             for loopvar in ([None] if (not if_condition) else []):
                 pass
-                self._create_space(self.prop('indent_size'))
+                self._create_space(self.prop(['indent_size']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props['text'] = self.prop('title')
+        props['text'] = self.prop(['title'])
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop('margin')
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers)
 
@@ -937,8 +937,8 @@ class RowDivider(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'background': self.prop('color'),
-            'min_size': size(-1, self.prop('thickness')),
+            'background': self.prop(['color']),
+            'min_size': size(-1, self.prop(['thickness'])),
         }
 
     def _create_sizer(self):
@@ -951,8 +951,8 @@ class ColumnDivider(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'background': self.prop('color'),
-            'min_size': size(self.prop('thickness'), -1),
+            'background': self.prop(['color']),
+            'min_size': size(self.prop(['thickness']), -1),
         }
 
     def _create_sizer(self):
