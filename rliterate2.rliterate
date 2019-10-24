@@ -311,7 +311,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContents %layout_rows {\n  min_size = size(#width -1)\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse = $id\n      __cache = \"yes\"\n      margin  = #row_margin\n      %align[EXPAND]\n    )\n    RowDivider(\n      thickness = #divider_thickness\n      color     = #dragdrop_color\n      __cache   = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
+"text":"vscroll TableOfContents %layout_rows {\n  min_size = size(#width -1)\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse = $id\n      __cache = \"yes\"\n      margin  = #row_margin\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine(\n      indent    = 0\n      active    = bool(0)\n      thickness = #divider_thickness\n      color     = #dragdrop_color\n      __cache   = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
 "type":"code"
 }
 ],
@@ -321,6 +321,54 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel TableOfContentsDropLine %layout_columns {\n  %space[#indent]\n  RowDivider(\n      thickness = #thickness\n      color     = self._get_color(#active #color)\n      visible   = #active\n      %align[EXPAND]\n      %proportion[1]\n  )\n}\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"TableOfContentsDropLine"
+],
+"prefix":"",
+"type":"chunk"
+}
+],
+"id":"694e000149dc4360a11c1edbad630e61",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TableOfContentsDropLine"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _get_color(self, active, color):\n    if active:\n        return color\n    else:\n        return None\n",
+"type":"code"
+}
+],
+"id":"af4a8d12629747ed8d150c16545df3a1",
+"language":"",
+"post_process":[],
 "type":"code"
 },
 {
@@ -561,7 +609,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n            \"dragdrop_color\": \"#ffffff\",\n        })\n",
+"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n            \"dragdrop_color\": \"#ff6400\",\n        })\n",
 "type":"code"
 }
 ],

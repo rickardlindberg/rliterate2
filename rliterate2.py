@@ -794,11 +794,41 @@ class TableOfContents(RLGuiVScroll):
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
+                props['indent'] = 0
+                props['active'] = bool(0)
                 props['thickness'] = self.prop('divider_thickness')
                 props['color'] = self.prop('dragdrop_color')
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
-                self._create_widget(RowDivider, props, sizer, handlers)
+                self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
+
+class TableOfContentsDropLine(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop('indent'))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        handlers = {}
+        props['thickness'] = self.prop('thickness')
+        props['color'] = self._get_color(self.prop('active'), self.prop('color'))
+        props['visible'] = self.prop('active')
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(RowDivider, props, sizer, handlers)
+
+    def _get_color(self, active, color):
+        if active:
+            return color
+        else:
+            return None
 
 class TableOfContentsRow(RLGuiPanel):
 
@@ -973,7 +1003,7 @@ class Theme(Immutable):
             "workspace": {
                 "background": "#cccccc",
             },
-            "dragdrop_color": "#ffffff",
+            "dragdrop_color": "#ff6400",
         })
 
 class Session(Immutable):
