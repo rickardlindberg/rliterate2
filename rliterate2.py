@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple, defaultdict
-from operator import add, mul
+from operator import add, sub, mul
 import contextlib
 import cProfile
 import io
@@ -372,7 +372,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         raise NotImplementedError()
 
     @contextlib.contextmanager
-    def _loop(self):
+    def _loop(self, cache_limit=-1):
         if self._child_index >= len(self._children):
             self._children.append([])
         old_children = self._children
@@ -382,15 +382,14 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         try:
             yield
         finally:
-            self._clear_leftovers()
+            self._clear_leftovers(cache_limit=cache_limit)
             self._children = old_children
             self._child_index = next_index
 
-    def _clear_leftovers(self):
+    def _clear_leftovers(self, cache_limit):
         child_index = self._child_index
         sizer_index = self._sizer_index
         num_cached = 0
-        cache_limit = self.prop_with_default(["__cache_limit"], -1)
         while child_index < len(self._children):
             widget, sizer_item = self._children[child_index]
             if (widget is not None and
@@ -761,18 +760,20 @@ class TableOfContents(RLGuiVScroll):
 
     def _create_widgets(self):
         pass
-        with self._loop():
-            for loopvar in self.prop(['rows']):
+        loop_options = {}
+        loop_options['cache_limit'] = mul(2, sub(self.prop(['rows', 'total_num_pages']), 1))
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['rows', 'rows']):
                 pass
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props.update(loopvar)
-                props['__reuse'] = loopvar['id']
-                props['__cache'] = 'yes'
                 props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
                 props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
                 props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
+                props['__reuse'] = loopvar['id']
+                props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
@@ -869,7 +870,7 @@ class TableOfContentsProps(Props):
                 document,
                 session,
                 self._generate_rows
-            )
+            ),
         })
 
     def _generate_rows(self, document, session):
@@ -888,7 +889,10 @@ class TableOfContentsProps(Props):
                     generate_rows_from_page(child, level+1)
         rows = []
         generate_rows_from_page(document.get_page())
-        return rows
+        return {
+            "rows": rows,
+            "total_num_pages": document.count_pages(),
+        }
 
 class Workspace(RLGuiPanel):
 
@@ -947,6 +951,15 @@ class Document(Immutable):
 
     def get_page(self):
         return self.get(["doc", "root_page"])
+
+    def count_pages(self):
+        return len(list(self.iter_pages(self.get_page())))
+
+    def iter_pages(self, page):
+        yield page
+        for child in page["children"]:
+            for x in self.iter_pages(child):
+                yield x
 
 class Theme(Immutable):
 
