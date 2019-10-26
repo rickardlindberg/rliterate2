@@ -6,6 +6,7 @@ import contextlib
 import cProfile
 import io
 import json
+import math
 import os
 import pstats
 import sys
@@ -305,6 +306,7 @@ class RLGuiWxMixin(RLGuiMixin):
         self._setup_wx_events()
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
+        self._register_builtin("drop_target", self._set_drop_target)
         self._register_builtin("cursor", lambda value:
             self.SetCursor({
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
@@ -318,7 +320,7 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def register_event_handler(self, name, fn):
         RLGuiMixin.register_event_handler(self, name, fn)
-        if name == "drag":
+        if name in ["drag", "grab"]:
             self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
             self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
             self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
@@ -332,7 +334,7 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
-        self._call_event_handler("drag", DragEvent(True, 0))
+        self._call_event_handler("drag", DragEvent(True, 0, 0))
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
@@ -342,7 +344,62 @@ class RLGuiWxMixin(RLGuiMixin):
     def _on_wx_motion(self, wx_event):
         if self._wx_down_pos is not None:
             new_pos = self.ClientToScreen(wx_event.Position)
-            self._call_event_handler("drag", DragEvent(False, new_pos.x-self._wx_down_pos.x))
+            dx = new_pos.x-self._wx_down_pos.x
+            dy = new_pos.y-self._wx_down_pos.y
+            self._call_event_handler("drag", DragEvent(
+                False,
+                dx,
+                dy,
+            ))
+            if math.sqrt(dx**2+dy**2) > 3:
+                self._wx_down_pos = None
+                self._call_event_handler("grab", None)
+
+    def initiate_drag_drop(self, kind, data):
+        obj = wx.CustomDataObject(f"rliterate/{kind}")
+        obj.SetData(json.dumps(data).encode("utf-8"))
+        drag_source = wx.DropSource(self)
+        drag_source.SetData(obj)
+        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)
+
+    def _set_drop_target(self, kind):
+        self.SetDropTarget(RLiterateDropTarget(self, kind))
+
+    def on_drag_drop_over(self, x, y):
+        return False
+
+    def on_drag_drop_leave(self):
+        pass
+
+    def on_drag_drop_data(self, x, y, data):
+        pass
+
+class RLiterateDropTarget(wx.DropTarget):
+
+    def __init__(self, widget, kind):
+        wx.DropTarget.__init__(self)
+        self.widget = widget
+        self.data = wx.CustomDataObject(f"rliterate/{kind}")
+        self.DataObject = self.data
+
+    def OnDragOver(self, x, y, defResult):
+        if defResult == wx.DragMove and self.widget.on_drag_drop_over(x, y):
+            return wx.DragMove
+        return wx.DragNone
+
+    def OnData(self, x, y, defResult):
+        if (defResult == wx.DragMove and
+            self.GetData()):
+            wx.CallAfter(
+                self.widget.on_drag_drop_data,
+                x,
+                y,
+                json.loads(self.data.GetData().tobytes().decode("utf-8"))
+            )
+        return defResult
+
+    def OnLeave(self):
+        self.widget.on_drag_drop_leave()
 
 class RLGuiWxContainerMixin(RLGuiWxMixin):
 
@@ -422,13 +479,13 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         else:
             if re_use_offset is None:
                 widget = widget_cls(self._parent, props)
-                for name, fn in handlers.items():
-                    widget.register_event_handler(name, fn)
             else:
                 widget = self._children.pop(self._child_index+re_use_offset)[0]
                 self._sizer.Detach(self._sizer_index+re_use_offset)
             sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
+            for name, fn in handlers.items():
+                widget.register_event_handler(name, fn)
         sizer_item.Show(True)
         self._sizer_index += 1
         self._child_index += 1
@@ -760,6 +817,7 @@ class TableOfContents(RLGuiVScroll):
         return {
             'min_size': size(self.prop(['width']), -1),
             'background': self.prop(['theme', 'toc', 'background']),
+            'drop_target': 'page',
         }
 
     def _create_sizer(self):
@@ -767,33 +825,45 @@ class TableOfContents(RLGuiVScroll):
 
     def _create_widgets(self):
         pass
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            handlers = {}
+            props.update(loopvar)
+            props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
+            props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
+            props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
+            props['__reuse'] = loopvar['id']
+            props['__cache'] = True
+            handlers['grab'] = lambda event: self.initiate_drag_drop('page', loopvar['id'])
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(TableOfContentsRow, props, sizer, handlers)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            handlers = {}
+            props['indent'] = 0
+            props['active'] = False
+            props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
+            props['color'] = self.prop(['theme', 'dragdrop_color'])
+            props['__reuse'] = loopvar['id']
+            props['__cache'] = True
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
         loop_options = {}
         loop_options['cache_limit'] = mul(2, sub(self.prop(['rows', 'total_num_pages']), 1))
         with self._loop(**loop_options):
             for loopvar in self.prop(['rows', 'rows']):
-                pass
-                props = {}
-                sizer = {"flag": 0, "border": 0, "proportion": 0}
-                handlers = {}
-                props.update(loopvar)
-                props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
-                props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
-                props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
-                props['__reuse'] = loopvar['id']
-                props['__cache'] = True
-                sizer["flag"] |= wx.EXPAND
-                self._create_widget(TableOfContentsRow, props, sizer, handlers)
-                props = {}
-                sizer = {"flag": 0, "border": 0, "proportion": 0}
-                handlers = {}
-                props['indent'] = 0
-                props['active'] = False
-                props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
-                props['color'] = self.prop(['theme', 'dragdrop_color'])
-                props['__reuse'] = loopvar['id']
-                props['__cache'] = True
-                sizer["flag"] |= wx.EXPAND
-                self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
+                loop_fn(loopvar)
+
+    def on_drag_drop_over(self, x, y):
+        return False
+
+    def on_drag_drop_leave(self):
+        pass
+
+    def on_drag_drop_data(self, x, y, page_id):
+        print(f"page_id = {page_id}")
 
 class TableOfContentsDropLine(RLGuiPanel):
 
@@ -835,22 +905,26 @@ class TableOfContentsRow(RLGuiPanel):
         pass
         self._create_space(add(self.prop(['margin']), mul(self.prop(['level']), self.prop(['indent_size']))))
         if_condition = self.prop(['has_children'])
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            handlers = {}
+            props['cursor'] = 'hand'
+            props['size'] = self.prop(['indent_size'])
+            props['collapsed'] = self.prop(['collapsed'])
+            handlers['click'] = lambda event: self.prop(['toggle'])(self.prop(['id']))
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(ExpandCollapse, props, sizer, handlers)
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
-                pass
-                props = {}
-                sizer = {"flag": 0, "border": 0, "proportion": 0}
-                handlers = {}
-                props['cursor'] = 'hand'
-                props['size'] = self.prop(['indent_size'])
-                props['collapsed'] = self.prop(['collapsed'])
-                handlers['click'] = lambda event: self.prop(['toggle'])(self.prop(['id']))
-                sizer["flag"] |= wx.EXPAND
-                self._create_widget(ExpandCollapse, props, sizer, handlers)
+                loop_fn(loopvar)
+        def loop_fn(loopvar):
+            pass
+            self._create_space(self.prop(['indent_size']))
         with self._loop():
             for loopvar in ([None] if (not if_condition) else []):
-                pass
-                self._create_space(self.prop(['indent_size']))
+                loop_fn(loopvar)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
@@ -1020,7 +1094,7 @@ class Session(Immutable):
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
 
-DragEvent = namedtuple("DragEvent", "initial,dx")
+DragEvent = namedtuple("DragEvent", "initial,dx,dy")
 
 SliderEvent = namedtuple("SliderEvent", "value")
 
