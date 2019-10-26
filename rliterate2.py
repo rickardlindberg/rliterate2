@@ -643,7 +643,7 @@ class MainFrame(RLGuiFrame):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop(['toolbar_divider']))
+        props.update(self.prop(['theme', 'toolbar_divider']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(RowDivider, props, sizer, handlers)
         props = {}
@@ -658,14 +658,17 @@ class MainFrameProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "title": PropUpdate(document, ["path"], lambda path:
-                "{} ({}) - RLiterate 2".format(
+            "title": PropUpdate(
+                document, ["path"],
+                lambda path: "{} ({}) - RLiterate 2".format(
                     os.path.basename(path),
                     os.path.abspath(os.path.dirname(path))
                 )
             ),
             "toolbar": ToolbarProps(theme),
-            "toolbar_divider": PropUpdate(theme, ["toolbar_divider"]),
+            "theme": PropUpdate(
+                theme, []
+            ),
             "main_area": MainAreaProps(document, session, theme),
         })
 
@@ -689,7 +692,7 @@ class MainArea(RLGuiPanel):
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
-        props.update(self.prop(['toc_divider']))
+        props.update(self.prop(['theme', 'toc_divider']))
         props['cursor'] = 'size_horizontal'
         handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
@@ -713,7 +716,9 @@ class MainAreaProps(Props):
     def __init__(self, document, session, theme):
         Props.__init__(self, {
             "toc": TableOfContentsProps(document, session, theme),
-            "toc_divider": PropUpdate(theme, ["toc_divider"]),
+            "theme": PropUpdate(
+                theme, []
+            ),
             "workspace": WorkspaceProps(theme),
         })
 
@@ -721,6 +726,7 @@ class Toolbar(RLGuiPanel):
 
     def _get_local_props(self):
         return {
+            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
@@ -728,23 +734,24 @@ class Toolbar(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop(['margin']))
+        self._create_space(self.prop(['theme', 'margin']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['icon'] = 'quit'
-        sizer["border"] = self.prop(['margin'])
+        sizer["border"] = self.prop(['theme', 'margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers)
-        self._create_space(self.prop(['margin']))
+        self._create_space(self.prop(['theme', 'margin']))
 
 class ToolbarProps(Props):
 
     def __init__(self, theme):
         Props.__init__(self, {
-            "background": PropUpdate(theme, ["toolbar", "background"]),
-            "margin": PropUpdate(theme, ["toolbar", "margin"]),
+            "theme": PropUpdate(
+                theme, ["toolbar"]
+            ),
         })
 
 class TableOfContents(RLGuiVScroll):
@@ -899,6 +906,7 @@ class Workspace(RLGuiPanel):
 
     def _get_local_props(self):
         return {
+            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
@@ -911,7 +919,7 @@ class WorkspaceProps(Props):
 
     def __init__(self, theme):
         Props.__init__(self, {
-            "background": PropUpdate(theme, ["workspace", "background"])
+            "theme": PropUpdate(theme, ["workspace"])
         })
 
 class RowDivider(RLGuiPanel):

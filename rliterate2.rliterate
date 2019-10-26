@@ -152,7 +152,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %align[EXPAND]\n  )\n  RowDivider(\n    #toolbar_divider\n    %align[EXPAND]\n  )\n  MainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %align[EXPAND]\n  )\n  RowDivider(\n    #theme.toolbar_divider\n    %align[EXPAND]\n  )\n  MainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -173,7 +173,7 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(document, [\"path\"], lambda path:\n                \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(path),\n                    os.path.abspath(os.path.dirname(path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"toolbar_divider\": PropUpdate(theme, [\"toolbar_divider\"]),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                lambda path: \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(path),\n                    os.path.abspath(os.path.dirname(path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -196,7 +196,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %align[EXPAND]\n  )\n  ColumnDivider(\n    #toc_divider\n    cursor = \"size_horizontal\"\n    @drag  = self._on_toc_divider_drag(event)\n    %align[EXPAND]\n  )\n  Workspace(\n    #workspace\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %align[EXPAND]\n  )\n  ColumnDivider(\n    #theme.toc_divider\n    cursor = \"size_horizontal\"\n    @drag  = self._on_toc_divider_drag(event)\n    %align[EXPAND]\n  )\n  Workspace(\n    #workspace\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n\n",
 "type":"code"
 },
 {
@@ -244,7 +244,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"toc_divider\": PropUpdate(theme, [\"toc_divider\"]),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
 "type":"code"
 }
 ],
@@ -267,7 +267,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n  %space[#margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#margin,TOP|BOTTOM]\n  )\n  %space[#margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n  background = #theme.background\n  %space[#theme.margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#theme.margin,TOP|BOTTOM]\n  )\n  %space[#theme.margin]\n}\n",
 "type":"code"
 }
 ],
@@ -288,7 +288,7 @@
 ],
 "fragments":[
 {
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(theme, [\"toolbar\", \"background\"]),\n            \"margin\": PropUpdate(theme, [\"toolbar\", \"margin\"]),\n        })\n",
+"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toolbar\"]\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -424,7 +424,7 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %layout_columns {\n}\n",
+"text":"panel Workspace %layout_columns {\n  background = #theme.background\n}\n",
 "type":"code"
 }
 ],
@@ -445,7 +445,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(theme, [\"workspace\", \"background\"])\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(theme, [\"workspace\"])\n        })\n",
 "type":"code"
 }
 ],
