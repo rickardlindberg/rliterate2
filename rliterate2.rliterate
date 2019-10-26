@@ -311,7 +311,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  loop (#rows.rows cache_limit=mul(2 sub(#rows.total_num_pages 1))) {\n    TableOfContentsRow(\n      $\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      __reuse     = $id\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine(\n      indent      = 0\n      active      = bool(0)\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
+"text":"vscroll TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  loop (#rows.rows cache_limit=mul(2 sub(#rows.total_num_pages 1))) {\n    TableOfContentsRow(\n      $\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      __reuse     = $id\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine(\n      indent      = 0\n      active      = bool(0)\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __reuse     = $id\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
 "type":"code"
 }
 ],

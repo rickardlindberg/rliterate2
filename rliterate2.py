@@ -783,6 +783,7 @@ class TableOfContents(RLGuiVScroll):
                 props['active'] = bool(0)
                 props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
                 props['color'] = self.prop(['theme', 'dragdrop_color'])
+                props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
