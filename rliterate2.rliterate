@@ -311,7 +311,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse     = $id\n      __cache     = \"yes\"\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine(\n      indent      = 0\n      active      = bool(0)\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
+"text":"vscroll TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  loop (#rows) {\n    TableOfContentsRow(\n      $\n      __reuse     = $id\n      __cache     = \"yes\"\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine(\n      indent      = 0\n      active      = bool(0)\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __cache     = \"yes\"\n      %align[EXPAND]\n    )\n  }\n}\n",
 "type":"code"
 }
 ],
@@ -380,7 +380,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_columns {\n  %space[add(#margin mul(#level #indent_size))]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = #indent_size\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[#indent_size]\n  }\n  Text(\n    text = #title\n    %align[EXPAND]\n    %margin[#margin,ALL]\n  )\n}\n",
+"text":"panel TableOfContentsRow %layout_columns {\n  %space[add(#margin mul(#level #indent_size))]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = #indent_size\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[#indent_size]\n  }\n  Text(\n    text       = #title\n    foreground = #foreground\n    %align[EXPAND]\n    %margin[#margin,ALL]\n  )\n}\n",
 "type":"code"
 }
 ],
@@ -609,7 +609,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n            \"dragdrop_color\": \"#ff6400\",\n        })\n",
+"text":"class Theme(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toolbar\": {\n                \"margin\": 4,\n                \"background\": None,\n            },\n            \"toolbar_divider\": {\n                \"thickness\": 1,\n                \"color\": \"#aaaaaf\",\n            },\n            \"toc\": {\n                \"background\": \"#ffffff\",\n                \"foreground\": \"#000000\",\n                \"indent_size\": 20,\n                \"row_margin\": 2,\n                \"divider_thickness\": 2,\n            },\n            \"toc_divider\": {\n                \"thickness\": 3,\n                \"color\": \"#aaaaaf\",\n            },\n            \"workspace\": {\n                \"background\": \"#cccccc\",\n            },\n            \"dragdrop_color\": \"#ff6400\",\n        })\n",
 "type":"code"
 }
 ],
@@ -1756,7 +1756,7 @@
 ],
 "fragments":[
 {
-"text":"class ExpandCollapse(wx.Panel, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n\n    def _get_local_props(self):\n        return {\n            \"min_size\": (self.prop([\"size\"])+1, -1),\n        }\n\n    def _on_paint(self, event):\n        dc = wx.GCDC(wx.PaintDC(self))\n        dc.SetBrush(wx.BLACK_BRUSH)\n        render = wx.RendererNative.Get()\n        (w, h) = self.Size\n        render.DrawTreeItemButton(\n            self,\n            dc,\n            (0, (h-self.prop([\"size\"]))/2, self.prop([\"size\"]), self.prop([\"size\"])),\n            flags=0 if self.prop([\"collapsed\"]) else wx.CONTROL_EXPANDED\n        )\n",
+"text":"class ExpandCollapse(wx.Panel, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n\n    def _get_local_props(self):\n        return {\n            \"min_size\": (self.prop([\"size\"])+1, -1),\n        }\n\n    def _on_paint(self, event):\n        dc = wx.GCDC(wx.PaintDC(self))\n        render = wx.RendererNative.Get()\n        (w, h) = self.Size\n        render.DrawTreeItemButton(\n            self,\n            dc,\n            (0, (h-self.prop([\"size\"]))/2, self.prop([\"size\"]), self.prop([\"size\"])),\n            flags=0 if self.prop([\"collapsed\"]) else wx.CONTROL_EXPANDED\n        )\n",
 "type":"code"
 }
 ],
@@ -1779,7 +1779,7 @@
 ],
 "fragments":[
 {
-"text":"class Text(wx.StaticText, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"text\", self.SetLabel)\n",
+"text":"class Text(wx.StaticText, RLGuiWxMixin):\n\n    def __init__(self, parent, props):\n        wx.Panel.__init__(self, parent)\n        RLGuiWxMixin.__init__(self, props)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"text\", self.SetLabel)\n        self._register_builtin(\"foreground\", self.SetForegroundColour)\n",
 "type":"code"
 }
 ],

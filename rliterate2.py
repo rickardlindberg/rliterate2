@@ -604,7 +604,6 @@ class ExpandCollapse(wx.Panel, RLGuiWxMixin):
 
     def _on_paint(self, event):
         dc = wx.GCDC(wx.PaintDC(self))
-        dc.SetBrush(wx.BLACK_BRUSH)
         render = wx.RendererNative.Get()
         (w, h) = self.Size
         render.DrawTreeItemButton(
@@ -623,6 +622,7 @@ class Text(wx.StaticText, RLGuiWxMixin):
     def _setup_gui(self):
         RLGuiWxMixin._setup_gui(self)
         self._register_builtin("text", self.SetLabel)
+        self._register_builtin("foreground", self.SetForegroundColour)
 
 class MainFrame(RLGuiFrame):
 
@@ -772,6 +772,7 @@ class TableOfContents(RLGuiVScroll):
                 props['__cache'] = 'yes'
                 props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
                 props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
+                props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
@@ -845,6 +846,7 @@ class TableOfContentsRow(RLGuiPanel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         handlers = {}
         props['text'] = self.prop(['title'])
+        props['foreground'] = self.prop(['foreground'])
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
@@ -960,6 +962,7 @@ class Theme(Immutable):
             },
             "toc": {
                 "background": "#ffffff",
+                "foreground": "#000000",
                 "indent_size": 20,
                 "row_margin": 2,
                 "divider_thickness": 2,
