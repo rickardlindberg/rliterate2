@@ -800,7 +800,6 @@ class TableOfContentsDropLine(RLGuiPanel):
         handlers = {}
         props['thickness'] = self.prop(['thickness'])
         props['color'] = self._get_color(self.prop(['active']), self.prop(['color']))
-        props['visible'] = self.prop(['active'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(RowDivider, props, sizer, handlers)

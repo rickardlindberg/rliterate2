@@ -332,7 +332,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n  %space[#indent]\n  RowDivider(\n      thickness = #thickness\n      color     = self._get_color(#active #color)\n      visible   = #active\n      %align[EXPAND]\n      %proportion[1]\n  )\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n  %space[#indent]\n  RowDivider(\n      thickness = #thickness\n      color     = self._get_color(#active #color)\n      %align[EXPAND]\n      %proportion[1]\n  )\n}\n\n",
 "type":"code"
 },
 {
