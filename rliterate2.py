@@ -773,18 +773,18 @@ class TableOfContents(RLGuiVScroll):
                 props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
                 props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
                 props['__reuse'] = loopvar['id']
-                props['__cache'] = 'yes'
+                props['__cache'] = True
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
                 sizer = {"flag": 0, "border": 0, "proportion": 0}
                 handlers = {}
                 props['indent'] = 0
-                props['active'] = bool(0)
+                props['active'] = False
                 props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
                 props['color'] = self.prop(['theme', 'dragdrop_color'])
                 props['__reuse'] = loopvar['id']
-                props['__cache'] = 'yes'
+                props['__cache'] = True
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
 
