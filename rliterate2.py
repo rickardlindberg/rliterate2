@@ -276,26 +276,26 @@ class RLGuiMixin(object):
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
-        self._updates = []
         data = {}
         for name, value in props.items():
             if isinstance(value, Props):
+                value.listen(self._create_props_handler(name, value))
                 data[name] = value.get()
-                value.listen(self._create_handler(name, value))
             elif isinstance(value, PropUpdate):
-                data[name] = value.fn()
-                self._updates.append((name, value.fn))
+                value.parse(self._create_prop_update_handler(name, value))
+                data[name] = value.eval()
             else:
                 data[name] = value
         Immutable.__init__(self, data)
 
-    def _update(self):
-        for name, fn in self._updates:
-            self.replace([name], fn())
-
-    def _create_handler(self, name, props):
+    def _create_props_handler(self, name, props):
         def handler():
             self.force_replace([name], props.get())
+        return handler
+
+    def _create_prop_update_handler(self, name, prop_update):
+        def handler():
+            self.replace([name], prop_update.eval())
         return handler
 
 class RLGuiWxMixin(RLGuiMixin):
@@ -658,19 +658,15 @@ class MainFrame(RLGuiFrame):
 class MainFrameProps(Props):
 
     def __init__(self, document, session, theme):
-        document.listen(self._update)
-        theme.listen(self._update)
         Props.__init__(self, {
-            "title": PropUpdate(lambda:
+            "title": PropUpdate(document, ["path"], lambda path:
                 "{} ({}) - RLiterate 2".format(
-                    os.path.basename(document.get(["path"])),
-                    os.path.abspath(os.path.dirname(document.get(["path"])))
+                    os.path.basename(path),
+                    os.path.abspath(os.path.dirname(path))
                 )
             ),
             "toolbar": ToolbarProps(theme),
-            "toolbar_divider": PropUpdate(lambda:
-                theme.get(["toolbar_divider"])
-            ),
+            "toolbar_divider": PropUpdate(theme, ["toolbar_divider"]),
             "main_area": MainAreaProps(document, session, theme),
         })
 
@@ -716,12 +712,9 @@ class MainArea(RLGuiPanel):
 class MainAreaProps(Props):
 
     def __init__(self, document, session, theme):
-        theme.listen(self._update)
         Props.__init__(self, {
             "toc": TableOfContentsProps(document, session, theme),
-            "toc_divider": PropUpdate(lambda:
-                theme.get(["toc_divider"])
-            ),
+            "toc_divider": PropUpdate(theme, ["toc_divider"]),
             "workspace": WorkspaceProps(theme),
         })
 
@@ -750,14 +743,9 @@ class Toolbar(RLGuiPanel):
 class ToolbarProps(Props):
 
     def __init__(self, theme):
-        theme.listen(self._update)
         Props.__init__(self, {
-            "background": PropUpdate(lambda:
-                theme.get(["toolbar", "background"])
-            ),
-            "margin": PropUpdate(lambda:
-                theme.get(["toolbar", "margin"])
-            ),
+            "background": PropUpdate(theme, ["toolbar", "background"]),
+            "margin": PropUpdate(theme, ["toolbar", "margin"]),
         })
 
 class TableOfContents(RLGuiVScroll):
@@ -864,31 +852,26 @@ class TableOfContentsRow(RLGuiPanel):
 class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
-        document.listen(self._update)
-        session.listen(self._update)
-        theme.listen(self._update)
         Props.__init__(self, {
-            "background": PropUpdate(lambda:
-                theme.get(["toc", "background"])
+            "background": PropUpdate(
+                theme, ["toc", "background"]
             ),
-            "row_margin": PropUpdate(lambda:
-                theme.get(["toc", "row_margin"])
+            "row_margin": PropUpdate(
+                theme, ["toc", "row_margin"]
             ),
-            "divider_thickness": PropUpdate(lambda:
-                theme.get(["toc", "divider_thickness"])
+            "divider_thickness": PropUpdate(
+                theme, ["toc", "divider_thickness"]
             ),
-            "dragdrop_color": PropUpdate(lambda:
-                theme.get(["dragdrop_color"])
+            "dragdrop_color": PropUpdate(
+                theme, ["dragdrop_color"]
             ),
-            "width": PropUpdate(lambda:
-                session.get(["toc", "width"])
+            "width": PropUpdate(
+                session, ["toc", "width"]
             ),
             "set_width": (lambda value:
                 session.replace(["toc", "width"], value)
             ),
-            "rows": PropUpdate(lambda:
-                self._generate_rows(document, session, theme)
-            ),
+            "rows": PropUpdate(document, session, theme, self._generate_rows)
         })
 
     def _generate_rows(self, document, session, theme):
@@ -926,11 +909,8 @@ class Workspace(RLGuiPanel):
 class WorkspaceProps(Props):
 
     def __init__(self, theme):
-        theme.listen(self._update)
         Props.__init__(self, {
-            "background": PropUpdate(lambda:
-                theme.get(["workspace", "background"])
-            ),
+            "background": PropUpdate(theme, ["workspace", "background"])
         })
 
 class RowDivider(RLGuiPanel):
@@ -1027,8 +1007,35 @@ SliderEvent = namedtuple("SliderEvent", "value")
 
 class PropUpdate(object):
 
-    def __init__(self, fn):
-        self.fn = fn
+    def __init__(self, *args):
+        self._args = args
+
+    def parse(self, handler):
+        self._fn = lambda x: x
+        self._inputs = []
+        items = list(self._args)
+        while items:
+            item = items.pop(0)
+            if isinstance(item, Immutable):
+                item.listen(handler)
+            if (isinstance(item, Immutable) and
+                items and
+                isinstance(items[0], list)):
+                self._inputs.append((item, items.pop(0)))
+                item.listen(handler)
+            elif callable(item) and not items:
+                self._fn = item
+            else:
+                self._inputs.append((item, None))
+
+    def eval(self):
+        args = []
+        for obj, path in self._inputs:
+            if path is None:
+                args.append(obj)
+            else:
+                args.append(obj.get(path))
+        return self._fn(*args)
 
 if __name__ == "__main__":
     main()
