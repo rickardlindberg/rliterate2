@@ -351,7 +351,7 @@ class RLGuiWxMixin(RLGuiMixin):
                 dx,
                 dy,
             ))
-            if math.sqrt(dx**2+dy**2) > 3:
+            if math.sqrt(dx**2+dy**2) > 3 and "grab" in self._event_handlers:
                 self._wx_down_pos = None
                 self._call_event_handler("grab", None)
 
