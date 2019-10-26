@@ -753,6 +753,7 @@ class TableOfContents(RLGuiVScroll):
     def _get_local_props(self):
         return {
             'min_size': size(self.prop(['width']), -1),
+            'background': self.prop(['theme', 'toc', 'background']),
         }
 
     def _create_sizer(self):
@@ -769,7 +770,8 @@ class TableOfContents(RLGuiVScroll):
                 props.update(loopvar)
                 props['__reuse'] = loopvar['id']
                 props['__cache'] = 'yes'
-                props['margin'] = self.prop(['row_margin'])
+                props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
+                props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsRow, props, sizer, handlers)
                 props = {}
@@ -777,8 +779,8 @@ class TableOfContents(RLGuiVScroll):
                 handlers = {}
                 props['indent'] = 0
                 props['active'] = bool(0)
-                props['thickness'] = self.prop(['divider_thickness'])
-                props['color'] = self.prop(['dragdrop_color'])
+                props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
+                props['color'] = self.prop(['theme', 'dragdrop_color'])
                 props['__cache'] = 'yes'
                 sizer["flag"] |= wx.EXPAND
                 self._create_widget(TableOfContentsDropLine, props, sizer, handlers)
@@ -852,17 +854,8 @@ class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "background": PropUpdate(
-                theme, ["toc", "background"]
-            ),
-            "row_margin": PropUpdate(
-                theme, ["toc", "row_margin"]
-            ),
-            "divider_thickness": PropUpdate(
-                theme, ["toc", "divider_thickness"]
-            ),
-            "dragdrop_color": PropUpdate(
-                theme, ["dragdrop_color"]
+            "theme": PropUpdate(
+                theme, []
             ),
             "width": PropUpdate(
                 session, ["toc", "width"]
@@ -870,11 +863,15 @@ class TableOfContentsProps(Props):
             "set_width": (lambda value:
                 session.replace(["toc", "width"], value)
             ),
-            "rows": PropUpdate(document, session, theme, self._generate_rows)
+            "rows": PropUpdate(
+                document,
+                session,
+                self._generate_rows
+            )
         })
 
-    def _generate_rows(self, document, session, theme):
-        def inner(page, level=0):
+    def _generate_rows(self, document, session):
+        def generate_rows_from_page(page, level=0):
             is_collapsed = session.is_collapsed(page["id"])
             rows.append({
                 "id": page["id"],
@@ -883,14 +880,12 @@ class TableOfContentsProps(Props):
                 "level": level,
                 "has_children": len(page["children"]) > 0,
                 "collapsed": is_collapsed,
-                "indent_size": indent_size,
             })
             if not is_collapsed:
                 for child in page["children"]:
-                    inner(child, level+1)
-        indent_size = theme.get(["toc", "indent_size"])
+                    generate_rows_from_page(child, level+1)
         rows = []
-        inner(document.get_page())
+        generate_rows_from_page(document.get_page())
         return rows
 
 class Workspace(RLGuiPanel):
