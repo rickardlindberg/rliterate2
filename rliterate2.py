@@ -702,6 +702,24 @@ class Text(wx.StaticText, RLGuiWxMixin):
         self._register_builtin("text", self.SetLabel)
         self._register_builtin("foreground", self.SetForegroundColour)
 
+class MainFrameProps(Props):
+
+    def __init__(self, document, session, theme):
+        Props.__init__(self, {
+            "title": PropUpdate(
+                document, ["path"],
+                lambda path: "{} ({}) - RLiterate 2".format(
+                    os.path.basename(path),
+                    os.path.abspath(os.path.dirname(path))
+                )
+            ),
+            "toolbar": ToolbarProps(theme),
+            "theme": PropUpdate(
+                theme, []
+            ),
+            "main_area": MainAreaProps(document, session, theme),
+        })
+
 class MainFrame(RLGuiFrame):
 
     def _get_local_props(self):
@@ -736,22 +754,48 @@ class MainFrame(RLGuiFrame):
         sizer["proportion"] = 1
         self._create_widget(MainArea, props, sizer, handlers, name)
 
-class MainFrameProps(Props):
+class ToolbarProps(Props):
+
+    def __init__(self, theme):
+        Props.__init__(self, {
+            "theme": PropUpdate(
+                theme, ["toolbar"]
+            ),
+        })
+
+class Toolbar(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+            'background': self.prop(['theme', 'background']),
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['theme', 'margin']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['icon'] = 'quit'
+        sizer["border"] = self.prop(['theme', 'margin'])
+        sizer["flag"] |= wx.TOP
+        sizer["flag"] |= wx.BOTTOM
+        self._create_widget(ToolbarButton, props, sizer, handlers, name)
+        self._create_space(self.prop(['theme', 'margin']))
+
+class MainAreaProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "title": PropUpdate(
-                document, ["path"],
-                lambda path: "{} ({}) - RLiterate 2".format(
-                    os.path.basename(path),
-                    os.path.abspath(os.path.dirname(path))
-                )
-            ),
-            "toolbar": ToolbarProps(theme),
+            "toc": TableOfContentsProps(document, session, theme),
             "theme": PropUpdate(
                 theme, []
             ),
-            "main_area": MainAreaProps(document, session, theme),
+            "workspace": WorkspaceProps(theme),
         })
 
 class MainArea(RLGuiPanel):
@@ -794,51 +838,74 @@ class MainArea(RLGuiPanel):
         if event.initial:
             self._start_width = self.prop(["toc", "width"])
         else:
-            self.prop(["toc", "set_width"])(self._start_width+event.dx)
+            self.prop(["toc", "set_width"])(self._start_width + event.dx)
 
-class MainAreaProps(Props):
+class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "toc": TableOfContentsProps(document, session, theme),
             "theme": PropUpdate(
                 theme, []
             ),
-            "workspace": WorkspaceProps(theme),
-        })
-
-class Toolbar(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-            'background': self.prop(['theme', 'background']),
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-        self._create_space(self.prop(['theme', 'margin']))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['icon'] = 'quit'
-        sizer["border"] = self.prop(['theme', 'margin'])
-        sizer["flag"] |= wx.TOP
-        sizer["flag"] |= wx.BOTTOM
-        self._create_widget(ToolbarButton, props, sizer, handlers, name)
-        self._create_space(self.prop(['theme', 'margin']))
-
-class ToolbarProps(Props):
-
-    def __init__(self, theme):
-        Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, ["toolbar"]
+            "width": PropUpdate(
+                session, ["toc", "width"]
+            ),
+            "set_width": (lambda value:
+                session.replace(["toc", "width"], value)
+            ),
+            "rows": PropUpdate(
+                document,
+                session,
+                self._generate_rows
             ),
         })
+
+    def _generate_rows(self, document, session):
+        def generate_rows_from_page(page, level=0):
+            is_collapsed = session.is_collapsed(page["id"])
+            num_children = len(page["children"])
+            rows.append({
+                "id": page["id"],
+                "toggle": session.toggle_collapsed,
+                "title": page["title"],
+                "level": level,
+                "has_children": num_children > 0,
+                "collapsed": is_collapsed,
+            })
+            if is_collapsed:
+                target_index = num_children
+            else:
+                target_index = 0
+            drop_points.append(TableOfContentsDropPoint(
+                row_index=len(rows)-1,
+                target_index=target_index,
+                target_page=page["id"],
+                level=level+1
+            ))
+            if not is_collapsed:
+                for target_index, child in enumerate(page["children"]):
+                    generate_rows_from_page(child, level+1)
+                    drop_points.append(TableOfContentsDropPoint(
+                        row_index=len(rows)-1,
+                        target_index=target_index+1,
+                        target_page=page["id"],
+                        level=level+1
+                    ))
+        rows = []
+        drop_points = []
+        generate_rows_from_page(document.get_page())
+        return {
+            "rows": rows,
+            "drop_points": drop_points,
+            "total_num_pages": document.count_pages(),
+        }
+
+TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
+    "row_index",
+    "target_index",
+    "target_page",
+    "level",
+])
 
 class TableOfContents(RLGuiVScroll):
 
@@ -866,7 +933,7 @@ class TableOfContents(RLGuiVScroll):
             props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
-            handlers['drag'] = lambda event: self.on_drag(event, loopvar['id'])
+            handlers['drag'] = lambda event: self._on_drag(event, loopvar['id'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsRow, props, sizer, handlers, name)
             props = {}
@@ -888,17 +955,16 @@ class TableOfContents(RLGuiVScroll):
             for loopvar in self.prop(['rows', 'rows']):
                 loop_fn(loopvar)
 
-    _last_drop_line = None
-
-    def on_drag(self, event, page_id):
+    def _on_drag(self, event, page_id):
         if math.sqrt(event.dx**2+event.dy**2) > 3:
             event.initiate_drag_drop("page", {"page_id": page_id})
+    _last_drop_line = None
 
     def on_drag_drop_over(self, x, y):
         self._hide()
         drop_point = self._get_drop_point(x, y)
         if drop_point is not None:
-            self._last_drop_line = self.get_widget("drop_lines", drop_point.divider_index)
+            self._last_drop_line = self.get_widget("drop_lines", drop_point.row_index)
         if self._last_drop_line is not None:
             self._last_drop_line.update_props({
                 "active": True,
@@ -908,17 +974,17 @@ class TableOfContents(RLGuiVScroll):
     def on_drag_drop_leave(self):
         self._hide()
 
+    def on_drag_drop_data(self, x, y, page_info):
+        print(f"page_info = {page_info}")
+
     def _hide(self):
         if self._last_drop_line is not None:
             self._last_drop_line.update_props({"active": False})
 
-    def on_drag_drop_data(self, x, y, page_info):
-        print(f"page_info = {page_info}")
-
     def _get_drop_point(self, x, y):
         lines = defaultdict(list)
         for drop_point in self.prop(["rows", "drop_points"]):
-            drop_line = self.get_widget("drop_lines", drop_point.divider_index)
+            drop_line = self.get_widget("drop_lines", drop_point.row_index)
             lines[self._y_distance_to(drop_line, y)].append(drop_point)
         if lines:
             columns = {}
@@ -938,34 +1004,6 @@ class TableOfContents(RLGuiVScroll):
             (2 * self.prop(["theme", "toc", "row_margin"])) +
             (level + 1) * self.prop(["theme", "toc", "indent_size"])
         )
-
-class TableOfContentsDropLine(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-        self._create_space(self.prop(['indent']))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['thickness'] = self.prop(['thickness'])
-        props['color'] = self._get_color(self.prop(['active']), self.prop(['color']))
-        sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 1
-        self._create_widget(RowDivider, props, sizer, handlers, name)
-
-    def _get_color(self, active, color):
-        if active:
-            return color
-        else:
-            return None
 
 class TableOfContentsRow(RLGuiPanel):
 
@@ -1012,67 +1050,40 @@ class TableOfContentsRow(RLGuiPanel):
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
-class TableOfContentsProps(Props):
+class TableOfContentsDropLine(RLGuiPanel):
 
-    def __init__(self, document, session, theme):
-        Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, []
-            ),
-            "width": PropUpdate(
-                session, ["toc", "width"]
-            ),
-            "set_width": (lambda value:
-                session.replace(["toc", "width"], value)
-            ),
-            "rows": PropUpdate(
-                document,
-                session,
-                self._generate_rows
-            ),
-        })
-
-    def _generate_rows(self, document, session):
-        def generate_rows_from_page(page, level=0):
-            is_collapsed = session.is_collapsed(page["id"])
-            num_children = len(page["children"])
-            rows.append({
-                "id": page["id"],
-                "toggle": session.toggle_collapsed,
-                "title": page["title"],
-                "level": level,
-                "has_children": num_children > 0,
-                "collapsed": is_collapsed,
-            })
-            if is_collapsed:
-                target_index = num_children
-            else:
-                target_index = 0
-            drop_points.append(TableOfContentsDropPoint(
-                divider_index=len(rows)-1,
-                target_index=target_index,
-                target_page=page["id"],
-                level=level+1
-            ))
-            if not is_collapsed:
-                for target_index, child in enumerate(page["children"]):
-                    generate_rows_from_page(child, level+1)
-                    drop_points.append(TableOfContentsDropPoint(
-                        divider_index=len(rows)-1,
-                        target_index=target_index+1,
-                        target_page=page["id"],
-                        level=level+1
-                    ))
-        rows = []
-        drop_points = []
-        generate_rows_from_page(document.get_page())
+    def _get_local_props(self):
         return {
-            "rows": rows,
-            "drop_points": drop_points,
-            "total_num_pages": document.count_pages(),
         }
 
-TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", "divider_index,target_index,target_page,level")
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['indent']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['thickness'] = self.prop(['thickness'])
+        props['color'] = self._get_color(self.prop(['active']), self.prop(['color']))
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(RowDivider, props, sizer, handlers, name)
+
+    def _get_color(self, active, color):
+        if active:
+            return color
+        else:
+            return None
+
+class WorkspaceProps(Props):
+
+    def __init__(self, theme):
+        Props.__init__(self, {
+            "theme": PropUpdate(theme, ["workspace"])
+        })
 
 class Workspace(RLGuiPanel):
 
@@ -1086,13 +1097,6 @@ class Workspace(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-
-class WorkspaceProps(Props):
-
-    def __init__(self, theme):
-        Props.__init__(self, {
-            "theme": PropUpdate(theme, ["workspace"])
-        })
 
 class RowDivider(RLGuiPanel):
 
@@ -1127,7 +1131,7 @@ class Document(Immutable):
     def __init__(self, path):
         Immutable.__init__(self, {
             "path": path,
-            "doc": load_json_from_file(path),
+            "doc": load_document_from_file(path),
         })
 
     def get_page(self):

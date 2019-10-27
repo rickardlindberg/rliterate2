@@ -152,16 +152,11 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %align[EXPAND]\n  )\n  RowDivider(\n    #theme.toolbar_divider\n    %align[EXPAND]\n  )\n  MainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                lambda path: \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(path),\n                    os.path.abspath(os.path.dirname(path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
 "type":"code"
 }
 ],
-"id":"7501efbaaca640c9aaf8e66a7309ad74",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
+"id":"817bfdde2cd042328c69a297120bdf9d",
 "type":"code"
 },
 {
@@ -173,11 +168,16 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                lambda path: \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(path),\n                    os.path.abspath(os.path.dirname(path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %align[EXPAND]\n  )\n  RowDivider(\n    #theme.toolbar_divider\n    %align[EXPAND]\n  )\n  MainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],
-"id":"817bfdde2cd042328c69a297120bdf9d",
+"id":"7501efbaaca640c9aaf8e66a7309ad74",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
 "type":"code"
 }
 ],
@@ -185,8 +185,68 @@
 },
 {
 "children":[],
+"id":"a52749c4dac1446ba6877e63f59b00d3",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toolbar\"]\n            ),\n        })\n",
+"type":"code"
+}
+],
+"id":"a2b6e1e17d804033bc21ab32625b15a9",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel Toolbar %layout_columns {\n  background = #theme.background\n  %space[#theme.margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#theme.margin,TOP|BOTTOM]\n  )\n  %space[#theme.margin]\n}\n",
+"type":"code"
+}
+],
+"id":"7d87330167694a41a0222b278aeb5aa5",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Toolbar"
+},
+{
+"children":[],
 "id":"d71ac83d4f1f44acac0274181fe89635",
 "paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
+"type":"code"
+}
+],
+"id":"5d9b7a83066349ac9d47a1e72e4b561d",
+"type":"code"
+},
 {
 "chunkpath":[
 "classes"
@@ -226,7 +286,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_toc_divider_drag(self, event):\n    if event.initial:\n        self._start_width = self.prop([\"toc\", \"width\"])\n    else:\n        self.prop([\"toc\", \"set_width\"])(self._start_width+event.dx)\n",
+"text":"def _on_toc_divider_drag(self, event):\n    if event.initial:\n        self._start_width = self.prop([\"toc\", \"width\"])\n    else:\n        self.prop([\"toc\", \"set_width\"])(self._start_width + event.dx)\n",
 "type":"code"
 }
 ],
@@ -234,29 +294,15 @@
 "language":"",
 "post_process":[],
 "type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
-"type":"code"
-}
-],
-"id":"5d9b7a83066349ac9d47a1e72e4b561d",
-"type":"code"
 }
 ],
 "title":"Main area"
 },
 {
+"children":[
+{
 "children":[],
-"id":"a52749c4dac1446ba6877e63f59b00d3",
+"id":"e23f4707dee34537a98e602ca3609133",
 "paragraphs":[
 {
 "chunkpath":[
@@ -267,51 +313,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n  background = #theme.background\n  %space[#theme.margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#theme.margin,TOP|BOTTOM]\n  )\n  %space[#theme.margin]\n}\n",
-"type":"code"
-}
-],
-"id":"7d87330167694a41a0222b278aeb5aa5",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toolbar\"]\n            ),\n        })\n",
-"type":"code"
-}
-],
-"id":"a2b6e1e17d804033bc21ab32625b15a9",
-"type":"code"
-}
-],
-"title":"Toolbar"
-},
-{
-"children":[],
-"id":"1f79ba6407164d8dbcc3f2e90f409093",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"vscroll TableOfContents %layout_rows {\n  min_size    = size(#width -1)\n  background  = #theme.toc.background\n  drop_target = \"page\"\n  loop (#rows.rows cache_limit=mul(2 sub(#rows.total_num_pages 1))) {\n    TableOfContentsRow(\n      $\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      __reuse     = $id\n      __cache     = True\n      @drag       = self.on_drag(event $id)\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_lines](\n      indent      = 0\n      active      = False\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __reuse     = $id\n      __cache     = True\n      %align[EXPAND]\n    )\n  }\n}\n\n",
+"text":"vscroll TableOfContents %layout_rows {\n  min_size    = size(#width -1)\n  background  = #theme.toc.background\n  drop_target = \"page\"\n  loop (#rows.rows cache_limit=mul(2 sub(#rows.total_num_pages 1))) {\n    TableOfContentsRow(\n      $\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      __reuse     = $id\n      __cache     = True\n      @drag       = self._on_drag(event $id)\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_lines](\n      indent      = 0\n      active      = False\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __reuse     = $id\n      __cache     = True\n      %align[EXPAND]\n    )\n  }\n}\n\n",
 "type":"code"
 },
 {
@@ -341,7 +343,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_line = None\n\ndef on_drag(self, event, page_id):\n    if math.sqrt(event.dx**2+event.dy**2) > 3:\n        event.initiate_drag_drop(\"page\", {\"page_id\": page_id})\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_line = self.get_widget(\"drop_lines\", drop_point.divider_index)\n    if self._last_drop_line is not None:\n        self._last_drop_line.update_props({\n            \"active\": True,\n            \"indent\": self._calculate_indent(drop_point.level),\n        })\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef _hide(self):\n    if self._last_drop_line is not None:\n        self._last_drop_line.update_props({\"active\": False})\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"rows\", \"drop_points\"]):\n        drop_line = self.get_widget(\"drop_lines\", drop_point.divider_index)\n        lines[self._y_distance_to(drop_line, y)].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _y_distance_to(self, drop_line, y):\n    span_y_center = drop_line.get_y() + drop_line.get_height()/2\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 0.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"theme\", \"toc\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"theme\", \"toc\", \"indent_size\"])\n    )\n",
+"text":"def _on_drag(self, event, page_id):\n    if math.sqrt(event.dx**2+event.dy**2) > 3:\n        event.initiate_drag_drop(\"page\", {\"page_id\": page_id})\n",
 "type":"code"
 }
 ],
@@ -350,6 +352,60 @@
 "post_process":[],
 "type":"code"
 },
+{
+"chunkpath":[
+"classes",
+"TableOfContents"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"_last_drop_line = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_line = self.get_widget(\"drop_lines\", drop_point.row_index)\n    if self._last_drop_line is not None:\n        self._last_drop_line.update_props({\n            \"active\": True,\n            \"indent\": self._calculate_indent(drop_point.level),\n        })\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_line is not None:\n        self._last_drop_line.update_props({\"active\": False})\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"rows\", \"drop_points\"]):\n        drop_line = self.get_widget(\"drop_lines\", drop_point.row_index)\n        lines[self._y_distance_to(drop_line, y)].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _y_distance_to(self, drop_line, y):\n    span_y_center = drop_line.get_y() + drop_line.get_height()/2\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 0.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"theme\", \"toc\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"theme\", \"toc\", \"indent_size\"])\n    )\n",
+"type":"code"
+}
+],
+"id":"c4fd9a57c01d4e5cb2482f3ab5c9ca3a",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Main widget"
+},
+{
+"children":[],
+"id":"cf689824aa3641828343eba2b5fbde9f",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel TableOfContentsRow %layout_columns {\n  %space[add(#margin mul(#level #indent_size))]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = #indent_size\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[#indent_size]\n  }\n  Text(\n    text       = #title\n    foreground = #foreground\n    %align[EXPAND]\n    %margin[#margin,ALL]\n  )\n}\n",
+"type":"code"
+}
+],
+"id":"e70e2005249e4fa29780c11f6dd1bb4c",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Row"
+},
+{
+"children":[],
+"id":"97827e5f0096482a9a4eadf0ce07764f",
+"paragraphs":[
 {
 "chunkpath":[
 "classes"
@@ -397,28 +453,13 @@
 "language":"",
 "post_process":[],
 "type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel TableOfContentsRow %layout_columns {\n  %space[add(#margin mul(#level #indent_size))]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = #indent_size\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      %align[EXPAND]\n    )\n  } else {\n    %space[#indent_size]\n  }\n  Text(\n    text       = #title\n    foreground = #foreground\n    %align[EXPAND]\n    %margin[#margin,ALL]\n  )\n}\n",
-"type":"code"
 }
 ],
-"id":"e70e2005249e4fa29780c11f6dd1bb4c",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
+"title":"Drop line"
+}
 ],
-"type":"code"
-},
+"id":"1f79ba6407164d8dbcc3f2e90f409093",
+"paragraphs":[
 {
 "chunkpath":[
 "classes"
@@ -428,8 +469,16 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"rows\": PropUpdate(\n                document,\n                session,\n                self._generate_rows\n            ),\n        })\n\n    def _generate_rows(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                divider_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        divider_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page())\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"rows\": PropUpdate(\n                document,\n                session,\n                self._generate_rows\n            ),\n        })\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"TableOfContentsProps"
+],
+"prefix":"    ",
+"type":"chunk"
 }
 ],
 "id":"2a866818635048c794a1a4be3e35509d",
@@ -437,6 +486,23 @@
 },
 {
 "chunkpath":[
+"classes",
+"TableOfContentsProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _generate_rows(self, document, session):\n    def generate_rows_from_page(page, level=0):\n        is_collapsed = session.is_collapsed(page[\"id\"])\n        num_children = len(page[\"children\"])\n        rows.append({\n            \"id\": page[\"id\"],\n            \"toggle\": session.toggle_collapsed,\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                generate_rows_from_page(child, level+1)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    generate_rows_from_page(document.get_page())\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n        \"total_num_pages\": document.count_pages(),\n    }\n",
+"type":"code"
+}
+],
+"id":"0da2c4bcfcc1430383b35387ba5224a0",
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -444,7 +510,7 @@
 ],
 "fragments":[
 {
-"text":"TableOfContentsDropPoint = namedtuple(\"TableOfContentsDropPoint\", \"divider_index,target_index,target_page,level\")\n",
+"text":"TableOfContentsDropPoint = namedtuple(\"TableOfContentsDropPoint\", [\n    \"row_index\",\n    \"target_index\",\n    \"target_page\",\n    \"level\",\n])\n",
 "type":"code"
 }
 ],
@@ -467,16 +533,11 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %layout_columns {\n  background = #theme.background\n}\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(theme, [\"workspace\"])\n        })\n",
 "type":"code"
 }
 ],
-"id":"3e408b8af8bf432f9db783f07ea161d8",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
+"id":"1bd7139b569d41039b4661e345deb68d",
 "type":"code"
 },
 {
@@ -488,11 +549,16 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(theme, [\"workspace\"])\n        })\n",
+"text":"panel Workspace %layout_columns {\n  background = #theme.background\n}\n",
 "type":"code"
 }
 ],
-"id":"1bd7139b569d41039b4661e345deb68d",
+"id":"3e408b8af8bf432f9db783f07ea161d8",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
 "type":"code"
 }
 ],
@@ -565,7 +631,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_json_from_file(path),\n        })\n\n    def get_page(self):\n        return self.get([\"doc\", \"root_page\"])\n\n    def count_pages(self):\n        return len(list(self.iter_pages(self.get_page())))\n\n    def iter_pages(self, page):\n        yield page\n        for child in page[\"children\"]:\n            for x in self.iter_pages(child):\n                yield x\n",
+"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n\n    def get_page(self):\n        return self.get([\"doc\", \"root_page\"])\n\n    def count_pages(self):\n        return len(list(self.iter_pages(self.get_page())))\n\n    def iter_pages(self, page):\n        yield page\n        for child in page[\"children\"]:\n            for x in self.iter_pages(child):\n                yield x\n",
 "type":"code"
 }
 ],
