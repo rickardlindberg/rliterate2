@@ -370,7 +370,7 @@ class RLGuiWxMixin(RLGuiMixin):
         self.SetDropTarget(RLiterateDropTarget(self, kind))
 
     def on_drag_drop_over(self, x, y):
-        return False
+        pass
 
     def on_drag_drop_leave(self):
         pass
@@ -387,7 +387,8 @@ class RLiterateDropTarget(wx.DropTarget):
         self.DataObject = self.data
 
     def OnDragOver(self, x, y, defResult):
-        if defResult == wx.DragMove and self.widget.on_drag_drop_over(x, y):
+        self.widget.on_drag_drop_over(x, y)
+        if defResult == wx.DragMove:
             return wx.DragMove
         return wx.DragNone
 
@@ -865,13 +866,13 @@ class TableOfContents(RLGuiVScroll):
             event.initiate_drag_drop("page", {"page_id": page_id})
 
     def on_drag_drop_over(self, x, y):
-        return False
+        pass
 
     def on_drag_drop_leave(self):
         pass
 
-    def on_drag_drop_data(self, x, y, page_id):
-        print(f"page_id = {page_id}")
+    def on_drag_drop_data(self, x, y, page_info):
+        print(f"page_info = {page_info}")
 
 class TableOfContentsDropLine(RLGuiPanel):
 
