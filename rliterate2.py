@@ -320,7 +320,7 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def register_event_handler(self, name, fn):
         RLGuiMixin.register_event_handler(self, name, fn)
-        if name in ["drag", "grab"]:
+        if name in "drag":
             self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
             self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
             self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
@@ -334,7 +334,12 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
-        self._call_event_handler("drag", DragEvent(True, 0, 0))
+        self._call_event_handler("drag", DragEvent(
+            True,
+            0,
+            0,
+            self.initiate_drag_drop
+        ))
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
@@ -350,12 +355,11 @@ class RLGuiWxMixin(RLGuiMixin):
                 False,
                 dx,
                 dy,
+                self.initiate_drag_drop
             ))
-            if math.sqrt(dx**2+dy**2) > 3 and "grab" in self._event_handlers:
-                self._wx_down_pos = None
-                self._call_event_handler("grab", None)
 
     def initiate_drag_drop(self, kind, data):
+        self._wx_down_pos = None
         obj = wx.CustomDataObject(f"rliterate/{kind}")
         obj.SetData(json.dumps(data).encode("utf-8"))
         drag_source = wx.DropSource(self)
@@ -836,7 +840,7 @@ class TableOfContents(RLGuiVScroll):
             props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
-            handlers['grab'] = lambda event: self.initiate_drag_drop('page', loopvar['id'])
+            handlers['drag'] = lambda event: self.on_drag(event, loopvar['id'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsRow, props, sizer, handlers)
             props = {}
@@ -855,6 +859,10 @@ class TableOfContents(RLGuiVScroll):
         with self._loop(**loop_options):
             for loopvar in self.prop(['rows', 'rows']):
                 loop_fn(loopvar)
+
+    def on_drag(self, event, page_id):
+        if math.sqrt(event.dx**2+event.dy**2) > 3:
+            event.initiate_drag_drop("page", {"page_id": page_id})
 
     def on_drag_drop_over(self, x, y):
         return False
@@ -1094,7 +1102,7 @@ class Session(Immutable):
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
 
-DragEvent = namedtuple("DragEvent", "initial,dx,dy")
+DragEvent = namedtuple("DragEvent", "initial,dx,dy,initiate_drag_drop")
 
 SliderEvent = namedtuple("SliderEvent", "value")
 
