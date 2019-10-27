@@ -935,7 +935,7 @@ class TableOfContents(RLGuiVScroll):
 
     def _calculate_indent(self, level):
         return (
-            self.prop(["theme", "toc", "row_margin"]) +
+            (2 * self.prop(["theme", "toc", "row_margin"])) +
             (level + 1) * self.prop(["theme", "toc", "indent_size"])
         )
 
