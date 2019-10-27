@@ -853,14 +853,14 @@ class TableOfContentsProps(Props):
             "set_width": (lambda value:
                 session.replace(["toc", "width"], value)
             ),
-            "rows": PropUpdate(
+            "main_area": PropUpdate(
                 document,
                 session,
-                self._generate_rows
+                self._generate_main_area
             ),
         })
 
-    def _generate_rows(self, document, session):
+    def _generate_main_area(self, document, session):
         def generate_rows_from_page(page, level=0):
             is_collapsed = session.is_collapsed(page["id"])
             num_children = len(page["children"])
@@ -900,6 +900,44 @@ class TableOfContentsProps(Props):
             "total_num_pages": document.count_pages(),
         }
 
+class TableOfContents(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+            'min_size': size(self.prop(['width']), -1),
+            'background': self.prop(['theme', 'toc', 'background']),
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        if_condition = False
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['label'] = 'unhoist'
+            sizer["border"] = add(1, self.prop(['theme', 'toc', 'row_margin']))
+            sizer["flag"] |= wx.ALL
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(Button, props, sizer, handlers, name)
+        with self._loop():
+            for loopvar in ([None] if (if_condition) else []):
+                loop_fn(loopvar)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['main_area']))
+        props['theme'] = self.prop(['theme'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(TableOfContentsMainArea, props, sizer, handlers, name)
+
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "row_index",
     "target_index",
@@ -907,12 +945,10 @@ TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "level",
 ])
 
-class TableOfContents(RLGuiVScroll):
+class TableOfContentsMainArea(RLGuiVScroll):
 
     def _get_local_props(self):
         return {
-            'min_size': size(self.prop(['width']), -1),
-            'background': self.prop(['theme', 'toc', 'background']),
             'drop_target': 'page',
         }
 
@@ -950,9 +986,9 @@ class TableOfContents(RLGuiVScroll):
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
         loop_options = {}
-        loop_options['cache_limit'] = mul(2, sub(self.prop(['rows', 'total_num_pages']), 1))
+        loop_options['cache_limit'] = mul(2, sub(self.prop(['total_num_pages']), 1))
         with self._loop(**loop_options):
-            for loopvar in self.prop(['rows', 'rows']):
+            for loopvar in self.prop(['rows']):
                 loop_fn(loopvar)
 
     def _on_drag(self, event, page_id):
@@ -983,7 +1019,7 @@ class TableOfContents(RLGuiVScroll):
 
     def _get_drop_point(self, x, y):
         lines = defaultdict(list)
-        for drop_point in self.prop(["rows", "drop_points"]):
+        for drop_point in self.prop(["drop_points"]):
             drop_line = self.get_widget("drop_lines", drop_point.row_index)
             lines[self._y_distance_to(drop_line, y)].append(drop_point)
         if lines:
