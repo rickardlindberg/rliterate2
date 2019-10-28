@@ -1306,7 +1306,7 @@
 "type":"tabstop"
 },
 {
-"text":"->[\"none\"]\n  call ",
+"text":"-> [\"none\"]\n  call ",
 "type":"code"
 },
 {
