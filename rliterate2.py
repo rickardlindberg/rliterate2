@@ -1134,6 +1134,7 @@ class TableOfContentsRow(RLGuiPanel):
             props['size'] = self.prop(['indent_size'])
             props['collapsed'] = self.prop(['collapsed'])
             handlers['click'] = lambda event: self.prop(['toggle'])(self.prop(['id']))
+            handlers['drag'] = lambda event: None
             sizer["flag"] |= wx.EXPAND
             self._create_widget(ExpandCollapse, props, sizer, handlers, name)
         with self._loop():
