@@ -227,9 +227,14 @@ class RLGuiMixin(object):
     def register_event_handler(self, name, fn):
         self._event_handlers[name] = profile(f"on_{name}")(profile_sub(f"on_{name}")(fn))
 
-    def _call_event_handler(self, name, *args, **kwargs):
-        if name in self._event_handlers:
-            self._event_handlers[name](*args, **kwargs)
+    def call_event_handler(self, name, event, propagate=False):
+        if self.has_event_handler(name):
+            self._event_handlers[name](event)
+        elif self._parent is not None and propagate:
+            self._parent.call_event_handler(name, event, True)
+
+    def has_event_handler(self, name):
+        return name in self._event_handlers
 
     def _setup_gui(self):
         pass
@@ -334,28 +339,35 @@ class RLGuiWxMixin(RLGuiMixin):
         self._wx_event_handlers = set()
         self._wx_down_pos = None
 
-    def register_event_handler(self, name, fn):
-        RLGuiMixin.register_event_handler(self, name, fn)
-        self._register_wx_event(name)
+    def _update_gui(self, parent_updated):
+        RLGuiMixin._update_gui(self, parent_updated)
+        for name in ["drag"]:
+            if self._parent is not None and self._parent.has_event_handler(name):
+                self._register_wx_events(name)
 
-    def _register_wx_event(self, name):
-        for event_id, handler in self._event_map.get(name, []):
-            if event_id not in self._wx_event_handlers:
-                self._wx_event_handlers.add(event_id)
+    def update_event_handlers(self, handlers):
+        RLGuiMixin.update_event_handlers(self, handlers)
+        for name in handlers:
+            self._register_wx_events(name)
+
+    def _register_wx_events(self, name):
+        if name not in self._wx_event_handlers:
+            self._wx_event_handlers.add(name)
+            for event_id, handler in self._event_map.get(name, []):
                 self.Bind(event_id, handler)
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
-        self._call_event_handler("drag", DragEvent(
+        self.call_event_handler("drag", DragEvent(
             True,
             0,
             0,
             self.initiate_drag_drop
-        ))
+        ), propagate=True)
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self._call_event_handler("click", None)
+            self.call_event_handler("click", None)
         self._wx_down_pos = None
 
     def _on_wx_motion(self, wx_event):
@@ -363,12 +375,12 @@ class RLGuiWxMixin(RLGuiMixin):
             new_pos = self.ClientToScreen(wx_event.Position)
             dx = new_pos.x-self._wx_down_pos.x
             dy = new_pos.y-self._wx_down_pos.y
-            self._call_event_handler("drag", DragEvent(
+            self.call_event_handler("drag", DragEvent(
                 False,
                 dx,
                 dy,
                 self.initiate_drag_drop
-            ))
+            ), propagate=True)
 
     def initiate_drag_drop(self, kind, data):
         self._wx_down_pos = None
