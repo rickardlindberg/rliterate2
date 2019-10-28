@@ -189,12 +189,25 @@ class Immutable(Observable):
         self._value = im_modify(self._value, path, fn)
         self._notify()
 
-    def replace(self, path, value):
-        if self._replace_if_needed(path, value):
+    def replace(self, *args):
+        notify = False
+        index = 0
+        while index < len(args):
+            path = args[index]
+            value = args[index+1]
+            index += 2
+            if self._replace_if_needed(path, value):
+                notify = True
+        if notify:
             self._notify()
 
-    def force_replace(self, path, value):
-        self._replace(path, value)
+    def force_replace(self, *args):
+        index = 0
+        while index < len(args):
+            path = args[index]
+            value = args[index+1]
+            index += 2
+            self._replace(path, value)
         self._notify()
 
     @profile_sub("replace")
@@ -292,23 +305,40 @@ class Props(Immutable):
         for name, value in props.items():
             if isinstance(value, Props):
                 value.listen(self._create_props_handler(name, value))
-                data[name] = value.get()
+                self._set_initial(data, name, value.get())
             elif isinstance(value, PropUpdate):
                 value.parse(self._create_prop_update_handler(name, value))
-                data[name] = value.eval()
+                self._set_initial(data, name, value.eval())
             else:
                 data[name] = value
         Immutable.__init__(self, data)
 
     def _create_props_handler(self, name, props):
         def handler():
-            self.force_replace([name], props.get())
+            self.force_replace(*self._replace_args(name, props.get()))
         return handler
 
     def _create_prop_update_handler(self, name, prop_update):
         def handler():
-            self.replace([name], prop_update.eval())
+            self.replace(*self._replace_args(name, prop_update.eval()))
         return handler
+
+    def _set_initial(self, data, name, value):
+        if "*" in name:
+            data.update(value)
+        else:
+            data[name] = value
+
+    def _replace_args(self, name, value):
+        args = []
+        if "*" in name:
+            for sub_name, sub_value in value.items():
+                args.append([sub_name])
+                args.append(sub_value)
+        else:
+            args.append([name])
+            args.append(value)
+        return args
 
 class RLGuiWxMixin(RLGuiMixin):
 
@@ -879,7 +909,59 @@ class TableOfContentsProps(Props):
             "set_width": (lambda value:
                 session.replace(["toc", "width"], value)
             ),
-            "main_area": PropUpdate(
+            "main_area": TableOfContentsMainAreaProps(
+                document,
+                session,
+                theme
+            ),
+        })
+
+class TableOfContents(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+            'min_size': size(self.prop(['width']), -1),
+            'background': self.prop(['theme', 'toc', 'background']),
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        if_condition = False
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['label'] = 'unhoist'
+            sizer["border"] = add(1, self.prop(['theme', 'toc', 'row_margin']))
+            sizer["flag"] |= wx.ALL
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(Button, props, sizer, handlers, name)
+        with self._loop():
+            for loopvar in ([None] if (if_condition) else []):
+                loop_fn(loopvar)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['main_area']))
+        props['theme'] = self.prop(['theme'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(TableOfContentsMainArea, props, sizer, handlers, name)
+
+class TableOfContentsMainAreaProps(Props):
+
+    def __init__(self, document, session, theme):
+        Props.__init__(self, {
+            "theme": PropUpdate(
+                theme, []
+            ),
+            "*": PropUpdate(
                 document,
                 session,
                 self._generate_main_area
@@ -925,44 +1007,6 @@ class TableOfContentsProps(Props):
             "drop_points": drop_points,
             "total_num_pages": document.count_pages(),
         }
-
-class TableOfContents(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-            'min_size': size(self.prop(['width']), -1),
-            'background': self.prop(['theme', 'toc', 'background']),
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
-
-    def _create_widgets(self):
-        pass
-        if_condition = False
-        def loop_fn(loopvar):
-            pass
-            props = {}
-            sizer = {"flag": 0, "border": 0, "proportion": 0}
-            name = None
-            handlers = {}
-            props['label'] = 'unhoist'
-            sizer["border"] = add(1, self.prop(['theme', 'toc', 'row_margin']))
-            sizer["flag"] |= wx.ALL
-            sizer["flag"] |= wx.EXPAND
-            self._create_widget(Button, props, sizer, handlers, name)
-        with self._loop():
-            for loopvar in ([None] if (if_condition) else []):
-                loop_fn(loopvar)
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props.update(self.prop(['main_area']))
-        props['theme'] = self.prop(['theme'])
-        sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 1
-        self._create_widget(TableOfContentsMainArea, props, sizer, handlers, name)
 
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "row_index",

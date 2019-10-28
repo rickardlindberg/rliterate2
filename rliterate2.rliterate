@@ -306,19 +306,18 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"TableOfContentsProps"
+"classes"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def _generate_main_area(self, document, session):\n    def generate_rows_from_page(page, level=0):\n        is_collapsed = session.is_collapsed(page[\"id\"])\n        num_children = len(page[\"children\"])\n        rows.append({\n            \"id\": page[\"id\"],\n            \"toggle\": session.toggle_collapsed,\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                generate_rows_from_page(child, level+1)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    generate_rows_from_page(document.get_page())\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n        \"total_num_pages\": document.count_pages(),\n    }\n",
+"text":"class TableOfContentsMainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"*\": PropUpdate(\n                document,\n                session,\n                self._generate_main_area\n            ),\n        })\n\n    def _generate_main_area(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        row_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page())\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
 "type":"code"
 }
 ],
-"id":"0da2c4bcfcc1430383b35387ba5224a0",
+"id":"35fa6ae9b01d46edba595aeca5cacef7",
 "type":"code"
 },
 {
@@ -502,16 +501,8 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"main_area\": PropUpdate(\n                document,\n                session,\n                self._generate_main_area\n            ),\n        })\n\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
-},
-{
-"blank_lines_before":0,
-"path":[
-"TableOfContentsProps"
-],
-"prefix":"    ",
-"type":"chunk"
 }
 ],
 "id":"2a866818635048c794a1a4be3e35509d",
@@ -932,7 +923,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                data[name] = value.get()\n            elif isinstance(value, PropUpdate):\n                value.parse(self._create_prop_update_handler(name, value))\n                data[name] = value.eval()\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self.force_replace([name], props.get())\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self.replace([name], prop_update.eval())\n        return handler\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n            elif isinstance(value, PropUpdate):\n                value.parse(self._create_prop_update_handler(name, value))\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self.force_replace(*self._replace_args(name, props.get()))\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self.replace(*self._replace_args(name, prop_update.eval()))\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _replace_args(self, name, value):\n        args = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                args.append([sub_name])\n                args.append(sub_value)\n        else:\n            args.append([name])\n            args.append(value)\n        return args\n",
 "type":"code"
 }
 ],
@@ -2183,7 +2174,7 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(Observable):\n\n    def __init__(self, value):\n        Observable.__init__(self)\n        self._value = value\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def modify(self, path, fn):\n        self._value = im_modify(self._value, path, fn)\n        self._notify()\n\n    def replace(self, path, value):\n        if self._replace_if_needed(path, value):\n            self._notify()\n\n    def force_replace(self, path, value):\n        self._replace(path, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, path, value):\n        if self.get(path) != value:\n            self._replace(path, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, path, value):\n        self._value = im_modify(self._value, path, lambda old: value)\n",
+"text":"class Immutable(Observable):\n\n    def __init__(self, value):\n        Observable.__init__(self)\n        self._value = value\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def modify(self, path, fn):\n        self._value = im_modify(self._value, path, fn)\n        self._notify()\n\n    def replace(self, *args):\n        notify = False\n        index = 0\n        while index < len(args):\n            path = args[index]\n            value = args[index+1]\n            index += 2\n            if self._replace_if_needed(path, value):\n                notify = True\n        if notify:\n            self._notify()\n\n    def force_replace(self, *args):\n        index = 0\n        while index < len(args):\n            path = args[index]\n            value = args[index+1]\n            index += 2\n            self._replace(path, value)\n        self._notify()\n\n    @profile_sub(\"replace\")\n    def _replace_if_needed(self, path, value):\n        if self.get(path) != value:\n            self._replace(path, value)\n            return True\n        return False\n\n    @profile_sub(\"replace\")\n    def _replace(self, path, value):\n        self._value = im_modify(self._value, path, lambda old: value)\n",
 "type":"code"
 }
 ],
