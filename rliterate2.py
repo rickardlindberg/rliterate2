@@ -73,7 +73,7 @@ def start_app(frame_cls, props):
     @profile_sub("show frame")
     def show_frame():
         props.listen(lambda: update(props.get()))
-        frame = frame_cls(None, None, props.get())
+        frame = frame_cls(None, None, {}, props.get())
         frame.Layout()
         frame.Refresh()
         frame.Show()
@@ -210,13 +210,18 @@ class Immutable(Observable):
 
 class RLGuiMixin(object):
 
-    def __init__(self, parent, props):
+    def __init__(self, parent, handlers, props):
         self._parent = parent
         self._props = {}
         self._builtin_props = {}
         self._event_handlers = {}
         self._setup_gui()
+        self.update_event_handlers(handlers)
         self.update_props(props, parent_updated=True)
+
+    def update_event_handlers(self, handlers):
+        for name, fn in handlers.items():
+            self.register_event_handler(name, fn)
 
     @profile_sub("register event")
     def register_event_handler(self, name, fn):
@@ -314,6 +319,16 @@ class RLGuiWxMixin(RLGuiMixin):
                 "hand": wx.Cursor(wx.CURSOR_HAND),
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
+        self._event_map = {
+            "drag": [
+                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),
+                (wx.EVT_LEFT_UP, self._on_wx_left_up),
+                (wx.EVT_MOTION, self._on_wx_motion),
+            ],
+            "click": [
+                (wx.EVT_LEFT_UP, self._on_wx_left_up),
+            ],
+        }
 
     def _setup_wx_events(self):
         self._wx_event_handlers = set()
@@ -321,17 +336,13 @@ class RLGuiWxMixin(RLGuiMixin):
 
     def register_event_handler(self, name, fn):
         RLGuiMixin.register_event_handler(self, name, fn)
-        if name in "drag":
-            self._bind_wx_event(wx.EVT_LEFT_DOWN, self._on_wx_left_down)
-            self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
-            self._bind_wx_event(wx.EVT_MOTION, self._on_wx_motion)
-        elif name == "click":
-            self._bind_wx_event(wx.EVT_LEFT_UP, self._on_wx_left_up)
+        self._register_wx_event(name)
 
-    def _bind_wx_event(self, event, handler):
-        if event not in self._wx_event_handlers:
-            self._wx_event_handlers.add(event)
-            self.Bind(event, handler)
+    def _register_wx_event(self, name):
+        for event_id, handler in self._event_map.get(name, []):
+            if event_id not in self._wx_event_handlers:
+                self._wx_event_handlers.add(event_id)
+                self.Bind(event_id, handler)
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
@@ -486,19 +497,21 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         re_use_offset = self._reuse(re_use_condition)
         if re_use_offset == 0:
             widget, sizer_item = self._children[self._child_index]
+            widget.update_event_handlers(handlers)
             widget.update_props(props, parent_updated=True)
             sizer_item.SetBorder(sizer["border"])
             sizer_item.SetProportion(sizer["proportion"])
         else:
             if re_use_offset is None:
-                widget = widget_cls(self._wx_parent, self, props)
+                widget = widget_cls(self._wx_parent, self, handlers, props)
             else:
                 widget = self._children.pop(self._child_index+re_use_offset)[0]
+                widget.update_event_handlers(handlers)
+                widget.update_props(props, parent_updated=True)
                 self._sizer.Detach(self._sizer_index+re_use_offset)
+                widget.update_event_handlers(handlers)
             sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
-            for name, fn in handlers.items():
-                widget.register_event_handler(name, fn)
         sizer_item.Show(True)
         if name is not None:
             self._names[name].append(widget)
