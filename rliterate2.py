@@ -168,8 +168,8 @@ class Immutable(object):
         self._listeners = []
         self._value = value
 
-    def listen(self, listener):
-        self._listeners.append(listener)
+    def listen(self, listener, prefix=[]):
+        self._listeners.append((listener, prefix))
 
     @profile_sub("get")
     def get(self, path=[]):
@@ -188,13 +188,11 @@ class Immutable(object):
         self.modify_many([(path, fn)])
 
     def modify_many(self, *args, **kwargs):
-        if self._modify(*args, **kwargs):
-            for listener in self._listeners:
-                listener()
+        self._notify(self._modify(*args, **kwargs))
 
     @profile_sub("im_modify")
     def _modify(self, items, only_if_differs=False):
-        old_value = self._value
+        changed_paths = []
         for path, fn in items:
             if only_if_differs:
                 subvalue = self.get(path)
@@ -205,9 +203,24 @@ class Immutable(object):
                         path,
                         lambda old: new_subvalue
                     )
+                    changed_paths.append(path)
             else:
-                self._value = im_modify(self._value, path, fn)
-        return self._value is not old_value
+                self._value = im_modify(
+                    self._value,
+                    path,
+                    fn
+                )
+                changed_paths.append(path)
+        return changed_paths
+
+    def _notify(self, changed_paths):
+        listeners = set()
+        for changed_path in changed_paths:
+            for listener, prefix in self._listeners:
+                if changed_path[:len(prefix)] == prefix:
+                    listeners.add(listener)
+        for listener in listeners:
+            listener()
 
 class RLGuiMixin(object):
 
@@ -919,12 +932,11 @@ class TableOfContentsProps(Props):
             "theme": PropUpdate(
                 theme, ["toc"]
             ),
-            "*": PropUpdate(
-                session, ["toc"],
-                lambda value: {
-                    "width": value["width"],
-                    "hoisted_page": value["hoisted_page"],
-                }
+            "width": PropUpdate(
+                session, ["toc", "width"]
+            ),
+            "hoisted_page": PropUpdate(
+                session, ["toc", "hoisted_page"]
             ),
             "set_hoisted_page": session.set_hoisted_page,
             "main_area": TableOfContentsMainAreaProps(
@@ -1353,12 +1365,14 @@ class PropUpdate(object):
         items = list(self._args)
         while items:
             item = items.pop(0)
-            if isinstance(item, Immutable):
-                item.listen(handler)
             if (isinstance(item, Immutable) and
                 items and
                 isinstance(items[0], list)):
-                self._inputs.append((item, items.pop(0)))
+                path = items.pop(0)
+                self._inputs.append((item, path))
+                item.listen(handler, prefix=path)
+            elif isinstance(item, Immutable):
+                self._inputs.append((item, None))
                 item.listen(handler)
             elif callable(item) and not items:
                 self._fn = item
