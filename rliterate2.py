@@ -156,27 +156,14 @@ def im_modify(obj, path, modify_fn):
         return new_obj
     return modify_fn(obj)
 
-class Observable(object):
+class Immutable(object):
 
-    def __init__(self):
+    def __init__(self, value):
         self._listeners = []
-
-    def _notify(self):
-        for listener in self._listeners:
-            listener()
+        self._value = value
 
     def listen(self, listener):
         self._listeners.append(listener)
-        return self
-
-    def unlisten(self, listener):
-        self._listeners.remove(listener)
-
-class Immutable(Observable):
-
-    def __init__(self, value):
-        Observable.__init__(self)
-        self._value = value
 
     @profile_sub("get")
     def get(self, path=[]):
@@ -185,46 +172,25 @@ class Immutable(Observable):
             value = value[part]
         return value
 
+    def replace(self, path, value):
+        self.modify_many(
+            [(path, lambda old_value: value)],
+            only_if_differs=True
+        )
+
     def modify(self, path, fn):
-        self._modify_many_notify(
-            [(path, fn)],
-            check=False
-        )
+        self.modify_many([(path, fn)])
 
-    def replace(self, *args):
-        self._modify_many_notify(
-            self._create_replace_modify_items(args),
-            check=True
-        )
-
-    def force_replace(self, *args):
-        self._modify_many_notify(
-            self._create_replace_modify_items(args),
-            check=False
-        )
-
-    def _create_replace_modify_items(self, args):
-        items = []
-        index = 0
-        while index < len(args):
-            path = args[index]
-            value = args[index + 1]
-            index += 2
-            items.append(self._create_replace_modify_item(path, value))
-        return items
-
-    def _create_replace_modify_item(self, name, value):
-        return (name, lambda old: value)
-
-    def _modify_many_notify(self, *args, **kwargs):
-        if self._modify_many(*args, **kwargs):
-            self._notify()
+    def modify_many(self, *args, **kwargs):
+        if self._modify(*args, **kwargs):
+            for listener in self._listeners:
+                listener()
 
     @profile_sub("im_modify")
-    def _modify_many(self, items, check=False):
+    def _modify(self, items, only_if_differs=False):
         old_value = self._value
         for path, fn in items:
-            if check:
+            if only_if_differs:
                 subvalue = self.get(path)
                 new_subvalue = fn(subvalue)
                 if new_subvalue != subvalue:
@@ -331,12 +297,18 @@ class Props(Immutable):
 
     def _create_props_handler(self, name, props):
         def handler():
-            self.force_replace(*self._replace_args(name, props.get()))
+            self.modify_many(
+                self._modify_items(name, props.get()),
+                only_if_differs=False
+            )
         return handler
 
     def _create_prop_update_handler(self, name, prop_update):
         def handler():
-            self.replace(*self._replace_args(name, prop_update.eval()))
+            self.modify_many(
+                self._modify_items(name, prop_update.eval()),
+                only_if_differs=True
+            )
         return handler
 
     def _set_initial(self, data, name, value):
@@ -345,16 +317,17 @@ class Props(Immutable):
         else:
             data[name] = value
 
-    def _replace_args(self, name, value):
-        args = []
+    def _modify_items(self, name, value):
+        items = []
         if "*" in name:
             for sub_name, sub_value in value.items():
-                args.append([sub_name])
-                args.append(sub_value)
+                items.append(self._modify_item(sub_name, sub_value))
         else:
-            args.append([name])
-            args.append(value)
-        return args
+            items.append(self._modify_item(name, value))
+        return items
+
+    def _modify_item(self, name, value):
+        return ([name], lambda old_value: value)
 
 class RLGuiWxMixin(RLGuiMixin):
 

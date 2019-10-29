@@ -923,7 +923,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n            elif isinstance(value, PropUpdate):\n                value.parse(self._create_prop_update_handler(name, value))\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self.force_replace(*self._replace_args(name, props.get()))\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self.replace(*self._replace_args(name, prop_update.eval()))\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _replace_args(self, name, value):\n        args = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                args.append([sub_name])\n                args.append(sub_value)\n        else:\n            args.append([name])\n            args.append(value)\n        return args\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n            elif isinstance(value, PropUpdate):\n                value.parse(self._create_prop_update_handler(name, value))\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        Immutable.__init__(self, data)\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self.modify_many(\n                self._modify_items(name, props.get()),\n                only_if_differs=False\n            )\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self.modify_many(\n                self._modify_items(name, prop_update.eval()),\n                only_if_differs=True\n            )\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _modify_items(self, name, value):\n        items = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                items.append(self._modify_item(sub_name, sub_value))\n        else:\n            items.append(self._modify_item(name, value))\n        return items\n\n    def _modify_item(self, name, value):\n        return ([name], lambda old_value: value)\n",
 "type":"code"
 }
 ],
@@ -2156,29 +2156,6 @@
 },
 {
 "children":[],
-"id":"8ad33ab3d75240afb87f93c0601bbb9f",
-"paragraphs":[
-{
-"chunkpath":[
-"base base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Observable(object):\n\n    def __init__(self):\n        self._listeners = []\n\n    def _notify(self):\n        for listener in self._listeners:\n            listener()\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n        return self\n\n    def unlisten(self, listener):\n        self._listeners.remove(listener)\n",
-"type":"code"
-}
-],
-"id":"ea51c18d2f0b47ccb8b01924564fcdee",
-"type":"code"
-}
-],
-"title":"Observable"
-},
-{
-"children":[],
 "id":"ececc958dff648909493062a2283a5ae",
 "paragraphs":[
 {
@@ -2190,7 +2167,7 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(Observable):\n\n    def __init__(self, value):\n        Observable.__init__(self)\n        self._value = value\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def modify(self, path, fn):\n        self._modify_many_notify(\n            [(path, fn)],\n            check=False\n        )\n\n    def replace(self, *args):\n        self._modify_many_notify(\n            self._create_replace_modify_items(args),\n            check=True\n        )\n\n    def force_replace(self, *args):\n        self._modify_many_notify(\n            self._create_replace_modify_items(args),\n            check=False\n        )\n\n    def _create_replace_modify_items(self, args):\n        items = []\n        index = 0\n        while index < len(args):\n            path = args[index]\n            value = args[index + 1]\n            index += 2\n            items.append(self._create_replace_modify_item(path, value))\n        return items\n\n    def _create_replace_modify_item(self, name, value):\n        return (name, lambda old: value)\n\n    def _modify_many_notify(self, *args, **kwargs):\n        if self._modify_many(*args, **kwargs):\n            self._notify()\n\n    @profile_sub(\"im_modify\")\n    def _modify_many(self, items, check=False):\n        old_value = self._value\n        for path, fn in items:\n            if check:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    self._value = im_modify(\n                        self._value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n            else:\n                self._value = im_modify(self._value, path, fn)\n        return self._value is not old_value\n",
+"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        if self._modify(*args, **kwargs):\n            for listener in self._listeners:\n                listener()\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        old_value = self._value\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    self._value = im_modify(\n                        self._value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n            else:\n                self._value = im_modify(self._value, path, fn)\n        return self._value is not old_value\n",
 "type":"code"
 }
 ],
