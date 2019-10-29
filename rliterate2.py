@@ -913,6 +913,10 @@ class TableOfContentsProps(Props):
             ),
             "*": PropUpdate(
                 session, ["toc"],
+                lambda value: {
+                    "width": value["width"],
+                    "hoisted_page": value["hoisted_page"],
+                }
             ),
             "set_width": session.set_toc_width,
             "set_hoisted_page": session.set_hoisted_page,
