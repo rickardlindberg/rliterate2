@@ -433,6 +433,9 @@ class RLGuiWxMixin(RLGuiMixin):
     def get_height(self):
         return self.Size.height
 
+    def get_width(self):
+        return self.Size.width
+
 class RLiterateDropTarget(wx.DropTarget):
 
     def __init__(self, widget, kind):
@@ -854,6 +857,7 @@ class MainAreaProps(Props):
                 session,
                 theme
             ),
+            "set_toc_width": session.set_toc_width,
             "toc_divider": PropUpdate(
                 theme, ["toc_divider"]
             ),
@@ -877,6 +881,7 @@ class MainArea(RLGuiPanel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
+        name = 'toc'
         props.update(self.prop(['toc']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContents, props, sizer, handlers, name)
@@ -900,9 +905,12 @@ class MainArea(RLGuiPanel):
 
     def _on_toc_divider_drag(self, event):
         if event.initial:
-            self._start_width = self.prop(["toc", "width"])
+            toc = self.get_widget("toc")
+            self._start_width = toc.get_width()
         else:
-            self.prop(["toc", "set_width"])(self._start_width + event.dx)
+            self.prop(["set_toc_width"])(
+                self._start_width + event.dx
+            )
 
 class TableOfContentsProps(Props):
 
@@ -918,7 +926,6 @@ class TableOfContentsProps(Props):
                     "hoisted_page": value["hoisted_page"],
                 }
             ),
-            "set_width": session.set_toc_width,
             "set_hoisted_page": session.set_hoisted_page,
             "main_area": TableOfContentsMainAreaProps(
                 document,
@@ -931,7 +938,7 @@ class TableOfContents(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'min_size': size(self.prop(['width']), -1),
+            'min_size': size(max(50, self.prop(['width'])), -1),
             'background': self.prop(['theme', 'background']),
         }
 
