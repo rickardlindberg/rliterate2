@@ -42,6 +42,12 @@ def main():
         MainFrameProps(document, session, theme)
     )
 
+def format_title(path):
+    return "{} ({}) - RLiterate 2".format(
+        os.path.basename(path),
+        os.path.abspath(os.path.dirname(path))
+    )
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -761,16 +767,19 @@ class MainFrameProps(Props):
         Props.__init__(self, {
             "title": PropUpdate(
                 document, ["path"],
-                lambda path: "{} ({}) - RLiterate 2".format(
-                    os.path.basename(path),
-                    os.path.abspath(os.path.dirname(path))
-                )
+                format_title
             ),
-            "toolbar": ToolbarProps(theme),
-            "theme": PropUpdate(
-                theme, []
+            "toolbar": ToolbarProps(
+                theme
             ),
-            "main_area": MainAreaProps(document, session, theme),
+            "toolbar_divider": PropUpdate(
+                theme, ["toolbar_divider"]
+            ),
+            "main_area": MainAreaProps(
+                document,
+                session,
+                theme
+            ),
         })
 
 class MainFrame(RLGuiFrame):
@@ -795,7 +804,7 @@ class MainFrame(RLGuiFrame):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['theme', 'toolbar_divider']))
+        props.update(self.prop(['toolbar_divider']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(RowDivider, props, sizer, handlers, name)
         props = {}
@@ -844,11 +853,17 @@ class MainAreaProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "toc": TableOfContentsProps(document, session, theme),
-            "theme": PropUpdate(
-                theme, []
+            "toc": TableOfContentsProps(
+                document,
+                session,
+                theme
             ),
-            "workspace": WorkspaceProps(theme),
+            "toc_divider": PropUpdate(
+                theme, ["toc_divider"]
+            ),
+            "workspace": WorkspaceProps(
+                theme
+            ),
         })
 
 class MainArea(RLGuiPanel):
@@ -873,7 +888,7 @@ class MainArea(RLGuiPanel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['theme', 'toc_divider']))
+        props.update(self.prop(['toc_divider']))
         props['cursor'] = 'size_horizontal'
         handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
@@ -898,7 +913,7 @@ class TableOfContentsProps(Props):
     def __init__(self, document, session, theme):
         Props.__init__(self, {
             "theme": PropUpdate(
-                theme, []
+                theme, ["toc"]
             ),
             "width": PropUpdate(
                 session, ["toc", "width"]
@@ -918,7 +933,7 @@ class TableOfContents(RLGuiPanel):
     def _get_local_props(self):
         return {
             'min_size': size(self.prop(['width']), -1),
-            'background': self.prop(['theme', 'toc', 'background']),
+            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
@@ -934,7 +949,7 @@ class TableOfContents(RLGuiPanel):
             name = None
             handlers = {}
             props['label'] = 'unhoist'
-            sizer["border"] = add(1, self.prop(['theme', 'toc', 'row_margin']))
+            sizer["border"] = add(1, self.prop(['theme', 'row_margin']))
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Button, props, sizer, handlers, name)
@@ -1058,7 +1073,7 @@ class TableOfContentsMainArea(RLGuiVScroll):
                 loop_fn(loopvar)
 
     def _on_drag(self, event, page_id):
-        if math.sqrt(event.dx**2+event.dy**2) > 3:
+        if math.sqrt(event.dx**2 + event.dy**2) > 3:
             event.initiate_drag_drop("page", {"page_id": page_id})
     _last_drop_line = None
 
@@ -1185,7 +1200,9 @@ class WorkspaceProps(Props):
 
     def __init__(self, theme):
         Props.__init__(self, {
-            "theme": PropUpdate(theme, ["workspace"])
+            "theme": PropUpdate(
+                theme, ["workspace"]
+            )
         })
 
 class Workspace(RLGuiPanel):

@@ -152,11 +152,27 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                lambda path: \"{} ({}) - RLiterate 2\".format(\n                    os.path.basename(path),\n                    os.path.abspath(os.path.dirname(path))\n                )\n            ),\n            \"toolbar\": ToolbarProps(theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"main_area\": MainAreaProps(document, session, theme),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                format_title\n            ),\n            \"toolbar\": ToolbarProps(\n                theme\n            ),\n            \"toolbar_divider\": PropUpdate(\n                theme, [\"toolbar_divider\"]\n            ),\n            \"main_area\": MainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
 "id":"817bfdde2cd042328c69a297120bdf9d",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def format_title(path):\n    return \"{} ({}) - RLiterate 2\".format(\n        os.path.basename(path),\n        os.path.abspath(os.path.dirname(path))\n    )\n",
+"type":"code"
+}
+],
+"id":"ceb410e88dd140cba3a2ec03218f2102",
 "type":"code"
 },
 {
@@ -168,7 +184,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n  Toolbar(\n    #toolbar\n    %align[EXPAND]\n  )\n  RowDivider(\n    #theme.toolbar_divider\n    %align[EXPAND]\n  )\n  MainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
+"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    RowDivider(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -212,7 +228,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n  background = #theme.background\n  %space[#theme.margin]\n  ToolbarButton(\n    icon = \"quit\"\n    %margin[#theme.margin,TOP|BOTTOM]\n  )\n  %space[#theme.margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n    background = #theme.background\n    %space[#theme.margin]\n    ToolbarButton(\n        icon = \"quit\"\n        %margin[#theme.margin,TOP|BOTTOM]\n    )\n    %space[#theme.margin]\n}\n",
 "type":"code"
 }
 ],
@@ -240,7 +256,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(document, session, theme),\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"workspace\": WorkspaceProps(theme),\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": PropUpdate(\n                theme, [\"toc_divider\"]\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -256,7 +272,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n  TableOfContents(\n    #toc\n    %align[EXPAND]\n  )\n  ColumnDivider(\n    #theme.toc_divider\n    cursor = \"size_horizontal\"\n    @drag  = self._on_toc_divider_drag(event)\n    %align[EXPAND]\n  )\n  Workspace(\n    #workspace\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n    TableOfContents(\n        #toc\n        %align[EXPAND]\n    )\n    ColumnDivider(\n        #toc_divider\n        cursor = \"size_horizontal\"\n        @drag  = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -345,7 +361,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsMainArea %layout_rows {\n  drop_target = \"page\"\n  loop (#rows cache_limit=mul(2 sub(#total_num_pages 1))) {\n    TableOfContentsRow(\n      $\n      margin      = #theme.toc.row_margin\n      indent_size = #theme.toc.indent_size\n      foreground  = #theme.toc.foreground\n      __reuse     = $id\n      __cache     = True\n      @drag       = self._on_drag(event $id)\n      %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_lines](\n      indent      = 0\n      active      = False\n      thickness   = #theme.toc.divider_thickness\n      color       = #theme.dragdrop_color\n      __reuse     = $id\n      __cache     = True\n      %align[EXPAND]\n    )\n  }\n}\n\n",
+"text":"vscroll TableOfContentsMainArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=mul(2 sub(#total_num_pages 1))) {\n        TableOfContentsRow(\n            $\n            margin      = #theme.toc.row_margin\n            indent_size = #theme.toc.indent_size\n            foreground  = #theme.toc.foreground\n            __reuse     = $id\n            __cache     = True\n            @drag       = self._on_drag(event $id)\n            %align[EXPAND]\n        )\n        TableOfContentsDropLine[drop_lines](\n            indent      = 0\n            active      = False\n            thickness   = #theme.toc.divider_thickness\n            color       = #theme.dragdrop_color\n            __reuse     = $id\n            __cache     = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -375,7 +391,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, page_id):\n    if math.sqrt(event.dx**2+event.dy**2) > 3:\n        event.initiate_drag_drop(\"page\", {\"page_id\": page_id})\n",
+"text":"def _on_drag(self, event, page_id):\n    if math.sqrt(event.dx**2 + event.dy**2) > 3:\n        event.initiate_drag_drop(\"page\", {\"page_id\": page_id})\n",
 "type":"code"
 }
 ],
@@ -419,7 +435,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_columns {\n  %space[add(#margin mul(#level #indent_size))]\n  if (#has_children) {\n    ExpandCollapse(\n      cursor    = \"hand\"\n      size      = #indent_size\n      collapsed = #collapsed\n      @click    = #toggle(#id)\n      @drag     = None\n      %align[EXPAND]\n    )\n  } else {\n    %space[#indent_size]\n  }\n  Text(\n    text       = #title\n    foreground = #foreground\n    %align[EXPAND]\n    %margin[#margin,ALL]\n  )\n}\n",
+"text":"panel TableOfContentsRow %layout_columns {\n    %space[add(#margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = #foreground\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -447,7 +463,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n  %space[#indent]\n  RowDivider(\n      thickness = #thickness\n      color     = self._get_color(#active #color)\n      %align[EXPAND]\n      %proportion[1]\n  )\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    RowDivider(\n        thickness = #thickness\n        color     = self._get_color(#active #color)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -501,7 +517,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -517,7 +533,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  if (False) {\n    Button(\n      label = \"unhoist\"\n      %margin[add(1 #theme.toc.row_margin),ALL]\n      %align[EXPAND]\n    )\n  }\n  TableOfContentsMainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    min_size   = size(#width -1)\n    background = #theme.background\n    if (False) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsMainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -545,7 +561,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(theme, [\"workspace\"])\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"workspace\"]\n            )\n        })\n",
 "type":"code"
 }
 ],
@@ -561,7 +577,7 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %layout_columns {\n  background = #theme.background\n}\n",
+"text":"panel Workspace %layout_columns {\n    background = #theme.background\n}\n",
 "type":"code"
 }
 ],
@@ -589,7 +605,7 @@
 ],
 "fragments":[
 {
-"text":"panel RowDivider %layout_columns {\n  background = #color\n  min_size   = size(-1 #thickness)\n}\n",
+"text":"panel RowDivider %layout_columns {\n    background = #color\n    min_size   = size(-1 #thickness)\n}\n",
 "type":"code"
 }
 ],
@@ -610,7 +626,7 @@
 ],
 "fragments":[
 {
-"text":"panel ColumnDivider %layout_rows {\n  background = #color\n  min_size   = size(#thickness -1)\n}\n",
+"text":"panel ColumnDivider %layout_rows {\n    background = #color\n    min_size   = size(#thickness -1)\n}\n",
 "type":"code"
 }
 ],
@@ -2386,43 +2402,6 @@
 }
 ],
 "id":"20fd19faf32a4577bdc992cfe7be4256",
-"type":"list"
-},
-{
-"fragments":[
-{
-"text":"Features that I will consider removing because I haven't used them much or I found the usage not pleasant:",
-"type":"text"
-}
-],
-"id":"7c08b9898a0649adb5c14324fcc678dd",
-"type":"text"
-},
-{
-"child_type":"unordered",
-"children":[
-{
-"child_type":null,
-"children":[],
-"fragments":[
-{
-"text":"Variables.",
-"type":"text"
-}
-]
-},
-{
-"child_type":null,
-"children":[],
-"fragments":[
-{
-"text":"Tab stops.",
-"type":"text"
-}
-]
-}
-],
-"id":"db0d204a26374f808fe6bcc676ec378c",
 "type":"list"
 }
 ],
