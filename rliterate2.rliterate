@@ -517,7 +517,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  if (False) {\n    Button(\n      label = \"unhoist\"\n      %margin[add(1 #theme.toc.row_margin),ALL]\n      %align[EXPAND]\n    )\n  }\n  TableOfContentsMainArea(\n    #main_area\n    theme = #theme\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n  min_size   = size(#width -1)\n  background = #theme.toc.background\n  if (False) {\n    Button(\n      label = \"unhoist\"\n      %margin[add(1 #theme.toc.row_margin),ALL]\n      %align[EXPAND]\n    )\n  }\n  TableOfContentsMainArea(\n    #main_area\n    %align[EXPAND]\n    %proportion[1]\n  )\n}\n",
 "type":"code"
 }
 ],

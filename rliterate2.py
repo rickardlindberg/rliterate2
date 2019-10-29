@@ -946,7 +946,6 @@ class TableOfContents(RLGuiPanel):
         name = None
         handlers = {}
         props.update(self.prop(['main_area']))
-        props['theme'] = self.prop(['theme'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(TableOfContentsMainArea, props, sizer, handlers, name)
