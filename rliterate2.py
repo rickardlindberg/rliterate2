@@ -461,6 +461,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         RLGuiWxMixin._setup_gui(self)
         self._setup_layout()
         self._children = []
+        self._inside_loop = False
 
     def _setup_layout(self):
         self.Sizer = self._sizer = self._create_sizer()
@@ -491,12 +492,14 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         next_index = self._child_index + 1
         self._children = self._children[self._child_index]
         self._child_index = 0
+        self._inside_loop = True
         try:
             yield
         finally:
             self._clear_leftovers(cache_limit=cache_limit)
             self._children = old_children
             self._child_index = next_index
+            self._inside_loop = False
 
     def _clear_leftovers(self, cache_limit):
         child_index = self._child_index
@@ -519,12 +522,18 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
                 self._children.pop(child_index)
 
     def _create_widget(self, widget_cls, props, sizer, handlers, name):
-        def re_use_condition(widget):
-            if type(widget) is not widget_cls:
-                return False
-            if "__reuse" in props and widget.prop(["__reuse"]) != props["__reuse"]:
-                return False
-            return True
+        if not self._inside_loop:
+            def re_use_condition(widget):
+                return True
+        elif "__reuse" in props:
+            def re_use_condition(widget):
+                return (
+                    type(widget) is widget_cls and
+                    widget.prop(["__reuse"]) == props["__reuse"]
+                )
+        else:
+            def re_use_condition(widget):
+                return type(widget) is widget_cls
         re_use_offset = self._reuse(re_use_condition)
         if re_use_offset == 0:
             widget, sizer_item = self._children[self._child_index]
@@ -540,7 +549,6 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
                 widget.update_event_handlers(handlers)
                 widget.update_props(props, parent_updated=True)
                 self._sizer.Detach(self._sizer_index+re_use_offset)
-                widget.update_event_handlers(handlers)
             sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
         sizer_item.Show(True)
