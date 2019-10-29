@@ -1100,7 +1100,7 @@ class TableOfContentsMainArea(RLGuiVScroll):
         return int(abs(span_y_center - y))
 
     def _x_distance_to(self, drop_point, x):
-        return int(abs(self._calculate_indent(drop_point.level + 0.5) - x))
+        return int(abs(self._calculate_indent(drop_point.level + 1) - x))
 
     def _calculate_indent(self, level):
         return (
