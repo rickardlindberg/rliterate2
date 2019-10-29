@@ -186,40 +186,56 @@ class Immutable(Observable):
         return value
 
     def modify(self, path, fn):
-        self._value = im_modify(self._value, path, fn)
-        self._notify()
+        self._modify_many_notify(
+            [(path, fn)],
+            check=False
+        )
 
     def replace(self, *args):
-        notify = False
-        index = 0
-        while index < len(args):
-            path = args[index]
-            value = args[index+1]
-            index += 2
-            if self._replace_if_needed(path, value):
-                notify = True
-        if notify:
-            self._notify()
+        self._modify_many_notify(
+            self._create_replace_modify_items(args),
+            check=True
+        )
 
     def force_replace(self, *args):
+        self._modify_many_notify(
+            self._create_replace_modify_items(args),
+            check=False
+        )
+
+    def _create_replace_modify_items(self, args):
+        items = []
         index = 0
         while index < len(args):
             path = args[index]
-            value = args[index+1]
+            value = args[index + 1]
             index += 2
-            self._replace(path, value)
-        self._notify()
+            items.append(self._create_replace_modify_item(path, value))
+        return items
 
-    @profile_sub("replace")
-    def _replace_if_needed(self, path, value):
-        if self.get(path) != value:
-            self._replace(path, value)
-            return True
-        return False
+    def _create_replace_modify_item(self, name, value):
+        return (name, lambda old: value)
 
-    @profile_sub("replace")
-    def _replace(self, path, value):
-        self._value = im_modify(self._value, path, lambda old: value)
+    def _modify_many_notify(self, *args, **kwargs):
+        if self._modify_many(*args, **kwargs):
+            self._notify()
+
+    @profile_sub("im_modify")
+    def _modify_many(self, items, check=False):
+        old_value = self._value
+        for path, fn in items:
+            if check:
+                subvalue = self.get(path)
+                new_subvalue = fn(subvalue)
+                if new_subvalue != subvalue:
+                    self._value = im_modify(
+                        self._value,
+                        path,
+                        lambda old: new_subvalue
+                    )
+            else:
+                self._value = im_modify(self._value, path, fn)
+        return self._value is not old_value
 
 class RLGuiMixin(object):
 
