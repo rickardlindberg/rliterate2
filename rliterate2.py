@@ -284,11 +284,10 @@ class RLGuiMixin(object):
     def _prop_differs(self, key, value):
         if key not in self._props:
             return True
-        if self._props[key] is value:
+        prop = self._props[key]
+        if prop is value:
             return False
-        if self._props[key] == value:
-            return False
-        return True
+        return prop != value
 
     def _update_gui(self, parent_updated):
         for name in self._changed_props:
