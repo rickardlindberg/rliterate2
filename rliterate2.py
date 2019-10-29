@@ -914,13 +914,8 @@ class TableOfContentsProps(Props):
             "*": PropUpdate(
                 session, ["toc"],
             ),
+            "set_width": session.set_toc_width,
             "set_hoisted_page": session.set_hoisted_page,
-            "set_width": (lambda value:
-                session.replace(
-                    ["toc", "width"],
-                    value
-                )
-            ),
             "main_area": TableOfContentsMainAreaProps(
                 document,
                 session,
@@ -1317,6 +1312,9 @@ class Session(Immutable):
 
     def set_hoisted_page(self, page_id):
         self.replace(["toc", "hoisted_page"], page_id)
+
+    def set_toc_width(self, width):
+        self.replace(["toc", "width"], width)
 
     def is_collapsed(self, page_id):
         return page_id in self.get(["toc", "collapsed"])
