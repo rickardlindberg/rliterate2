@@ -694,14 +694,10 @@ class Button(wx.Button, RLGuiWxMixin):
     def _setup_gui(self):
         RLGuiWxMixin._setup_gui(self)
         self._register_builtin("label", self.SetLabel)
-
-    def register_event_handler(self, name, fn):
-        RLGuiWxMixin.register_event_handler(self, name, fn)
-        if name == "button":
-            self._bind_wx_event(wx.EVT_BUTTON, self._on_wx_button)
+        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
 
     def _on_wx_button(self, wx_event):
-        self._call_event_handler("button", None)
+        self.call_event_handler("button", None)
 
 class Slider(wx.Slider, RLGuiWxMixin):
 
@@ -915,11 +911,15 @@ class TableOfContentsProps(Props):
             "theme": PropUpdate(
                 theme, ["toc"]
             ),
-            "width": PropUpdate(
-                session, ["toc", "width"]
+            "*": PropUpdate(
+                session, ["toc"],
             ),
+            "set_hoisted_page": session.set_hoisted_page,
             "set_width": (lambda value:
-                session.replace(["toc", "width"], value)
+                session.replace(
+                    ["toc", "width"],
+                    value
+                )
             ),
             "main_area": TableOfContentsMainAreaProps(
                 document,
@@ -941,7 +941,7 @@ class TableOfContents(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        if_condition = False
+        if_condition = self.prop(['hoisted_page'])
         def loop_fn(loopvar):
             pass
             props = {}
@@ -952,6 +952,7 @@ class TableOfContents(RLGuiPanel):
             sizer["border"] = add(1, self.prop(['theme', 'row_margin']))
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
+            handlers['button'] = lambda event: self.prop(['set_hoisted_page'])(None)
             self._create_widget(Button, props, sizer, handlers, name)
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
@@ -972,6 +973,7 @@ class TableOfContentsMainAreaProps(Props):
             "theme": PropUpdate(
                 theme, []
             ),
+            "set_hoisted_page": session.set_hoisted_page,
             "*": PropUpdate(
                 document,
                 session,
@@ -1012,7 +1014,7 @@ class TableOfContentsMainAreaProps(Props):
                     ))
         rows = []
         drop_points = []
-        generate_rows_from_page(document.get_page())
+        generate_rows_from_page(document.get_page(session.get(["toc", "hoisted_page"])))
         return {
             "rows": rows,
             "drop_points": drop_points,
@@ -1051,6 +1053,7 @@ class TableOfContentsMainArea(RLGuiVScroll):
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             handlers['drag'] = lambda event: self._on_drag(event, loopvar['id'])
+            handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(loopvar['id'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsRow, props, sizer, handlers, name)
             props = {}
@@ -1254,8 +1257,14 @@ class Document(Immutable):
             "doc": load_document_from_file(path),
         })
 
-    def get_page(self):
-        return self.get(["doc", "root_page"])
+    def get_page(self, page_id=None):
+        root_page = self.get(["doc", "root_page"])
+        if page_id is None:
+            return root_page
+        for page in self.iter_pages(root_page):
+            if page["id"] == page_id:
+                return page
+        return None
 
     def count_pages(self):
         return len(list(self.iter_pages(self.get_page())))
@@ -1302,8 +1311,12 @@ class Session(Immutable):
             "toc": {
                 "width": 230,
                 "collapsed": [],
+                "hoisted_page": None,
             },
         })
+
+    def set_hoisted_page(self, page_id):
+        self.replace(["toc", "hoisted_page"], page_id)
 
     def is_collapsed(self, page_id):
         return page_id in self.get(["toc", "collapsed"])

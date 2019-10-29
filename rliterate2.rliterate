@@ -329,7 +329,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsMainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"*\": PropUpdate(\n                document,\n                session,\n                self._generate_main_area\n            ),\n        })\n\n    def _generate_main_area(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        row_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page())\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
+"text":"class TableOfContentsMainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"*\": PropUpdate(\n                document,\n                session,\n                self._generate_main_area\n            ),\n        })\n\n    def _generate_main_area(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        row_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page(session.get([\"toc\", \"hoisted_page\"])))\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
 "type":"code"
 }
 ],
@@ -361,7 +361,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsMainArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=mul(2 sub(#total_num_pages 1))) {\n        TableOfContentsRow(\n            $\n            margin      = #theme.toc.row_margin\n            indent_size = #theme.toc.indent_size\n            foreground  = #theme.toc.foreground\n            __reuse     = $id\n            __cache     = True\n            @drag       = self._on_drag(event $id)\n            %align[EXPAND]\n        )\n        TableOfContentsDropLine[drop_lines](\n            indent      = 0\n            active      = False\n            thickness   = #theme.toc.divider_thickness\n            color       = #theme.dragdrop_color\n            __reuse     = $id\n            __cache     = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"vscroll TableOfContentsMainArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=mul(2 sub(#total_num_pages 1))) {\n        TableOfContentsRow(\n            $\n            margin      = #theme.toc.row_margin\n            indent_size = #theme.toc.indent_size\n            foreground  = #theme.toc.foreground\n            __reuse     = $id\n            __cache     = True\n            @drag       = self._on_drag(event $id)\n            @click      = #set_hoisted_page($id)\n            %align[EXPAND]\n        )\n        TableOfContentsDropLine[drop_lines](\n            indent      = 0\n            active      = False\n            thickness   = #theme.toc.divider_thickness\n            color       = #theme.dragdrop_color\n            __reuse     = $id\n            __cache     = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -517,7 +517,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"set_width\": (lambda value:\n                session.replace([\"toc\", \"width\"], value)\n            ),\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"*\": PropUpdate(\n                session, [\"toc\"],\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"set_width\": (lambda value:\n                session.replace(\n                    [\"toc\", \"width\"],\n                    value\n                )\n            ),\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -533,7 +533,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    min_size   = size(#width -1)\n    background = #theme.background\n    if (False) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsMainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    min_size   = size(#width -1)\n    background = #theme.background\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsMainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -659,7 +659,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n\n    def get_page(self):\n        return self.get([\"doc\", \"root_page\"])\n\n    def count_pages(self):\n        return len(list(self.iter_pages(self.get_page())))\n\n    def iter_pages(self, page):\n        yield page\n        for child in page[\"children\"]:\n            for x in self.iter_pages(child):\n                yield x\n",
+"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n\n    def get_page(self, page_id=None):\n        root_page = self.get([\"doc\", \"root_page\"])\n        if page_id is None:\n            return root_page\n        for page in self.iter_pages(root_page):\n            if page[\"id\"] == page_id:\n                return page\n        return None\n\n    def count_pages(self):\n        return len(list(self.iter_pages(self.get_page())))\n\n    def iter_pages(self, page):\n        yield page\n        for child in page[\"children\"]:\n            for x in self.iter_pages(child):\n                yield x\n",
 "type":"code"
 }
 ],
@@ -769,7 +769,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n            },\n        })\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get([\"toc\", \"collapsed\"])\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get([\"toc\", \"collapsed\"])\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],
@@ -1659,7 +1659,7 @@
 ],
 "fragments":[
 {
-"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|frame|panel|loop|if|else|True|False|cache_limit)\\b', Keyword),\n            (r'#\\w+([.]\\w+)*', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
+"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|frame|panel|loop|if|else|True|False|None|cache_limit)\\b', Keyword),\n            (r'#\\w+([.]\\w+)*', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
 "type":"code"
 }
 ],
@@ -1922,7 +1922,7 @@
 ],
 "fragments":[
 {
-"text":"class Button(wx.Button, RLGuiWxMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        RLGuiWxMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"label\", self.SetLabel)\n\n    def register_event_handler(self, name, fn):\n        RLGuiWxMixin.register_event_handler(self, name, fn)\n        if name == \"button\":\n            self._bind_wx_event(wx.EVT_BUTTON, self._on_wx_button)\n\n    def _on_wx_button(self, wx_event):\n        self._call_event_handler(\"button\", None)\n",
+"text":"class Button(wx.Button, RLGuiWxMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        RLGuiWxMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._register_builtin(\"label\", self.SetLabel)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
 "type":"code"
 }
 ],
