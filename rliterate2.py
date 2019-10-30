@@ -1063,50 +1063,31 @@ class TableOfContentsMainArea(RLGuiVScroll):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props.update(loopvar)
-            props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
-            props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
-            props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
+            name = 'rows'
+            props['row'] = loopvar
+            props['theme'] = self.prop(['theme'])
+            props['set_hoisted_page'] = self.prop(['set_hoisted_page'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
-            handlers['drag'] = lambda event: self._on_drag(event, loopvar['id'])
-            handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(loopvar['id'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsRow, props, sizer, handlers, name)
-            props = {}
-            sizer = {"flag": 0, "border": 0, "proportion": 0}
-            name = None
-            handlers = {}
-            name = 'drop_lines'
-            props['indent'] = 0
-            props['active'] = False
-            props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
-            props['color'] = self.prop(['theme', 'dragdrop_color'])
-            props['__reuse'] = loopvar['id']
-            props['__cache'] = True
-            sizer["flag"] |= wx.EXPAND
-            self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
         loop_options = {}
-        loop_options['cache_limit'] = mul(2, sub(self.prop(['total_num_pages']), 1))
+        loop_options['cache_limit'] = sub(self.prop(['total_num_pages']), 1)
         with self._loop(**loop_options):
             for loopvar in self.prop(['rows']):
                 loop_fn(loopvar)
 
-    def _on_drag(self, event, page_id):
-        if math.sqrt(event.dx**2 + event.dy**2) > 3:
-            event.initiate_drag_drop("page", {"page_id": page_id})
-    _last_drop_line = None
+    _last_drop_row = None
 
     def on_drag_drop_over(self, x, y):
         self._hide()
         drop_point = self._get_drop_point(x, y)
         if drop_point is not None:
-            self._last_drop_line = self.get_widget("drop_lines", drop_point.row_index)
-        if self._last_drop_line is not None:
-            self._last_drop_line.update_props({
-                "active": True,
-                "indent": self._calculate_indent(drop_point.level),
-            })
+            self._last_drop_row = self._get_drop_row(drop_point)
+        if self._last_drop_row is not None:
+            self._last_drop_row.show_drop_line(
+                self._calculate_indent(drop_point.level)
+            )
 
     def on_drag_drop_leave(self):
         self._hide()
@@ -1115,22 +1096,29 @@ class TableOfContentsMainArea(RLGuiVScroll):
         print(f"page_info = {page_info}")
 
     def _hide(self):
-        if self._last_drop_line is not None:
-            self._last_drop_line.update_props({"active": False})
+        if self._last_drop_row is not None:
+            self._last_drop_row.hide_drop_line()
 
     def _get_drop_point(self, x, y):
         lines = defaultdict(list)
         for drop_point in self.prop(["drop_points"]):
-            drop_line = self.get_widget("drop_lines", drop_point.row_index)
-            lines[self._y_distance_to(drop_line, y)].append(drop_point)
+            lines[
+                self._y_distance_to(
+                    self._get_drop_row(drop_point),
+                    y
+                )
+            ].append(drop_point)
         if lines:
             columns = {}
             for drop_point in lines[min(lines.keys())]:
                 columns[self._x_distance_to(drop_point, x)] = drop_point
             return columns[min(columns.keys())]
 
-    def _y_distance_to(self, drop_line, y):
-        span_y_center = drop_line.get_y() + drop_line.get_height()/2
+    def _get_drop_row(self, drop_point):
+        return self.get_widget("rows", drop_point.row_index)
+
+    def _y_distance_to(self, row, y):
+        span_y_center = row.get_y() + row.get_drop_line_y_offset()
         return int(abs(span_y_center - y))
 
     def _x_distance_to(self, drop_point, x):
@@ -1143,6 +1131,57 @@ class TableOfContentsMainArea(RLGuiVScroll):
         )
 
 class TableOfContentsRow(RLGuiPanel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['row']))
+        props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
+        props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
+        props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
+        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['row', 'id']))
+        handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(TableOfContentsRowText, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        name = 'drop_line'
+        props['indent'] = 0
+        props['active'] = False
+        props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
+        props['color'] = self.prop(['theme', 'dragdrop_color'])
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
+
+    def _on_drag(self, event, page_id):
+        if math.sqrt(event.dx**2 + event.dy**2) > 3:
+            event.initiate_drag_drop("page", {"page_id": page_id})
+    def get_drop_line_y_offset(self):
+        drop_line = self.get_widget("drop_line")
+        return drop_line.get_y() + drop_line.get_height() / 2
+    def show_drop_line(self, indent):
+        self.get_widget("drop_line").update_props({
+            "active": True,
+            "indent": indent
+        })
+    def hide_drop_line(self):
+        self.get_widget("drop_line").update_props({
+            "active": False,
+        })
+
+class TableOfContentsRowText(RLGuiPanel):
 
     def _get_local_props(self):
         return {
