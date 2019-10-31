@@ -217,7 +217,8 @@ class Immutable(object):
         listeners = set()
         for changed_path in changed_paths:
             for listener, prefix in self._listeners:
-                if changed_path[:len(prefix)] == prefix:
+                if (len(changed_path) < len(prefix) or
+                    changed_path[:len(prefix)] == prefix):
                     listeners.add(listener)
         for listener in listeners:
             listener()
@@ -694,11 +695,16 @@ class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
                     "redo": wx.ART_REDO,
                     "quit": wx.ART_QUIT,
                     "save": wx.ART_FILE_SAVE,
+                    "settings": wx.ART_HELP_SETTINGS,
                 }.get(value, wx.ART_QUESTION),
                 wx.ART_BUTTON,
                 (24, 24)
             ))
         )
+        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
+
+    def _on_wx_button(self, wx_event):
+        self.call_event_handler("button", None)
 
 class Button(wx.Button, RLGuiWxMixin):
 
@@ -834,6 +840,7 @@ class ToolbarProps(Props):
             "theme": PropUpdate(
                 theme, ["toolbar"]
             ),
+            "rotate_theme": theme.rotate,
         })
 
 class Toolbar(RLGuiPanel):
@@ -854,6 +861,16 @@ class Toolbar(RLGuiPanel):
         name = None
         handlers = {}
         props['icon'] = 'quit'
+        sizer["border"] = self.prop(['theme', 'margin'])
+        sizer["flag"] |= wx.TOP
+        sizer["flag"] |= wx.BOTTOM
+        self._create_widget(ToolbarButton, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['icon'] = 'settings'
+        handlers['button'] = lambda event: self.prop(['rotate_theme'])()
         sizer["border"] = self.prop(['theme', 'margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
@@ -1333,32 +1350,67 @@ class Document(Immutable):
 
 class Theme(Immutable):
 
+    DEFAULT = {
+        "toolbar": {
+            "margin": 4,
+            "background": None,
+        },
+        "toolbar_divider": {
+            "thickness": 1,
+            "color": "#aaaaaf",
+        },
+        "toc": {
+            "background": "#ffffff",
+            "foreground": "#000000",
+            "indent_size": 20,
+            "row_margin": 2,
+            "divider_thickness": 2,
+        },
+        "toc_divider": {
+            "thickness": 3,
+            "color": "#aaaaaf",
+        },
+        "workspace": {
+            "background": "#cccccc",
+        },
+        "dragdrop_color": "#ff6400",
+    }
+
+    ALTERNATIVE = {
+        "toolbar": {
+            "margin": 6,
+            "background": "#ffcfcf",
+        },
+        "toolbar_divider": {
+            "thickness": 2,
+            "color": "#aaaaff",
+        },
+        "toc": {
+            "background": "#cfcfff",
+            "foreground": "#0ddd00",
+            "indent_size": 25,
+            "row_margin": 3,
+            "divider_thickness": 3,
+        },
+        "toc_divider": {
+            "thickness": 5,
+            "color": "#aaaadf",
+        },
+        "workspace": {
+            "background": "#cc99cc",
+        },
+        "dragdrop_color": "#ff6444",
+    }
+
     def __init__(self):
-        Immutable.__init__(self, {
-            "toolbar": {
-                "margin": 4,
-                "background": None,
-            },
-            "toolbar_divider": {
-                "thickness": 1,
-                "color": "#aaaaaf",
-            },
-            "toc": {
-                "background": "#ffffff",
-                "foreground": "#000000",
-                "indent_size": 20,
-                "row_margin": 2,
-                "divider_thickness": 2,
-            },
-            "toc_divider": {
-                "thickness": 3,
-                "color": "#aaaaaf",
-            },
-            "workspace": {
-                "background": "#cccccc",
-            },
-            "dragdrop_color": "#ff6400",
-        })
+        Immutable.__init__(self, self.DEFAULT)
+
+    def rotate(self):
+        if self.get([]) is self.ALTERNATIVE:
+            self.replace([], self.DEFAULT)
+        else:
+            self.replace([], self.ALTERNATIVE)
+        print(self.get([]))
 
 class Session(Immutable):
 
