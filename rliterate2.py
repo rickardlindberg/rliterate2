@@ -1414,7 +1414,6 @@ class Theme(Immutable):
             self.replace([], self.DEFAULT)
         else:
             self.replace([], self.ALTERNATIVE)
-        print(self.get([]))
 
 class Session(Immutable):
 
