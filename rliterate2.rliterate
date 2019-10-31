@@ -879,7 +879,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def is_collapsed(self, page_id):\n        return page_id in self.get([\"toc\", \"collapsed\"])\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],

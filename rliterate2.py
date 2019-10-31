@@ -1432,9 +1432,6 @@ class Session(Immutable):
     def set_toc_width(self, width):
         self.replace(["toc", "width"], width)
 
-    def is_collapsed(self, page_id):
-        return page_id in self.get(["toc", "collapsed"])
-
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
             if page_id in collapsed:
