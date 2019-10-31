@@ -955,7 +955,7 @@ class TableOfContentsProps(Props):
                 session, ["toc", "hoisted_page"]
             ),
             "set_hoisted_page": session.set_hoisted_page,
-            "main_area": TableOfContentsMainAreaProps(
+            "scroll_area": TableOfContentsScrollAreaProps(
                 document,
                 session,
                 theme
@@ -995,12 +995,12 @@ class TableOfContents(RLGuiPanel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['main_area']))
+        props.update(self.prop(['scroll_area']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
-        self._create_widget(TableOfContentsMainArea, props, sizer, handlers, name)
+        self._create_widget(TableOfContentsScrollArea, props, sizer, handlers, name)
 
-class TableOfContentsMainAreaProps(Props):
+class TableOfContentsScrollAreaProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
@@ -1011,11 +1011,11 @@ class TableOfContentsMainAreaProps(Props):
             "*": PropUpdate(
                 document,
                 session,
-                self._generate_main_area
+                self._generate_scroll_area
             ),
         })
 
-    def _generate_main_area(self, document, session):
+    def _generate_scroll_area(self, document, session):
         def generate_rows_from_page(page, level=0):
             is_collapsed = session.is_collapsed(page["id"])
             num_children = len(page["children"])
@@ -1062,7 +1062,7 @@ TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "level",
 ])
 
-class TableOfContentsMainArea(RLGuiVScroll):
+class TableOfContentsScrollArea(RLGuiVScroll):
 
     def _get_local_props(self):
         return {

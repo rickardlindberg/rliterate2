@@ -329,7 +329,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsMainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"*\": PropUpdate(\n                document,\n                session,\n                self._generate_main_area\n            ),\n        })\n\n    def _generate_main_area(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        row_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page(session.get([\"toc\", \"hoisted_page\"])))\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"*\": PropUpdate(\n                document,\n                session,\n                self._generate_scroll_area\n            ),\n        })\n\n    def _generate_scroll_area(self, document, session):\n        def generate_rows_from_page(page, level=0):\n            is_collapsed = session.is_collapsed(page[\"id\"])\n            num_children = len(page[\"children\"])\n            rows.append({\n                \"id\": page[\"id\"],\n                \"toggle\": session.toggle_collapsed,\n                \"title\": page[\"title\"],\n                \"level\": level,\n                \"has_children\": num_children > 0,\n                \"collapsed\": is_collapsed,\n            })\n            if is_collapsed:\n                target_index = num_children\n            else:\n                target_index = 0\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=len(rows)-1,\n                target_index=target_index,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n            if not is_collapsed:\n                for target_index, child in enumerate(page[\"children\"]):\n                    generate_rows_from_page(child, level+1)\n                    drop_points.append(TableOfContentsDropPoint(\n                        row_index=len(rows)-1,\n                        target_index=target_index+1,\n                        target_page=page[\"id\"],\n                        level=level+1\n                    ))\n        rows = []\n        drop_points = []\n        generate_rows_from_page(document.get_page(session.get([\"toc\", \"hoisted_page\"])))\n        return {\n            \"rows\": rows,\n            \"drop_points\": drop_points,\n            \"total_num_pages\": document.count_pages(),\n        }\n",
 "type":"code"
 }
 ],
@@ -361,13 +361,13 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsMainArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            row              = $\n            theme            = #theme\n            set_hoisted_page = #set_hoisted_page\n            __reuse          = $id\n            __cache          = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            row              = $\n            theme            = #theme\n            set_hoisted_page = #set_hoisted_page\n            __reuse          = $id\n            __cache          = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
 "blank_lines_before":0,
 "path":[
-"TableOfContentsMainArea"
+"TableOfContentsScrollArea"
 ],
 "prefix":"",
 "type":"chunk"
@@ -384,7 +384,7 @@
 {
 "chunkpath":[
 "classes",
-"TableOfContentsMainArea"
+"TableOfContentsScrollArea"
 ],
 "filepath":[
 "rliterate2.py"
@@ -401,7 +401,7 @@
 "type":"code"
 }
 ],
-"title":"Main area"
+"title":"Scroll area"
 },
 {
 "children":[
@@ -611,7 +611,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"main_area\": TableOfContentsMainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -627,7 +627,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    min_size   = size(max(50 #width) -1)\n    background = #theme.background\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsMainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    min_size   = size(max(50 #width) -1)\n    background = #theme.background\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
