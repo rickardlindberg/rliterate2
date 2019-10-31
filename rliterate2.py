@@ -48,6 +48,44 @@ def format_title(path):
         os.path.abspath(os.path.dirname(path))
     )
 
+def generate_rows_and_drop_points(document, collapsed, hoisted_page):
+    def traverse(page, level=0):
+        is_collapsed = page["id"] in collapsed
+        num_children = len(page["children"])
+        rows.append({
+            "id": page["id"],
+            "title": page["title"],
+            "level": level,
+            "has_children": num_children > 0,
+            "collapsed": is_collapsed,
+        })
+        if is_collapsed:
+            target_index = num_children
+        else:
+            target_index = 0
+        drop_points.append(TableOfContentsDropPoint(
+            row_index=len(rows)-1,
+            target_index=target_index,
+            target_page=page["id"],
+            level=level+1
+        ))
+        if not is_collapsed:
+            for target_index, child in enumerate(page["children"]):
+                traverse(child, level+1)
+                drop_points.append(TableOfContentsDropPoint(
+                    row_index=len(rows)-1,
+                    target_index=target_index+1,
+                    target_page=page["id"],
+                    level=level+1
+                ))
+    rows = []
+    drop_points = []
+    traverse(document.get_page(hoisted_page))
+    return {
+        "rows": rows,
+        "drop_points": drop_points,
+    }
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -1008,52 +1046,18 @@ class TableOfContentsScrollAreaProps(Props):
                 theme, []
             ),
             "set_hoisted_page": session.set_hoisted_page,
+            "toggle_collapsed": session.toggle_collapsed,
+            "total_num_pages": PropUpdate(
+                document,
+                lambda document: document.count_pages()
+            ),
             "*": PropUpdate(
                 document,
-                session,
-                self._generate_scroll_area
+                session, ["toc", "collapsed"],
+                session, ["toc", "hoisted_page"],
+                generate_rows_and_drop_points
             ),
         })
-
-    def _generate_scroll_area(self, document, session):
-        def generate_rows_from_page(page, level=0):
-            is_collapsed = session.is_collapsed(page["id"])
-            num_children = len(page["children"])
-            rows.append({
-                "id": page["id"],
-                "toggle": session.toggle_collapsed,
-                "title": page["title"],
-                "level": level,
-                "has_children": num_children > 0,
-                "collapsed": is_collapsed,
-            })
-            if is_collapsed:
-                target_index = num_children
-            else:
-                target_index = 0
-            drop_points.append(TableOfContentsDropPoint(
-                row_index=len(rows)-1,
-                target_index=target_index,
-                target_page=page["id"],
-                level=level+1
-            ))
-            if not is_collapsed:
-                for target_index, child in enumerate(page["children"]):
-                    generate_rows_from_page(child, level+1)
-                    drop_points.append(TableOfContentsDropPoint(
-                        row_index=len(rows)-1,
-                        target_index=target_index+1,
-                        target_page=page["id"],
-                        level=level+1
-                    ))
-        rows = []
-        drop_points = []
-        generate_rows_from_page(document.get_page(session.get(["toc", "hoisted_page"])))
-        return {
-            "rows": rows,
-            "drop_points": drop_points,
-            "total_num_pages": document.count_pages(),
-        }
 
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "row_index",
@@ -1084,6 +1088,7 @@ class TableOfContentsScrollArea(RLGuiVScroll):
             props['row'] = loopvar
             props['theme'] = self.prop(['theme'])
             props['set_hoisted_page'] = self.prop(['set_hoisted_page'])
+            props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             sizer["flag"] |= wx.EXPAND
@@ -1163,9 +1168,8 @@ class TableOfContentsRow(RLGuiPanel):
         name = None
         handlers = {}
         props.update(self.prop(['row']))
-        props['margin'] = self.prop(['theme', 'toc', 'row_margin'])
-        props['indent_size'] = self.prop(['theme', 'toc', 'indent_size'])
-        props['foreground'] = self.prop(['theme', 'toc', 'foreground'])
+        props['theme'] = self.prop(['theme', 'toc'])
+        props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['row', 'id']))
         handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
         sizer["flag"] |= wx.EXPAND
@@ -1209,7 +1213,7 @@ class TableOfContentsRowText(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(add(self.prop(['margin']), mul(self.prop(['level']), self.prop(['indent_size']))))
+        self._create_space(add(self.prop(['theme', 'row_margin']), mul(self.prop(['level']), self.prop(['theme', 'indent_size']))))
         if_condition = self.prop(['has_children'])
         def loop_fn(loopvar):
             pass
@@ -1218,9 +1222,9 @@ class TableOfContentsRowText(RLGuiPanel):
             name = None
             handlers = {}
             props['cursor'] = 'hand'
-            props['size'] = self.prop(['indent_size'])
+            props['size'] = self.prop(['theme', 'indent_size'])
             props['collapsed'] = self.prop(['collapsed'])
-            handlers['click'] = lambda event: self.prop(['toggle'])(self.prop(['id']))
+            handlers['click'] = lambda event: self.prop(['toggle_collapsed'])(self.prop(['id']))
             handlers['drag'] = lambda event: None
             sizer["flag"] |= wx.EXPAND
             self._create_widget(ExpandCollapse, props, sizer, handlers, name)
@@ -1229,7 +1233,7 @@ class TableOfContentsRowText(RLGuiPanel):
                 loop_fn(loopvar)
         def loop_fn(loopvar):
             pass
-            self._create_space(self.prop(['indent_size']))
+            self._create_space(self.prop(['theme', 'indent_size']))
         with self._loop():
             for loopvar in ([None] if (not if_condition) else []):
                 loop_fn(loopvar)
@@ -1238,9 +1242,9 @@ class TableOfContentsRowText(RLGuiPanel):
         name = None
         handlers = {}
         props['text'] = self.prop(['title'])
-        props['foreground'] = self.prop(['foreground'])
+        props['foreground'] = self.prop(['theme', 'foreground'])
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['margin'])
+        sizer["border"] = self.prop(['theme', 'row_margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
