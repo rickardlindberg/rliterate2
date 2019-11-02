@@ -649,7 +649,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toc\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"toc\", \"width\"]\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -665,7 +665,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    min_size   = size(max(50 #width) -1)\n    background = #theme.background\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #theme.row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],

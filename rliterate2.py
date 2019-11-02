@@ -998,11 +998,15 @@ class TableOfContentsProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, ["toc"]
+            "background": PropUpdate(
+                theme, ["toc", "background"]
             ),
-            "width": PropUpdate(
-                session, ["toc", "width"]
+            "row_margin": PropUpdate(
+                theme, ["toc", "row_margin"]
+            ),
+            "min_size": PropUpdate(
+                session, ["toc", "width"],
+                lambda width: (max(50, width), -1)
             ),
             "hoisted_page": PropUpdate(
                 session, ["toc", "hoisted_page"]
@@ -1019,8 +1023,6 @@ class TableOfContents(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'min_size': size(max(50, self.prop(['width'])), -1),
-            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
@@ -1036,7 +1038,7 @@ class TableOfContents(RLGuiPanel):
             name = None
             handlers = {}
             props['label'] = 'unhoist'
-            sizer["border"] = add(1, self.prop(['theme', 'row_margin']))
+            sizer["border"] = add(1, self.prop(['row_margin']))
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
             handlers['button'] = lambda event: self.prop(['set_hoisted_page'])(None)
