@@ -1419,28 +1419,28 @@ class Theme(Immutable):
 
     ALTERNATIVE = {
         "toolbar": {
-            "margin": 6,
-            "background": "#ffcfcf",
+            "margin": 4,
+            "background": "#dcd6c6",
         },
         "toolbar_divider": {
             "thickness": 2,
-            "color": "#aaaaff",
+            "color": "#b0ab9e",
         },
         "toc": {
-            "background": "#cfcfff",
-            "foreground": "#0ddd00",
-            "indent_size": 25,
+            "background": "#fdf6e3",
+            "foreground": "#657b83",
+            "indent_size": 21,
             "row_margin": 3,
             "divider_thickness": 3,
         },
         "toc_divider": {
             "thickness": 5,
-            "color": "#aaaadf",
+            "color": "#b0ab9e",
         },
         "workspace": {
-            "background": "#cc99cc",
+            "background": "#d0cabb",
         },
-        "dragdrop_color": "#ff6444",
+        "dragdrop_color": "#dc322f",
     }
 
     def __init__(self):
