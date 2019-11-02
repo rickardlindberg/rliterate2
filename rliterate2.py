@@ -252,12 +252,13 @@ class Immutable(object):
         return changed_paths
 
     def _notify(self, changed_paths):
-        listeners = set()
+        listeners = []
         for changed_path in changed_paths:
             for listener, prefix in self._listeners:
                 if (len(changed_path) < len(prefix) or
                     changed_path[:len(prefix)] == prefix):
-                    listeners.add(listener)
+                    if listener not in listeners:
+                        listeners.append(listener)
         for listener in listeners:
             listener()
 
@@ -340,32 +341,43 @@ class RLGuiMixin(object):
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
+        self.dependencies = set()
+        self.changed_paths = []
         data = {}
         for name, value in props.items():
             if isinstance(value, Props):
                 value.listen(self._create_props_handler(name, value))
                 self._set_initial(data, name, value.get())
+                self.dependencies.update(value.dependencies)
             elif isinstance(value, PropUpdate):
-                value.parse(self._create_prop_update_handler(name, value))
+                self.dependencies.update(
+                    value.parse(self._create_prop_update_handler(name, value))
+                )
                 self._set_initial(data, name, value.eval())
             else:
                 data[name] = value
+        for dep in self.dependencies:
+            dep.listen(self._propagate_changes)
         Immutable.__init__(self, data)
+
+    def _propagate_changes(self):
+        self._notify(self.changed_paths)
+        self.changed_paths.clear()
 
     def _create_props_handler(self, name, props):
         def handler():
-            self.modify_many(
+            self.changed_paths.extend(self._modify(
                 self._modify_items(name, props.get()),
                 only_if_differs=False
-            )
+            ))
         return handler
 
     def _create_prop_update_handler(self, name, prop_update):
         def handler():
-            self.modify_many(
+            self.changed_paths.extend(self._modify(
                 self._modify_items(name, prop_update.eval()),
                 only_if_differs=True
-            )
+            ))
         return handler
 
     def _set_initial(self, data, name, value):
@@ -1450,6 +1462,7 @@ class PropUpdate(object):
         self._args = args
 
     def parse(self, handler):
+        dependencies = set()
         self._fn = lambda x: x
         self._inputs = []
         items = list(self._args)
@@ -1461,13 +1474,16 @@ class PropUpdate(object):
                 path = items.pop(0)
                 self._inputs.append((item, path))
                 item.listen(handler, prefix=path)
+                dependencies.add(item)
             elif isinstance(item, Immutable):
                 self._inputs.append((item, None))
                 item.listen(handler)
+                dependencies.add(item)
             elif callable(item) and not items:
                 self._fn = item
             else:
                 self._inputs.append((item, None))
+        return dependencies
 
     def eval(self):
         args = []
