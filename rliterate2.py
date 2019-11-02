@@ -255,7 +255,8 @@ class Immutable(object):
         listeners = []
         for changed_path in changed_paths:
             for listener, prefix in self._listeners:
-                if (len(changed_path) < len(prefix) or
+                if ((len(changed_path) < len(prefix) and
+                    changed_path == prefix[:len(changed_path)]) or
                     changed_path[:len(prefix)] == prefix):
                     if listener not in listeners:
                         listeners.append(listener)

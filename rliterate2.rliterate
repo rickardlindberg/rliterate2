@@ -78,6 +78,28 @@
 ],
 "id":"264da9dfb5c04b259a001f47538827a8",
 "type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[
+"test_rliterate2.py"
+],
+"fragments":[
+{
+"text":"from unittest.mock import Mock, call\n\nimport rliterate2\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"test cases"
+],
+"prefix":"",
+"type":"chunk"
+}
+],
+"id":"f4e95a10e48249d1986d0a03569aa7d4",
+"type":"code"
 }
 ],
 "title":"File"
@@ -2325,7 +2347,7 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n\n    def listen(self, listener, prefix=[]):\n        self._listeners.append((listener, prefix))\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        self._notify(self._modify(*args, **kwargs))\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        changed_paths = []\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    self._value = im_modify(\n                        self._value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n                    changed_paths.append(path)\n            else:\n                self._value = im_modify(\n                    self._value,\n                    path,\n                    fn\n                )\n                changed_paths.append(path)\n        return changed_paths\n\n    def _notify(self, changed_paths):\n        listeners = []\n        for changed_path in changed_paths:\n            for listener, prefix in self._listeners:\n                if (len(changed_path) < len(prefix) or\n                    changed_path[:len(prefix)] == prefix):\n                    if listener not in listeners:\n                        listeners.append(listener)\n        for listener in listeners:\n            listener()\n",
+"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n\n    def listen(self, listener, prefix=[]):\n        self._listeners.append((listener, prefix))\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        self._notify(self._modify(*args, **kwargs))\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        changed_paths = []\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    self._value = im_modify(\n                        self._value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n                    changed_paths.append(path)\n            else:\n                self._value = im_modify(\n                    self._value,\n                    path,\n                    fn\n                )\n                changed_paths.append(path)\n        return changed_paths\n\n    def _notify(self, changed_paths):\n        listeners = []\n        for changed_path in changed_paths:\n            for listener, prefix in self._listeners:\n                if ((len(changed_path) < len(prefix) and\n                    changed_path == prefix[:len(changed_path)]) or\n                    changed_path[:len(prefix)] == prefix):\n                    if listener not in listeners:\n                        listeners.append(listener)\n        for listener in listeners:\n            listener()\n",
 "type":"code"
 }
 ],
@@ -2346,6 +2368,24 @@
 }
 ],
 "id":"95dd623524c84e72a68d55645dc7dbca",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"test cases"
+],
+"filepath":[
+"test_rliterate2.py"
+],
+"fragments":[
+{
+"text":"def test_notification():\n    listeners = Mock()\n    immutable = rliterate2.Immutable({\n        \"foo\": 1,\n        \"bar\": {\n            \"foobar\": 2,\n        },\n    })\n    immutable.listen(listeners.foo, [\"foo\"])\n    immutable.listen(listeners.bar, [\"bar\"])\n    immutable.listen(listeners.foobar, [\"bar\", \"foobar\"])\n\n    listeners.reset_mock()\n    immutable.replace([\"foo\"], 2)\n    assert listeners.mock_calls == [\n        call.foo(),\n    ]\n\n    listeners.reset_mock()\n    immutable.replace([\"bar\", \"foobar\"], 3)\n    assert listeners.mock_calls == [\n        call.bar(),\n        call.foobar(),\n    ]\n\n    listeners.reset_mock()\n    immutable.replace([\"bar\"], {\"foobar\", 3})\n    assert listeners.mock_calls == [\n        call.bar(),\n        call.foobar(),\n    ]\n",
+"type":"code"
+}
+],
+"id":"57eaf7932f074f50a010cbb77f7dd8a4",
 "language":"",
 "post_process":[],
 "type":"code"
