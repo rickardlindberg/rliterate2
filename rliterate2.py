@@ -110,6 +110,9 @@ def create_new_page():
 def genid():
     return uuid.uuid4().hex
 
+def makeTuple(*args):
+    return tuple(args)
+
 def start_app(frame_cls, props):
     @profile_sub("render")
     def update(props):
@@ -185,9 +188,6 @@ def profile_print_summary(text, cprofile_out):
             time,
             "\033[0m"
         ))
-
-def size(w, h):
-    return (w, h)
 
 def im_modify(obj, path, modify_fn):
     if path:
@@ -684,11 +684,17 @@ class RLGuiFrame(wx.Frame, RLGuiWxContainerMixin):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
 
-class RLGuiPanel(wx.Panel, RLGuiWxContainerMixin):
+class Panel(wx.Panel, RLGuiWxContainerMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
         RLGuiWxContainerMixin.__init__(self, *args)
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
 
 class CompactScrolledWindow(wx.ScrolledWindow):
 
@@ -841,13 +847,26 @@ class MainFrameProps(Props):
             "toolbar": ToolbarProps(
                 theme
             ),
-            "toolbar_divider": PropUpdate(
-                theme, ["toolbar_divider"]
+            "toolbar_divider": ToolbarDividerProps(
+                theme
             ),
             "main_area": MainAreaProps(
                 document,
                 session,
                 theme
+            ),
+        })
+
+class ToolbarDividerProps(Props):
+
+    def __init__(self, theme):
+        Props.__init__(self, {
+            "background": PropUpdate(
+                theme, ["toolbar_divider", "color"]
+            ),
+            "min_size": PropUpdate(
+                theme, ["toolbar_divider", "thickness"],
+                lambda thickness: (-1, thickness)
             ),
         })
 
@@ -875,7 +894,7 @@ class MainFrame(RLGuiFrame):
         handlers = {}
         props.update(self.prop(['toolbar_divider']))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(RowDivider, props, sizer, handlers, name)
+        self._create_widget(Panel, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -898,7 +917,7 @@ class ToolbarProps(Props):
             "rotate_theme": theme.rotate,
         })
 
-class Toolbar(RLGuiPanel):
+class Toolbar(Panel):
 
     def _get_local_props(self):
         return {
@@ -940,8 +959,8 @@ class MainAreaProps(Props):
                 session,
                 theme
             ),
-            "toc_divider": PropUpdate(
-                theme, ["toc_divider"]
+            "toc_divider": TocDividerProps(
+                theme
             ),
             "workspace": WorkspaceProps(
                 theme
@@ -949,7 +968,20 @@ class MainAreaProps(Props):
             "set_toc_width": session.set_toc_width,
         })
 
-class MainArea(RLGuiPanel):
+class TocDividerProps(Props):
+
+    def __init__(self, theme):
+        Props.__init__(self, {
+            "background": PropUpdate(
+                theme, ["toc_divider", "color"]
+            ),
+            "min_size": PropUpdate(
+                theme, ["toc_divider", "thickness"],
+                lambda thickness: (thickness, -1)
+            ),
+        })
+
+class MainArea(Panel):
 
     def _get_local_props(self):
         return {
@@ -976,7 +1008,7 @@ class MainArea(RLGuiPanel):
         props['cursor'] = 'size_horizontal'
         handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(ColumnDivider, props, sizer, handlers, name)
+        self._create_widget(Panel, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -1020,7 +1052,7 @@ class TableOfContentsProps(Props):
             "set_hoisted_page": session.set_hoisted_page,
         })
 
-class TableOfContents(RLGuiPanel):
+class TableOfContents(Panel):
 
     def _get_local_props(self):
         return {
@@ -1189,7 +1221,7 @@ class TableOfContentsScrollArea(RLGuiVScroll):
             (level + 1) * self.prop(["indent_size"])
         )
 
-class TableOfContentsRow(RLGuiPanel):
+class TableOfContentsRow(Panel):
 
     def _get_local_props(self):
         return {
@@ -1241,7 +1273,7 @@ class TableOfContentsRow(RLGuiPanel):
             "active": False,
         })
 
-class TableOfContentsRowText(RLGuiPanel):
+class TableOfContentsRowText(Panel):
 
     def _get_local_props(self):
         return {
@@ -1287,7 +1319,7 @@ class TableOfContentsRowText(RLGuiPanel):
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
-class TableOfContentsDropLine(RLGuiPanel):
+class TableOfContentsDropLine(Panel):
 
     def _get_local_props(self):
         return {
@@ -1303,11 +1335,11 @@ class TableOfContentsDropLine(RLGuiPanel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['thickness'] = self.prop(['thickness'])
-        props['color'] = self._get_color(self.prop(['active']), self.prop(['color']))
+        props['min_size'] = makeTuple(-1, self.prop(['thickness']))
+        props['background'] = self._get_color(self.prop(['active']), self.prop(['color']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
-        self._create_widget(RowDivider, props, sizer, handlers, name)
+        self._create_widget(Panel, props, sizer, handlers, name)
 
     def _get_color(self, active, color):
         if active:
@@ -1324,7 +1356,7 @@ class WorkspaceProps(Props):
             )
         })
 
-class Workspace(RLGuiPanel):
+class Workspace(Panel):
 
     def _get_local_props(self):
         return {
@@ -1332,34 +1364,6 @@ class Workspace(RLGuiPanel):
 
     def _create_sizer(self):
         return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-
-class RowDivider(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-            'background': self.prop(['color']),
-            'min_size': size(-1, self.prop(['thickness'])),
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-
-class ColumnDivider(RLGuiPanel):
-
-    def _get_local_props(self):
-        return {
-            'background': self.prop(['color']),
-            'min_size': size(self.prop(['thickness']), -1),
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
 
     def _create_widgets(self):
         pass

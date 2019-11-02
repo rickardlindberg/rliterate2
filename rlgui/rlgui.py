@@ -1598,7 +1598,7 @@ class WxCodeGenerator(_Grammar):
         I('BACKTRACK', 46)
         I('PUSH_SCOPE')
         I('MATCH_STRING', 'panel')
-        I('ACTION', lambda scope: 'RLGuiPanel')
+        I('ACTION', lambda scope: 'Panel')
         I('POP_SCOPE')
         I('COMMIT', 47)
         LABEL(46)

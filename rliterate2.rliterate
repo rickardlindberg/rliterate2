@@ -194,11 +194,27 @@
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                format_title\n            ),\n            \"toolbar\": ToolbarProps(\n                theme\n            ),\n            \"toolbar_divider\": PropUpdate(\n                theme, [\"toolbar_divider\"]\n            ),\n            \"main_area\": MainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                format_title\n            ),\n            \"toolbar\": ToolbarProps(\n                theme\n            ),\n            \"toolbar_divider\": ToolbarDividerProps(\n                theme\n            ),\n            \"main_area\": MainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
 "id":"817bfdde2cd042328c69a297120bdf9d",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ToolbarDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toolbar_divider\", \"thickness\"],\n                lambda thickness: (-1, thickness)\n            ),\n        })\n",
+"type":"code"
+}
+],
+"id":"0d1aa734b0db4435a342b4ea5f985640",
 "type":"code"
 },
 {
@@ -226,7 +242,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    RowDivider(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    Panel(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -298,7 +314,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": PropUpdate(\n                theme, [\"toc_divider\"]\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"set_toc_width\": session.set_toc_width,\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"set_toc_width\": session.set_toc_width,\n        })\n",
 "type":"code"
 }
 ],
@@ -314,7 +330,23 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n    TableOfContents[toc](\n        #toc\n        %align[EXPAND]\n    )\n    ColumnDivider(\n        #toc_divider\n        cursor = \"size_horizontal\"\n        @drag  = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"class TocDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toc_divider\", \"thickness\"],\n                lambda thickness: (thickness, -1)\n            ),\n        })\n",
+"type":"code"
+}
+],
+"id":"e7fb2594facb4dfeb049b605862ca0d8",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel MainArea %layout_columns {\n    TableOfContents[toc](\n        #toc\n        %align[EXPAND]\n    )\n    Panel(\n        #toc_divider\n        cursor = \"size_horizontal\"\n        @drag  = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -504,7 +536,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    RowDivider(\n        thickness = #thickness\n        color     = self._get_color(#active #color)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel(\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #color)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -743,55 +775,6 @@
 }
 ],
 "title":"Workspace"
-},
-{
-"children":[],
-"id":"b022c98477a04ed2a492e75f63e75796",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel RowDivider %layout_columns {\n    background = #color\n    min_size   = size(-1 #thickness)\n}\n",
-"type":"code"
-}
-],
-"id":"6b9bbfc9a6cd4bb88cea712ebb9909dd",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel ColumnDivider %layout_rows {\n    background = #color\n    min_size   = size(#thickness -1)\n}\n",
-"type":"code"
-}
-],
-"id":"5c17f50053b24b4cadb41b3de44a038a",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-}
-],
-"title":"Dividers"
 }
 ],
 "id":"d625649aae0a40bcb3e2e8cc9ede4373",
@@ -1116,6 +1099,31 @@
 }
 ],
 "title":"Props"
+},
+{
+"children":[],
+"id":"35ef5a963f054d02b14cf8ca245e8518",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def makeTuple(*args):\n    return tuple(args)\n",
+"type":"code"
+}
+],
+"id":"90df86522a67483095acdf98bf1c58a8",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Misc"
 }
 ],
 "id":"da31b318d9f2479496494b3e56985a07",
@@ -1906,7 +1914,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"RLGuiFrame\"\n    | \"panel\"   -> \"RLGuiPanel\"\n    | \"vscroll\" -> \"RLGuiVScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"RLGuiFrame\"\n    | \"panel\"   -> \"Panel\"\n    | \"vscroll\" -> \"RLGuiVScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -2021,7 +2029,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiPanel(wx.Panel, RLGuiWxContainerMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        RLGuiWxContainerMixin.__init__(self, *args)\n",
+"text":"class Panel(wx.Panel, RLGuiWxContainerMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        RLGuiWxContainerMixin.__init__(self, *args)\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n",
 "type":"code"
 }
 ],
@@ -2142,8 +2150,10 @@
 ],
 "id":"bf2fd902b8794da3851327a2a97f4939",
 "paragraphs":[],
-"title":"Wrappers for native wxPython widgets"
+"title":"Wrappers for wxPython widgets"
 },
+{
+"children":[
 {
 "children":[],
 "id":"c32443e9bbd44958830fbd62706e2f60",
@@ -2189,6 +2199,11 @@
 }
 ],
 "title":"Text"
+}
+],
+"id":"3995c791972c46cbb46d9289a3225fa3",
+"paragraphs":[],
+"title":"Custom widgets"
 },
 {
 "children":[],
@@ -2328,31 +2343,6 @@
 }
 ],
 "title":"Profiling"
-},
-{
-"children":[],
-"id":"35ef5a963f054d02b14cf8ca245e8518",
-"paragraphs":[
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def size(w, h):\n    return (w, h)\n",
-"type":"code"
-}
-],
-"id":"90df86522a67483095acdf98bf1c58a8",
-"language":"",
-"post_process":[],
-"type":"code"
-}
-],
-"title":"Misc"
 },
 {
 "children":[],
