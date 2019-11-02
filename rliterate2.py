@@ -888,8 +888,11 @@ class ToolbarProps(Props):
 
     def __init__(self, theme):
         Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, ["toolbar"]
+            "background": PropUpdate(
+                theme, ["toolbar", "background"]
+            ),
+            "margin": PropUpdate(
+                theme, ["toolbar", "margin"]
             ),
             "rotate_theme": theme.rotate,
         })
@@ -898,7 +901,6 @@ class Toolbar(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
@@ -906,13 +908,13 @@ class Toolbar(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop(['theme', 'margin']))
+        self._create_space(self.prop(['margin']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
         props['icon'] = 'quit'
-        sizer["border"] = self.prop(['theme', 'margin'])
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers, name)
@@ -922,11 +924,11 @@ class Toolbar(RLGuiPanel):
         handlers = {}
         props['icon'] = 'settings'
         handlers['button'] = lambda event: self.prop(['rotate_theme'])()
-        sizer["border"] = self.prop(['theme', 'margin'])
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers, name)
-        self._create_space(self.prop(['theme', 'margin']))
+        self._create_space(self.prop(['margin']))
 
 class MainAreaProps(Props):
 

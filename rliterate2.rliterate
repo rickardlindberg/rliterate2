@@ -234,7 +234,7 @@
 ],
 "fragments":[
 {
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"toolbar\"]\n            ),\n            \"rotate_theme\": theme.rotate,\n        })\n",
+"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"toolbar\", \"margin\"]\n            ),\n            \"rotate_theme\": theme.rotate,\n        })\n",
 "type":"code"
 }
 ],
@@ -250,7 +250,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    background = #theme.background\n    %space[#theme.margin]\n    ToolbarButton(\n        icon = \"quit\"\n        %margin[#theme.margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #rotate_theme()\n        %margin[#theme.margin,TOP|BOTTOM]\n    )\n    %space[#theme.margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
 "type":"code"
 }
 ],
