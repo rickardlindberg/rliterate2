@@ -13,6 +13,7 @@ import sys
 import textwrap
 import time
 import uuid
+
 import wx
 
 PROFILING_TIMES = defaultdict(list)

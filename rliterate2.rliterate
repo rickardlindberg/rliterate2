@@ -6,13 +6,23 @@
 "id":"165a1189e30f4ce5b22001ea8091aa9c",
 "paragraphs":[
 {
+"fragments":[
+{
+"text":"RLiterate is written in a single Python file. It looks like this:",
+"type":"text"
+}
+],
+"id":"8b762978877f401bb3199b3de8085c27",
+"type":"text"
+},
+{
 "chunkpath":[],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -78,6 +88,16 @@
 ],
 "id":"264da9dfb5c04b259a001f47538827a8",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"There is also a corresponding test file:",
+"type":"text"
+}
+],
+"id":"c962e92cf90247849787a7e1eea2a682",
+"type":"text"
 },
 {
 "chunkpath":[],
