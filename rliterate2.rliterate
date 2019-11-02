@@ -278,7 +278,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"set_toc_width\": session.set_toc_width,\n            \"toc_divider\": PropUpdate(\n                theme, [\"toc_divider\"]\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": PropUpdate(\n                theme, [\"toc_divider\"]\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"set_toc_width\": session.set_toc_width,\n        })\n",
 "type":"code"
 }
 ],
@@ -649,7 +649,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n        })\n",
 "type":"code"
 }
 ],

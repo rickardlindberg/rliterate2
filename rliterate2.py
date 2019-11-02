@@ -939,13 +939,13 @@ class MainAreaProps(Props):
                 session,
                 theme
             ),
-            "set_toc_width": session.set_toc_width,
             "toc_divider": PropUpdate(
                 theme, ["toc_divider"]
             ),
             "workspace": WorkspaceProps(
                 theme
             ),
+            "set_toc_width": session.set_toc_width,
         })
 
 class MainArea(RLGuiPanel):
@@ -1001,9 +1001,6 @@ class TableOfContentsProps(Props):
             "background": PropUpdate(
                 theme, ["toc", "background"]
             ),
-            "row_margin": PropUpdate(
-                theme, ["toc", "row_margin"]
-            ),
             "min_size": PropUpdate(
                 session, ["toc", "width"],
                 lambda width: (max(50, width), -1)
@@ -1011,12 +1008,15 @@ class TableOfContentsProps(Props):
             "hoisted_page": PropUpdate(
                 session, ["toc", "hoisted_page"]
             ),
-            "set_hoisted_page": session.set_hoisted_page,
+            "row_margin": PropUpdate(
+                theme, ["toc", "row_margin"]
+            ),
             "scroll_area": TableOfContentsScrollAreaProps(
                 document,
                 session,
                 theme
             ),
+            "set_hoisted_page": session.set_hoisted_page,
         })
 
 class TableOfContents(RLGuiPanel):
