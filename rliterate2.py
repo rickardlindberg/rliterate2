@@ -555,8 +555,11 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         self.Layout()
         self.Refresh()
 
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
     def _create_widgets(self):
-        raise NotImplementedError()
+        pass
 
     @contextlib.contextmanager
     def _loop(self, cache_limit=-1):
@@ -689,12 +692,6 @@ class Panel(wx.Panel, RLGuiWxContainerMixin):
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
         RLGuiWxContainerMixin.__init__(self, *args)
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
 
 class CompactScrolledWindow(wx.ScrolledWindow):
 
@@ -1071,10 +1068,10 @@ class TableOfContents(Panel):
             name = None
             handlers = {}
             props['label'] = 'unhoist'
+            handlers['button'] = lambda event: self.prop(['set_hoisted_page'])(None)
             sizer["border"] = add(1, self.prop(['row_margin']))
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
-            handlers['button'] = lambda event: self.prop(['set_hoisted_page'])(None)
             self._create_widget(Button, props, sizer, handlers, name)
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
@@ -1244,7 +1241,7 @@ class TableOfContentsRow(Panel):
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['row', 'id']))
         handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(TableOfContentsRowText, props, sizer, handlers, name)
+        self._create_widget(TableOfContentsTitle, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -1273,7 +1270,7 @@ class TableOfContentsRow(Panel):
             "active": False,
         })
 
-class TableOfContentsRowText(Panel):
+class TableOfContentsTitle(Panel):
 
     def _get_local_props(self):
         return {

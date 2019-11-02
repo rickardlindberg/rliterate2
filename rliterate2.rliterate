@@ -203,22 +203,6 @@
 },
 {
 "chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class ToolbarDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toolbar_divider\", \"thickness\"],\n                lambda thickness: (-1, thickness)\n            ),\n        })\n",
-"type":"code"
-}
-],
-"id":"0d1aa734b0db4435a342b4ea5f985640",
-"type":"code"
-},
-{
-"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -231,6 +215,22 @@
 }
 ],
 "id":"ceb410e88dd140cba3a2ec03218f2102",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ToolbarDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toolbar_divider\", \"thickness\"],\n                lambda thickness: (-1, thickness)\n            ),\n        })\n",
+"type":"code"
+}
+],
+"id":"0d1aa734b0db4435a342b4ea5f985640",
 "type":"code"
 },
 {
@@ -286,7 +286,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
 "type":"code"
 }
 ],
@@ -508,7 +508,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRowText %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle_collapsed(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = #foreground\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle_collapsed(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = #foreground\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -521,7 +521,7 @@
 "type":"code"
 }
 ],
-"title":"Text"
+"title":"Title"
 },
 {
 "children":[],
@@ -590,7 +590,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsRowText(\n        #row\n        row_margin       = #row_margin\n        indent_size      = #indent_size\n        foreground       = #foreground\n        toggle_collapsed = #toggle_collapsed\n        @drag            = self._on_drag(event #row.id)\n        @click           = #set_hoisted_page(#row.id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent      = 0\n        active      = False\n        thickness   = #divider_thickness\n        color       = #dragdrop_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #row\n        row_margin       = #row_margin\n        indent_size      = #indent_size\n        foreground       = #foreground\n        toggle_collapsed = #toggle_collapsed\n        @drag            = self._on_drag(event #row.id)\n        @click           = #set_hoisted_page(#row.id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent      = 0\n        active      = False\n        thickness   = #divider_thickness\n        color       = #dragdrop_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -717,7 +717,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    if (#hoisted_page) {\n        Button(\n            label = \"unhoist\"\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n            @button = #set_hoisted_page(None)\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    if (#hoisted_page) {\n        Button(\n            label   = \"unhoist\"\n            @button = #set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1981,7 +1981,7 @@
 ],
 "fragments":[
 {
-"text":"class RLGuiWxContainerMixin(RLGuiWxMixin):\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_gui(self, parent_updated):\n        RLGuiWxMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        if not parent_updated:\n            self._layout()\n\n    @profile_sub(\"layout\")\n    def _layout(self):\n        self.Layout()\n        self.Refresh()\n\n    def _create_widgets(self):\n        raise NotImplementedError()\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props, parent_updated=True)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n",
+"text":"class RLGuiWxContainerMixin(RLGuiWxMixin):\n\n    def _setup_gui(self):\n        RLGuiWxMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_gui(self, parent_updated):\n        RLGuiWxMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        if not parent_updated:\n            self._layout()\n\n    @profile_sub(\"layout\")\n    def _layout(self):\n        self.Layout()\n        self.Refresh()\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props, parent_updated=True)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n",
 "type":"code"
 }
 ],
@@ -2029,7 +2029,7 @@
 ],
 "fragments":[
 {
-"text":"class Panel(wx.Panel, RLGuiWxContainerMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        RLGuiWxContainerMixin.__init__(self, *args)\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n",
+"text":"class Panel(wx.Panel, RLGuiWxContainerMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        RLGuiWxContainerMixin.__init__(self, *args)\n",
 "type":"code"
 }
 ],
