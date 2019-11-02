@@ -693,7 +693,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, [\"workspace\"]\n            )\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            )\n        })\n",
 "type":"code"
 }
 ],
@@ -709,7 +709,7 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %layout_columns {\n    background = #theme.background\n}\n",
+"text":"panel Workspace %layout_columns {\n}\n",
 "type":"code"
 }
 ],

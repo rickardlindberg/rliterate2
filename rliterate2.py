@@ -1293,8 +1293,8 @@ class WorkspaceProps(Props):
 
     def __init__(self, theme):
         Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, ["workspace"]
+            "background": PropUpdate(
+                theme, ["workspace", "background"]
             )
         })
 
@@ -1302,7 +1302,6 @@ class Workspace(RLGuiPanel):
 
     def _get_local_props(self):
         return {
-            'background': self.prop(['theme', 'background']),
         }
 
     def _create_sizer(self):
