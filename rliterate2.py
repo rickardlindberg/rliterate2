@@ -1062,6 +1062,21 @@ class TableOfContentsScrollAreaProps(Props):
             "theme": PropUpdate(
                 theme, []
             ),
+            "row_margin": PropUpdate(
+                theme, ["toc", "row_margin"]
+            ),
+            "indent_size": PropUpdate(
+                theme, ["toc", "indent_size"]
+            ),
+            "foreground": PropUpdate(
+                theme, ["toc", "foreground"]
+            ),
+            "divider_thickness": PropUpdate(
+                theme, ["toc", "divider_thickness"]
+            ),
+            "dragdrop_color": PropUpdate(
+                theme, ["dragdrop_color"]
+            ),
             "set_hoisted_page": session.set_hoisted_page,
             "toggle_collapsed": session.toggle_collapsed,
             "total_num_pages": PropUpdate(
@@ -1103,9 +1118,13 @@ class TableOfContentsScrollArea(RLGuiVScroll):
             handlers = {}
             name = 'rows'
             props['row'] = loopvar
-            props['theme'] = self.prop(['theme'])
+            props['row_margin'] = self.prop(['row_margin'])
+            props['indent_size'] = self.prop(['indent_size'])
+            props['foreground'] = self.prop(['foreground'])
             props['set_hoisted_page'] = self.prop(['set_hoisted_page'])
             props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
+            props['divider_thickness'] = self.prop(['divider_thickness'])
+            props['dragdrop_color'] = self.prop(['dragdrop_color'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             sizer["flag"] |= wx.EXPAND
@@ -1165,8 +1184,8 @@ class TableOfContentsScrollArea(RLGuiVScroll):
 
     def _calculate_indent(self, level):
         return (
-            (2 * self.prop(["theme", "toc", "row_margin"])) +
-            (level + 1) * self.prop(["theme", "toc", "indent_size"])
+            (2 * self.prop(["row_margin"])) +
+            (level + 1) * self.prop(["indent_size"])
         )
 
 class TableOfContentsRow(RLGuiPanel):
@@ -1185,7 +1204,9 @@ class TableOfContentsRow(RLGuiPanel):
         name = None
         handlers = {}
         props.update(self.prop(['row']))
-        props['theme'] = self.prop(['theme', 'toc'])
+        props['row_margin'] = self.prop(['row_margin'])
+        props['indent_size'] = self.prop(['indent_size'])
+        props['foreground'] = self.prop(['foreground'])
         props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['row', 'id']))
         handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
@@ -1198,8 +1219,8 @@ class TableOfContentsRow(RLGuiPanel):
         name = 'drop_line'
         props['indent'] = 0
         props['active'] = False
-        props['thickness'] = self.prop(['theme', 'toc', 'divider_thickness'])
-        props['color'] = self.prop(['theme', 'dragdrop_color'])
+        props['thickness'] = self.prop(['divider_thickness'])
+        props['color'] = self.prop(['dragdrop_color'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
 
@@ -1230,7 +1251,7 @@ class TableOfContentsRowText(RLGuiPanel):
 
     def _create_widgets(self):
         pass
-        self._create_space(add(self.prop(['theme', 'row_margin']), mul(self.prop(['level']), self.prop(['theme', 'indent_size']))))
+        self._create_space(add(self.prop(['row_margin']), mul(self.prop(['level']), self.prop(['indent_size']))))
         if_condition = self.prop(['has_children'])
         def loop_fn(loopvar):
             pass
@@ -1239,7 +1260,7 @@ class TableOfContentsRowText(RLGuiPanel):
             name = None
             handlers = {}
             props['cursor'] = 'hand'
-            props['size'] = self.prop(['theme', 'indent_size'])
+            props['size'] = self.prop(['indent_size'])
             props['collapsed'] = self.prop(['collapsed'])
             handlers['click'] = lambda event: self.prop(['toggle_collapsed'])(self.prop(['id']))
             handlers['drag'] = lambda event: None
@@ -1250,7 +1271,7 @@ class TableOfContentsRowText(RLGuiPanel):
                 loop_fn(loopvar)
         def loop_fn(loopvar):
             pass
-            self._create_space(self.prop(['theme', 'indent_size']))
+            self._create_space(self.prop(['indent_size']))
         with self._loop():
             for loopvar in ([None] if (not if_condition) else []):
                 loop_fn(loopvar)
@@ -1259,9 +1280,9 @@ class TableOfContentsRowText(RLGuiPanel):
         name = None
         handlers = {}
         props['text'] = self.prop(['title'])
-        props['foreground'] = self.prop(['theme', 'foreground'])
+        props['foreground'] = self.prop(['foreground'])
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['theme', 'row_margin'])
+        sizer["border"] = self.prop(['row_margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
