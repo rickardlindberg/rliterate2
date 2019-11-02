@@ -1,1 +1,3 @@
 .*.layout
+.cache/
+__pycache__/
