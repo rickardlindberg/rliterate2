@@ -403,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                generate_rows_and_drop_points\n            ),\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"set_dragged_page\": session.set_dragged_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"can_move_page\": document.can_move_page,\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -419,7 +419,7 @@
 ],
 "fragments":[
 {
-"text":"def generate_rows_and_drop_points(document, collapsed, hoisted_page):\n    def traverse(page, level=0):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    traverse(document.get_page(hoisted_page))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
+"text":"def generate_rows_and_drop_points(document, collapsed, hoisted_page, dragged_page):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    traverse(document.get_page(hoisted_page))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
 "type":"code"
 }
 ],
@@ -451,7 +451,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            row               = $\n            row_margin        = #row_margin\n            indent_size       = #indent_size\n            foreground        = #foreground\n            set_hoisted_page  = #set_hoisted_page\n            toggle_collapsed  = #toggle_collapsed\n            divider_thickness = #divider_thickness\n            dragdrop_color    = #dragdrop_color\n            __reuse           = $id\n            __cache           = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            row                    = $\n            row_margin             = #row_margin\n            indent_size            = #indent_size\n            foreground             = #foreground\n            set_hoisted_page       = #set_hoisted_page\n            toggle_collapsed       = #toggle_collapsed\n            divider_thickness      = #divider_thickness\n            dragdrop_color         = #dragdrop_color\n            dragdrop_invalid_color = #dragdrop_invalid_color\n            set_dragged_page       = #set_dragged_page\n            __reuse                = $id\n            __cache                = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -481,7 +481,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level)\n        )\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_margin\"])) +\n        (level + 1) * self.prop([\"indent_size\"])\n    )\n",
+"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_margin\"])) +\n        (level + 1) * self.prop([\"indent_size\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -508,8 +508,16 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle_collapsed(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = #foreground\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle_collapsed(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"TableOfContentsTitle"
+],
+"prefix":"",
+"type":"chunk"
 }
 ],
 "id":"e70e2005249e4fa29780c11f6dd1bb4c",
@@ -518,6 +526,25 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TableOfContentsTitle"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _foreground(self):\n    if self.prop([\"dragged\"]):\n        return self.prop([\"invalid_color\"])\n    else:\n        return self.prop([\"foreground\"])\n",
+"type":"code"
+}
+],
+"id":"27bd6ad27d6f4c918d0894743b6bc26b",
+"language":"",
+"post_process":[],
 "type":"code"
 }
 ],
@@ -536,7 +563,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel(\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #color)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel(\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #valid)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -566,7 +593,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_color(self, active, color):\n    if active:\n        return color\n    else:\n        return None\n",
+"text":"def _get_color(self, active, valid):\n    if active:\n        if valid:\n            return self.prop([\"color\"])\n        else:\n            return self.prop([\"invalid_color\"])\n    else:\n        return None\n",
 "type":"code"
 }
 ],
@@ -590,7 +617,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #row\n        row_margin       = #row_margin\n        indent_size      = #indent_size\n        foreground       = #foreground\n        toggle_collapsed = #toggle_collapsed\n        @drag            = self._on_drag(event #row.id)\n        @click           = #set_hoisted_page(#row.id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent      = 0\n        active      = False\n        thickness   = #divider_thickness\n        color       = #dragdrop_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #row\n        row_margin       = #row_margin\n        indent_size      = #indent_size\n        foreground       = #foreground\n        invalid_color    = #dragdrop_invalid_color\n        toggle_collapsed = #toggle_collapsed\n        @drag            = self._on_drag(event #set_dragged_page #row.id)\n        @click           = #set_hoisted_page(#row.id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -620,7 +647,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, page_id):\n    if math.sqrt(event.dx**2 + event.dy**2) > 3:\n        event.initiate_drag_drop(\"page\", {\"page_id\": page_id})\n",
+"text":"def _on_drag(self, event, set_dragged_page, page_id):\n    if math.sqrt(event.dx**2 + event.dy**2) > 3:\n        set_dragged_page(page_id)\n        try:\n            event.initiate_drag_drop(\"move_page\", {})\n        finally:\n            set_dragged_page(None)\n",
 "type":"code"
 }
 ],
@@ -658,7 +685,7 @@
 ],
 "fragments":[
 {
-"text":"def show_drop_line(self, indent):\n    self.get_widget(\"drop_line\").update_props({\n        \"active\": True,\n        \"indent\": indent\n    })\n",
+"text":"def show_drop_line(self, indent, valid):\n    self.get_widget(\"drop_line\").update_props({\n        \"active\": True,\n        \"valid\": valid,\n        \"indent\": indent\n    })\n",
 "type":"code"
 }
 ],
@@ -794,11 +821,27 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n\n    def get_page(self, page_id=None):\n        root_page = self.get([\"doc\", \"root_page\"])\n        if page_id is None:\n            return root_page\n        for page in self.iter_pages(root_page):\n            if page[\"id\"] == page_id:\n                return page\n        return None\n\n    def count_pages(self):\n        return len(list(self.iter_pages(self.get_page())))\n\n    def iter_pages(self, page):\n        yield page\n        for child in page[\"children\"]:\n            for x in self.iter_pages(child):\n                yield x\n",
+"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._init_page_index()\n\n    def _init_page_index(self):\n        def init(page, path, parent, index):\n            page_meta = PageMeta(self, page[\"id\"], path, parent, index)\n            self._page_index[page[\"id\"]] = page_meta\n            for index, child in enumerate(page[\"children\"]):\n                init(child, path+[\"children\", index], page_meta, index)\n        self._page_index = {}\n        root_path = [\"doc\", \"root_page\"]\n        init(self.get(root_path), root_path, None, 0)\n\n    def get_page(self, page_id=None):\n        if page_id is None:\n            return self.get([\"doc\", \"root_page\"])\n        else:\n            return self.get(self._page_index[page_id].path)\n\n    def count_pages(self):\n        return len(self._page_index)\n\n    def can_move_page(self, source_page_id, target_page_id, target_index):\n        source_page_meta = self._page_index.get(source_page_id, None)\n        if source_page_meta is None:\n            return False\n        target_page_meta = self._page_index.get(target_page_id, None)\n        if target_page_meta is None:\n            return False\n        return source_page_meta.can_move_to(target_page_meta, target_index)\n",
 "type":"code"
 }
 ],
 "id":"fb0708b0726240f18415dd1e63cff22d",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class PageMeta(object):\n\n    def __init__(self, doc, id, path, parent, index):\n        self.doc = doc\n        self.id = id\n        self.path = path\n        self.parent = parent\n        self.index = index\n\n    def can_move_to(self, target_page, target_index):\n        page = target_page\n        while page is not None:\n            if page.id == self.id:\n                return False\n            page = page.parent\n        if (target_page.id == self.parent.id and\n            target_index in [self.index, self.index+1]):\n            return False\n        return True\n",
+"type":"code"
+}
+],
+"id":"a77747d6d48a47a5ace26ce65833b94a",
 "type":"code"
 },
 {
@@ -881,7 +924,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n        },\n        \"dragdrop_color\": \"#ff6400\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 21,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n        },\n        \"dragdrop_color\": \"#dc322f\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
+"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 21,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
 "type":"code"
 }
 ],
@@ -904,7 +947,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],
@@ -1958,7 +2001,7 @@
 ],
 "fragments":[
 {
-"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        self.widget.on_drag_drop_over(x, y)\n        if defResult == wx.DragMove:\n            return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            wx.CallAfter(\n                self.widget.on_drag_drop_data,\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
+"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        if self.widget.on_drag_drop_over(x, y):\n            if defResult == wx.DragMove:\n                return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            wx.CallAfter(\n                self.widget.on_drag_drop_data,\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
 "type":"code"
 }
 ],
@@ -2600,7 +2643,9 @@
 "title":"RLiterate 2"
 },
 "variables":{
+"0f86edb70f4c42d2a13500eafb09f308":"target_page",
 "7f02baf9597a44618c7942768716bba3":"OnDataDropped",
-"d1440232958142d18f9a52920dabf4b1":"FindClosestDropPoint"
+"d1440232958142d18f9a52920dabf4b1":"FindClosestDropPoint",
+"d2aa737fb7224d9a8e3903670cddc46b":"target_index"
 }
 }

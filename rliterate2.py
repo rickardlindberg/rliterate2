@@ -49,16 +49,18 @@ def format_title(path):
         os.path.abspath(os.path.dirname(path))
     )
 
-def generate_rows_and_drop_points(document, collapsed, hoisted_page):
-    def traverse(page, level=0):
+def generate_rows_and_drop_points(document, collapsed, hoisted_page, dragged_page):
+    def traverse(page, level=0, dragged=False):
         is_collapsed = page["id"] in collapsed
         num_children = len(page["children"])
+        dragged = dragged or page["id"] == dragged_page
         rows.append({
             "id": page["id"],
             "title": page["title"],
             "level": level,
             "has_children": num_children > 0,
             "collapsed": is_collapsed,
+            "dragged": dragged,
         })
         if is_collapsed:
             target_index = num_children
@@ -72,7 +74,7 @@ def generate_rows_and_drop_points(document, collapsed, hoisted_page):
         ))
         if not is_collapsed:
             for target_index, child in enumerate(page["children"]):
-                traverse(child, level+1)
+                traverse(child, level+1, dragged=dragged)
                 drop_points.append(TableOfContentsDropPoint(
                     row_index=len(rows)-1,
                     target_index=target_index+1,
@@ -510,9 +512,9 @@ class RLiterateDropTarget(wx.DropTarget):
         self.DataObject = self.data
 
     def OnDragOver(self, x, y, defResult):
-        self.widget.on_drag_drop_over(x, y)
-        if defResult == wx.DragMove:
-            return wx.DragMove
+        if self.widget.on_drag_drop_over(x, y):
+            if defResult == wx.DragMove:
+                return wx.DragMove
         return wx.DragNone
 
     def OnData(self, x, y, defResult):
@@ -1107,8 +1109,16 @@ class TableOfContentsScrollAreaProps(Props):
             "dragdrop_color": PropUpdate(
                 theme, ["dragdrop_color"]
             ),
+            "dragdrop_invalid_color": PropUpdate(
+                theme, ["dragdrop_invalid_color"]
+            ),
+            "dragged_page": PropUpdate(
+                session, ["toc", "dragged_page"]
+            ),
             "set_hoisted_page": session.set_hoisted_page,
+            "set_dragged_page": session.set_dragged_page,
             "toggle_collapsed": session.toggle_collapsed,
+            "can_move_page": document.can_move_page,
             "total_num_pages": PropUpdate(
                 document,
                 lambda document: document.count_pages()
@@ -1117,6 +1127,7 @@ class TableOfContentsScrollAreaProps(Props):
                 document,
                 session, ["toc", "collapsed"],
                 session, ["toc", "hoisted_page"],
+                session, ["toc", "dragged_page"],
                 generate_rows_and_drop_points
             ),
         })
@@ -1132,7 +1143,7 @@ class TableOfContentsScrollArea(RLGuiVScroll):
 
     def _get_local_props(self):
         return {
-            'drop_target': 'page',
+            'drop_target': 'move_page',
         }
 
     def _create_sizer(self):
@@ -1155,6 +1166,8 @@ class TableOfContentsScrollArea(RLGuiVScroll):
             props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
             props['divider_thickness'] = self.prop(['divider_thickness'])
             props['dragdrop_color'] = self.prop(['dragdrop_color'])
+            props['dragdrop_invalid_color'] = self.prop(['dragdrop_invalid_color'])
+            props['set_dragged_page'] = self.prop(['set_dragged_page'])
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             sizer["flag"] |= wx.EXPAND
@@ -1173,9 +1186,17 @@ class TableOfContentsScrollArea(RLGuiVScroll):
         if drop_point is not None:
             self._last_drop_row = self._get_drop_row(drop_point)
         if self._last_drop_row is not None:
-            self._last_drop_row.show_drop_line(
-                self._calculate_indent(drop_point.level)
+            valid = self.prop(["can_move_page"])(
+                self.prop(["dragged_page"]),
+                drop_point.target_page,
+                drop_point.target_index
             )
+            self._last_drop_row.show_drop_line(
+                self._calculate_indent(drop_point.level),
+                valid=valid
+            )
+            return valid
+        return False
 
     def on_drag_drop_leave(self):
         self._hide()
@@ -1237,8 +1258,9 @@ class TableOfContentsRow(Panel):
         props['row_margin'] = self.prop(['row_margin'])
         props['indent_size'] = self.prop(['indent_size'])
         props['foreground'] = self.prop(['foreground'])
+        props['invalid_color'] = self.prop(['dragdrop_invalid_color'])
         props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
-        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['row', 'id']))
+        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['row', 'id']))
         handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsTitle, props, sizer, handlers, name)
@@ -1249,20 +1271,27 @@ class TableOfContentsRow(Panel):
         name = 'drop_line'
         props['indent'] = 0
         props['active'] = False
+        props['valid'] = True
         props['thickness'] = self.prop(['divider_thickness'])
         props['color'] = self.prop(['dragdrop_color'])
+        props['invalid_color'] = self.prop(['dragdrop_invalid_color'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
 
-    def _on_drag(self, event, page_id):
+    def _on_drag(self, event, set_dragged_page, page_id):
         if math.sqrt(event.dx**2 + event.dy**2) > 3:
-            event.initiate_drag_drop("page", {"page_id": page_id})
+            set_dragged_page(page_id)
+            try:
+                event.initiate_drag_drop("move_page", {})
+            finally:
+                set_dragged_page(None)
     def get_drop_line_y_offset(self):
         drop_line = self.get_widget("drop_line")
         return drop_line.get_y() + drop_line.get_height() / 2
-    def show_drop_line(self, indent):
+    def show_drop_line(self, indent, valid):
         self.get_widget("drop_line").update_props({
             "active": True,
+            "valid": valid,
             "indent": indent
         })
     def hide_drop_line(self):
@@ -1310,11 +1339,17 @@ class TableOfContentsTitle(Panel):
         name = None
         handlers = {}
         props['text'] = self.prop(['title'])
-        props['foreground'] = self.prop(['foreground'])
+        props['foreground'] = self._foreground()
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['row_margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
+
+    def _foreground(self):
+        if self.prop(["dragged"]):
+            return self.prop(["invalid_color"])
+        else:
+            return self.prop(["foreground"])
 
 class TableOfContentsDropLine(Panel):
 
@@ -1333,14 +1368,17 @@ class TableOfContentsDropLine(Panel):
         name = None
         handlers = {}
         props['min_size'] = makeTuple(-1, self.prop(['thickness']))
-        props['background'] = self._get_color(self.prop(['active']), self.prop(['color']))
+        props['background'] = self._get_color(self.prop(['active']), self.prop(['valid']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Panel, props, sizer, handlers, name)
 
-    def _get_color(self, active, color):
+    def _get_color(self, active, valid):
         if active:
-            return color
+            if valid:
+                return self.prop(["color"])
+            else:
+                return self.prop(["invalid_color"])
         else:
             return None
 
@@ -1372,24 +1410,55 @@ class Document(Immutable):
             "path": path,
             "doc": load_document_from_file(path),
         })
+        self._init_page_index()
+
+    def _init_page_index(self):
+        def init(page, path, parent, index):
+            page_meta = PageMeta(self, page["id"], path, parent, index)
+            self._page_index[page["id"]] = page_meta
+            for index, child in enumerate(page["children"]):
+                init(child, path+["children", index], page_meta, index)
+        self._page_index = {}
+        root_path = ["doc", "root_page"]
+        init(self.get(root_path), root_path, None, 0)
 
     def get_page(self, page_id=None):
-        root_page = self.get(["doc", "root_page"])
         if page_id is None:
-            return root_page
-        for page in self.iter_pages(root_page):
-            if page["id"] == page_id:
-                return page
-        return None
+            return self.get(["doc", "root_page"])
+        else:
+            return self.get(self._page_index[page_id].path)
 
     def count_pages(self):
-        return len(list(self.iter_pages(self.get_page())))
+        return len(self._page_index)
 
-    def iter_pages(self, page):
-        yield page
-        for child in page["children"]:
-            for x in self.iter_pages(child):
-                yield x
+    def can_move_page(self, source_page_id, target_page_id, target_index):
+        source_page_meta = self._page_index.get(source_page_id, None)
+        if source_page_meta is None:
+            return False
+        target_page_meta = self._page_index.get(target_page_id, None)
+        if target_page_meta is None:
+            return False
+        return source_page_meta.can_move_to(target_page_meta, target_index)
+
+class PageMeta(object):
+
+    def __init__(self, doc, id, path, parent, index):
+        self.doc = doc
+        self.id = id
+        self.path = path
+        self.parent = parent
+        self.index = index
+
+    def can_move_to(self, target_page, target_index):
+        page = target_page
+        while page is not None:
+            if page.id == self.id:
+                return False
+            page = page.parent
+        if (target_page.id == self.parent.id and
+            target_index in [self.index, self.index+1]):
+            return False
+        return True
 
 class Theme(Immutable):
 
@@ -1417,6 +1486,7 @@ class Theme(Immutable):
             "background": "#cccccc",
         },
         "dragdrop_color": "#ff6400",
+        "dragdrop_invalid_color": "#cccccc",
     }
 
     ALTERNATIVE = {
@@ -1443,6 +1513,7 @@ class Theme(Immutable):
             "background": "#d0cabb",
         },
         "dragdrop_color": "#dc322f",
+        "dragdrop_invalid_color": "#cccccc",
     }
 
     def __init__(self):
@@ -1462,11 +1533,15 @@ class Session(Immutable):
                 "width": 230,
                 "collapsed": [],
                 "hoisted_page": None,
+                "dragged_page": None,
             },
         })
 
     def set_hoisted_page(self, page_id):
         self.replace(["toc", "hoisted_page"], page_id)
+
+    def set_dragged_page(self, page_id):
+        self.replace(["toc", "dragged_page"], page_id)
 
     def set_toc_width(self, width):
         self.replace(["toc", "width"], width)
