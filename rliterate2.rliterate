@@ -2558,6 +2558,35 @@
 },
 {
 "children":[],
+"id":"7b532b6306f9462b9c5e9487661ab014",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"wx.StaticText",
+"type":"code"
+},
+{
+"text":" does not seem to get mouse move events if drag is started in it. But ",
+"type":"text"
+},
+{
+"text":"wx.Panel",
+"type":"code"
+},
+{
+"text":" does.",
+"type":"text"
+}
+],
+"id":"e7a53f88e6a047bf924be0003a65699a",
+"type":"text"
+}
+],
+"title":"Retro"
+},
+{
+"children":[],
 "id":"6d92bc9005724ecdad6856ba67ec2121",
 "paragraphs":[
 {
