@@ -208,6 +208,22 @@ class Immutable(object):
     def __init__(self, value):
         self._listeners = []
         self._value = value
+        self._transaction_counter = 0
+        self._changed_paths = []
+
+    @contextlib.contextmanager
+    def transaction(self):
+        self._transaction_counter += 1
+        original_value = self._value
+        try:
+            yield
+        except:
+            self._value = original_value
+            self._changed_paths.clear()
+            raise
+        finally:
+            self._transaction_counter -= 1
+            self._notify()
 
     def listen(self, listener, prefix=[]):
         self._listeners.append((listener, prefix))
@@ -229,12 +245,12 @@ class Immutable(object):
         self.modify_many([(path, fn)])
 
     def modify_many(self, *args, **kwargs):
-        self._notify(self._modify(*args, **kwargs))
+        self._modify(*args, **kwargs)
+        self._notify()
 
     @profile_sub("im_modify")
     def _modify(self, items, only_if_differs=False):
         new_value = self._value
-        changed_paths = []
         for path, fn in items:
             if only_if_differs:
                 subvalue = self.get(path)
@@ -245,28 +261,29 @@ class Immutable(object):
                         path,
                         lambda old: new_subvalue
                     )
-                    changed_paths.append(path)
+                    self._changed_paths.append(path)
             else:
                 new_value = im_modify(
                     new_value,
                     path,
                     fn
                 )
-                changed_paths.append(path)
+                self._changed_paths.append(path)
         self._value = new_value
-        return changed_paths
 
-    def _notify(self, changed_paths):
-        listeners = []
-        for changed_path in changed_paths:
-            for listener, prefix in self._listeners:
-                if ((len(changed_path) < len(prefix) and
-                    changed_path == prefix[:len(changed_path)]) or
-                    changed_path[:len(prefix)] == prefix):
-                    if listener not in listeners:
-                        listeners.append(listener)
-        for listener in listeners:
-            listener()
+    def _notify(self):
+        if self._transaction_counter == 0:
+            listeners = []
+            for changed_path in self._changed_paths:
+                for listener, prefix in self._listeners:
+                    if ((len(changed_path) < len(prefix) and
+                        changed_path == prefix[:len(changed_path)]) or
+                        changed_path[:len(prefix)] == prefix):
+                        if listener not in listeners:
+                            listeners.append(listener)
+            self._changed_paths.clear()
+            for listener in listeners:
+                listener()
 
 class RLGuiMixin(object):
 
@@ -348,7 +365,6 @@ class Props(Immutable):
 
     def __init__(self, props, child_props={}):
         self.dependencies = set()
-        self.changed_paths = []
         data = {}
         for name, value in props.items():
             if isinstance(value, Props):
@@ -367,23 +383,22 @@ class Props(Immutable):
         Immutable.__init__(self, data)
 
     def _propagate_changes(self):
-        self._notify(self.changed_paths)
-        self.changed_paths.clear()
+        self._notify()
 
     def _create_props_handler(self, name, props):
         def handler():
-            self.changed_paths.extend(self._modify(
+            self._modify(
                 self._modify_items(name, props.get()),
                 only_if_differs=False
-            ))
+            )
         return handler
 
     def _create_prop_update_handler(self, name, prop_update):
         def handler():
-            self.changed_paths.extend(self._modify(
+            self._modify(
                 self._modify_items(name, prop_update.eval()),
                 only_if_differs=True
-            ))
+            )
         return handler
 
     def _set_initial(self, data, name, value):
@@ -1481,8 +1496,9 @@ class Document(Immutable):
             operations = [operation_insert, operation_remove]
         else:
             operations = [operation_remove, operation_insert]
-        self.modify_many(operations)
-        self._build_page_index()
+        with self.transaction():
+            self.modify_many(operations)
+            self._build_page_index()
     def _can_move_page(self, source_meta, target_meta, target_index):
         page_meta = target_meta
         while page_meta is not None:
