@@ -1418,12 +1418,13 @@ class Document(Immutable):
     def _build_page_index(self):
         def build(page, path, parent, index):
             page_meta = PageMeta(page["id"], path, parent, index)
-            self._page_index[page["id"]] = page_meta
+            page_index[page["id"]] = page_meta
             for index, child in enumerate(page["children"]):
                 build(child, path+["children", index], page_meta, index)
-        self._page_index = {}
+        page_index = {}
         root_path = ["doc", "root_page"]
         build(self.get(root_path), root_path, None, 0)
+        self._page_index = page_index
     def _get_page_meta(self, page_id):
         if page_id not in self._page_index:
             raise PageNotFound()
@@ -1435,32 +1436,24 @@ class Document(Immutable):
             return self.get(self._page_index[page_id].path)
     def count_pages(self):
         return len(self._page_index)
-    def can_move_page(self, source_page_id, target_page_id, target_index):
-        try:
-            source_page = self._get_page_meta(source_page_id)
-            target_page = self._get_page_meta(target_page_id)
-        except PageNotFound:
-            return False
-        else:
-            return self._can_move_page(source_page, target_page, target_index)
     def move_page(self, source_page_id, target_page_id, target_index):
         try:
-            source_meta = self._get_page_meta(source_page_id)
-            target_meta = self._get_page_meta(target_page_id)
+            self._move_page(
+                self._get_page_meta(source_page_id),
+                self._get_page_meta(target_page_id),
+                target_index
+            )
         except PageNotFound:
             pass
-        else:
-            self._move_page(source_meta, target_meta, target_index)
-    def _can_move_page(self, source_meta, target_meta, target_index):
-        page_meta = target_meta
-        while page_meta is not None:
-            if page_meta.id == source_meta.id:
-                return False
-            page_meta = page_meta.parent
-        if (target_meta.id == source_meta.parent.id and
-            target_index in [source_meta.index, source_meta.index+1]):
+    def can_move_page(self, source_page_id, target_page_id, target_index):
+        try:
+            return self._can_move_page(
+                self._get_page_meta(source_page_id),
+                self._get_page_meta(target_page_id),
+                target_index
+            )
+        except PageNotFound:
             return False
-        return True
     def _move_page(self, source_meta, target_meta, target_index):
         if not self._can_move_page(source_meta, target_meta, target_index):
             return
@@ -1490,6 +1483,16 @@ class Document(Immutable):
             operations = [operation_remove, operation_insert]
         self.modify_many(operations)
         self._build_page_index()
+    def _can_move_page(self, source_meta, target_meta, target_index):
+        page_meta = target_meta
+        while page_meta is not None:
+            if page_meta.id == source_meta.id:
+                return False
+            page_meta = page_meta.parent
+        if (target_meta.id == source_meta.parent.id and
+            target_index in [source_meta.index, source_meta.index+1]):
+            return False
+        return True
 
 class PageNotFound(Exception):
     pass

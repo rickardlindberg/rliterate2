@@ -840,7 +840,7 @@
 ],
 "fragments":[
 {
-"text":"def _build_page_index(self):\n    def build(page, path, parent, index):\n        page_meta = PageMeta(page[\"id\"], path, parent, index)\n        self._page_index[page[\"id\"]] = page_meta\n        for index, child in enumerate(page[\"children\"]):\n            build(child, path+[\"children\", index], page_meta, index)\n    self._page_index = {}\n    root_path = [\"doc\", \"root_page\"]\n    build(self.get(root_path), root_path, None, 0)\n",
+"text":"def _build_page_index(self):\n    def build(page, path, parent, index):\n        page_meta = PageMeta(page[\"id\"], path, parent, index)\n        page_index[page[\"id\"]] = page_meta\n        for index, child in enumerate(page[\"children\"]):\n            build(child, path+[\"children\", index], page_meta, index)\n    page_index = {}\n    root_path = [\"doc\", \"root_page\"]\n    build(self.get(root_path), root_path, None, 0)\n    self._page_index = page_index\n",
 "type":"code"
 }
 ],
@@ -963,24 +963,7 @@
 ],
 "fragments":[
 {
-"text":"def can_move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        source_page = self._get_page_meta(source_page_id)\n        target_page = self._get_page_meta(target_page_id)\n    except PageNotFound:\n        return False\n    else:\n        return self._can_move_page(source_page, target_page, target_index)\n",
-"type":"code"
-}
-],
-"id":"1575fab0c145481cbc492c005c8bcb07",
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"Document"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        source_meta = self._get_page_meta(source_page_id)\n        target_meta = self._get_page_meta(target_page_id)\n    except PageNotFound:\n        pass\n    else:\n        self._move_page(source_meta, target_meta, target_index)\n",
+"text":"def move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        self._move_page(\n            self._get_page_meta(source_page_id),\n            self._get_page_meta(target_page_id),\n            target_index\n        )\n    except PageNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -997,11 +980,11 @@
 ],
 "fragments":[
 {
-"text":"def _can_move_page(self, source_meta, target_meta, target_index):\n    page_meta = target_meta\n    while page_meta is not None:\n        if page_meta.id == source_meta.id:\n            return False\n        page_meta = page_meta.parent\n    if (target_meta.id == source_meta.parent.id and\n        target_index in [source_meta.index, source_meta.index+1]):\n        return False\n    return True\n",
+"text":"def can_move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        return self._can_move_page(\n            self._get_page_meta(source_page_id),\n            self._get_page_meta(target_page_id),\n            target_index\n        )\n    except PageNotFound:\n        return False\n",
 "type":"code"
 }
 ],
-"id":"6ccc8611c05f46de94ec30938522c0a2",
+"id":"1575fab0c145481cbc492c005c8bcb07",
 "type":"code"
 },
 {
@@ -1019,6 +1002,23 @@
 }
 ],
 "id":"fb27c929fccb4d8fb0946a04a93a0d09",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _can_move_page(self, source_meta, target_meta, target_index):\n    page_meta = target_meta\n    while page_meta is not None:\n        if page_meta.id == source_meta.id:\n            return False\n        page_meta = page_meta.parent\n    if (target_meta.id == source_meta.parent.id and\n        target_index in [source_meta.index, source_meta.index+1]):\n        return False\n    return True\n",
+"type":"code"
+}
+],
+"id":"6ccc8611c05f46de94ec30938522c0a2",
 "type":"code"
 },
 {
