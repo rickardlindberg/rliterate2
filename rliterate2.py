@@ -245,8 +245,8 @@ class Immutable(object):
         self.modify_many([(path, fn)])
 
     def modify_many(self, *args, **kwargs):
-        self._modify(*args, **kwargs)
-        self._notify()
+        with self.transaction():
+            self._modify(*args, **kwargs)
 
     @profile_sub("im_modify")
     def _modify(self, items, only_if_differs=False):
