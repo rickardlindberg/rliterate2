@@ -1254,7 +1254,7 @@ class TableOfContentsScrollArea(RLGuiVScroll):
         return int(abs(span_y_center - y))
 
     def _x_distance_to(self, drop_point, x):
-        return int(abs(self._calculate_indent(drop_point.level + 1) - x))
+        return int(abs(self._calculate_indent(drop_point.level + 1.5) - x))
 
     def _calculate_indent(self, level):
         return (
@@ -1562,7 +1562,7 @@ class Theme(Immutable):
         "toc": {
             "background": "#fdf6e3",
             "foreground": "#657b83",
-            "indent_size": 21,
+            "indent_size": 22,
             "row_margin": 3,
             "divider_thickness": 3,
         },
