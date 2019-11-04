@@ -2001,7 +2001,7 @@
 ],
 "fragments":[
 {
-"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        if self.widget.on_drag_drop_over(x, y):\n            if defResult == wx.DragMove:\n                return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            wx.CallAfter(\n                self.widget.on_drag_drop_data,\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
+"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        if self.widget.on_drag_drop_over(x, y):\n            if defResult == wx.DragMove:\n                return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            self.widget.on_drag_drop_data(\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
 "type":"code"
 }
 ],

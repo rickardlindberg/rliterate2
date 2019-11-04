@@ -520,8 +520,7 @@ class RLiterateDropTarget(wx.DropTarget):
     def OnData(self, x, y, defResult):
         if (defResult == wx.DragMove and
             self.GetData()):
-            wx.CallAfter(
-                self.widget.on_drag_drop_data,
+            self.widget.on_drag_drop_data(
                 x,
                 y,
                 json.loads(self.data.GetData().tobytes().decode("utf-8"))
