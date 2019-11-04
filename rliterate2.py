@@ -1090,9 +1090,32 @@ class TableOfContentsScrollAreaProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "theme": PropUpdate(
-                theme, []
+            "total_num_pages": PropUpdate(
+                document,
+                lambda document: document.count_pages()
             ),
+            "dragged_page": PropUpdate(
+                session, ["toc", "dragged_page"]
+            ),
+            "can_move_page": document.can_move_page,
+            "*": PropUpdate(
+                document,
+                session, ["toc", "collapsed"],
+                session, ["toc", "hoisted_page"],
+                session, ["toc", "dragged_page"],
+                generate_rows_and_drop_points
+            ),
+            "row_extra": TableOfContentsRowExtraProps(
+                document,
+                session,
+                theme
+            ),
+        })
+
+class TableOfContentsRowExtraProps(Props):
+
+    def __init__(self, document, session, theme):
+        Props.__init__(self, {
             "row_margin": PropUpdate(
                 theme, ["toc", "row_margin"]
             ),
@@ -1102,6 +1125,8 @@ class TableOfContentsScrollAreaProps(Props):
             "foreground": PropUpdate(
                 theme, ["toc", "foreground"]
             ),
+            "set_hoisted_page": session.set_hoisted_page,
+            "toggle_collapsed": session.toggle_collapsed,
             "divider_thickness": PropUpdate(
                 theme, ["toc", "divider_thickness"]
             ),
@@ -1111,24 +1136,7 @@ class TableOfContentsScrollAreaProps(Props):
             "dragdrop_invalid_color": PropUpdate(
                 theme, ["dragdrop_invalid_color"]
             ),
-            "dragged_page": PropUpdate(
-                session, ["toc", "dragged_page"]
-            ),
-            "set_hoisted_page": session.set_hoisted_page,
             "set_dragged_page": session.set_dragged_page,
-            "toggle_collapsed": session.toggle_collapsed,
-            "can_move_page": document.can_move_page,
-            "total_num_pages": PropUpdate(
-                document,
-                lambda document: document.count_pages()
-            ),
-            "*": PropUpdate(
-                document,
-                session, ["toc", "collapsed"],
-                session, ["toc", "hoisted_page"],
-                session, ["toc", "dragged_page"],
-                generate_rows_and_drop_points
-            ),
         })
 
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
@@ -1157,16 +1165,8 @@ class TableOfContentsScrollArea(RLGuiVScroll):
             name = None
             handlers = {}
             name = 'rows'
-            props['row'] = loopvar
-            props['row_margin'] = self.prop(['row_margin'])
-            props['indent_size'] = self.prop(['indent_size'])
-            props['foreground'] = self.prop(['foreground'])
-            props['set_hoisted_page'] = self.prop(['set_hoisted_page'])
-            props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
-            props['divider_thickness'] = self.prop(['divider_thickness'])
-            props['dragdrop_color'] = self.prop(['dragdrop_color'])
-            props['dragdrop_invalid_color'] = self.prop(['dragdrop_invalid_color'])
-            props['set_dragged_page'] = self.prop(['set_dragged_page'])
+            props.update(loopvar)
+            props.update(self.prop(['row_extra']))
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             sizer["flag"] |= wx.EXPAND
@@ -1234,8 +1234,8 @@ class TableOfContentsScrollArea(RLGuiVScroll):
 
     def _calculate_indent(self, level):
         return (
-            (2 * self.prop(["row_margin"])) +
-            (level + 1) * self.prop(["indent_size"])
+            (2 * self.prop(["row_extra", "row_margin"])) +
+            (level + 1) * self.prop(["row_extra", "indent_size"])
         )
 
 class TableOfContentsRow(Panel):
@@ -1253,14 +1253,9 @@ class TableOfContentsRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['row']))
-        props['row_margin'] = self.prop(['row_margin'])
-        props['indent_size'] = self.prop(['indent_size'])
-        props['foreground'] = self.prop(['foreground'])
-        props['invalid_color'] = self.prop(['dragdrop_invalid_color'])
-        props['toggle_collapsed'] = self.prop(['toggle_collapsed'])
-        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['row', 'id']))
-        handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['row', 'id']))
+        props.update(self.prop([]))
+        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['id']))
+        handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['id']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsTitle, props, sizer, handlers, name)
         props = {}
@@ -1346,7 +1341,7 @@ class TableOfContentsTitle(Panel):
 
     def _foreground(self):
         if self.prop(["dragged"]):
-            return self.prop(["invalid_color"])
+            return self.prop(["dragdrop_invalid_color"])
         else:
             return self.prop(["foreground"])
 

@@ -403,11 +403,27 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"theme\": PropUpdate(\n                theme, []\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"set_dragged_page\": session.set_dragged_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"can_move_page\": document.can_move_page,\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
 "id":"35fa6ae9b01d46edba595aeca5cacef7",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"set_dragged_page\": session.set_dragged_page,\n        })\n",
+"type":"code"
+}
+],
+"id":"979a1f19c35646fa87675dee9bd52ffd",
 "type":"code"
 },
 {
@@ -451,7 +467,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            row                    = $\n            row_margin             = #row_margin\n            indent_size            = #indent_size\n            foreground             = #foreground\n            set_hoisted_page       = #set_hoisted_page\n            toggle_collapsed       = #toggle_collapsed\n            divider_thickness      = #divider_thickness\n            dragdrop_color         = #dragdrop_color\n            dragdrop_invalid_color = #dragdrop_invalid_color\n            set_dragged_page       = #set_dragged_page\n            __reuse                = $id\n            __cache                = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -481,7 +497,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_margin\"])) +\n        (level + 1) * self.prop([\"indent_size\"])\n    )\n",
+"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -538,7 +554,7 @@
 ],
 "fragments":[
 {
-"text":"def _foreground(self):\n    if self.prop([\"dragged\"]):\n        return self.prop([\"invalid_color\"])\n    else:\n        return self.prop([\"foreground\"])\n",
+"text":"def _foreground(self):\n    if self.prop([\"dragged\"]):\n        return self.prop([\"dragdrop_invalid_color\"])\n    else:\n        return self.prop([\"foreground\"])\n",
 "type":"code"
 }
 ],
@@ -617,7 +633,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #row\n        row_margin       = #row_margin\n        indent_size      = #indent_size\n        foreground       = #foreground\n        invalid_color    = #dragdrop_invalid_color\n        toggle_collapsed = #toggle_collapsed\n        @drag            = self._on_drag(event #set_dragged_page #row.id)\n        @click           = #set_hoisted_page(#row.id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #\n        @drag  = self._on_drag(event #set_dragged_page #id)\n        @click = #set_hoisted_page(#id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
