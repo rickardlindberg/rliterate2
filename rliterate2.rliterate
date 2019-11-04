@@ -929,7 +929,7 @@
 ],
 "fragments":[
 {
-"text":"def get_page(self, page_id=None):\n    if page_id is None:\n        return self.get([\"doc\", \"root_page\"])\n    else:\n        return self.get(self._page_index[page_id].path)\n",
+"text":"def get_page(self, page_id=None):\n    if page_id is None:\n        return self.get([\"doc\", \"root_page\"])\n    else:\n        return self.get(self._get_page_meta(page_id).path)\n",
 "type":"code"
 }
 ],

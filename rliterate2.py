@@ -1448,7 +1448,7 @@ class Document(Immutable):
         if page_id is None:
             return self.get(["doc", "root_page"])
         else:
-            return self.get(self._page_index[page_id].path)
+            return self.get(self._get_page_meta(page_id).path)
     def count_pages(self):
         return len(self._page_index)
     def move_page(self, source_page_id, target_page_id, target_index):
