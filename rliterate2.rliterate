@@ -403,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -497,7 +497,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    print(f\"page_info = {page_info}\")\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
+"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self.prop([\"move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -825,23 +825,43 @@
 "title":"GUI"
 },
 {
+"children":[
+{
 "children":[],
-"id":"27c8072213a94090a6d0d5e1362ab3ed",
+"id":"7c9472a51c374b4e9408ee6a0adf6500",
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"classes",
+"Document"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._init_page_index()\n\n    def _init_page_index(self):\n        def init(page, path, parent, index):\n            page_meta = PageMeta(self, page[\"id\"], path, parent, index)\n            self._page_index[page[\"id\"]] = page_meta\n            for index, child in enumerate(page[\"children\"]):\n                init(child, path+[\"children\", index], page_meta, index)\n        self._page_index = {}\n        root_path = [\"doc\", \"root_page\"]\n        init(self.get(root_path), root_path, None, 0)\n\n    def get_page(self, page_id=None):\n        if page_id is None:\n            return self.get([\"doc\", \"root_page\"])\n        else:\n            return self.get(self._page_index[page_id].path)\n\n    def count_pages(self):\n        return len(self._page_index)\n\n    def can_move_page(self, source_page_id, target_page_id, target_index):\n        source_page_meta = self._page_index.get(source_page_id, None)\n        if source_page_meta is None:\n            return False\n        target_page_meta = self._page_index.get(target_page_id, None)\n        if target_page_meta is None:\n            return False\n        return source_page_meta.can_move_to(target_page_meta, target_index)\n",
+"text":"def _build_page_index(self):\n    def build(page, path, parent, index):\n        page_meta = PageMeta(page[\"id\"], path, parent, index)\n        self._page_index[page[\"id\"]] = page_meta\n        for index, child in enumerate(page[\"children\"]):\n            build(child, path+[\"children\", index], page_meta, index)\n    self._page_index = {}\n    root_path = [\"doc\", \"root_page\"]\n    build(self.get(root_path), root_path, None, 0)\n",
 "type":"code"
 }
 ],
-"id":"fb0708b0726240f18415dd1e63cff22d",
+"id":"a3ec09011bd44eed8140888f037296bd",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _get_page_meta(self, page_id):\n    if page_id not in self._page_index:\n        raise PageNotFound()\n    return self._page_index[page_id]\n",
+"type":"code"
+}
+],
+"id":"c49cfbf2f6664eaa98dd1f03b70f020c",
 "type":"code"
 },
 {
@@ -853,11 +873,215 @@
 ],
 "fragments":[
 {
-"text":"class PageMeta(object):\n\n    def __init__(self, doc, id, path, parent, index):\n        self.doc = doc\n        self.id = id\n        self.path = path\n        self.parent = parent\n        self.index = index\n\n    def can_move_to(self, target_page, target_index):\n        page = target_page\n        while page is not None:\n            if page.id == self.id:\n                return False\n            page = page.parent\n        if (target_page.id == self.parent.id and\n            target_index in [self.index, self.index+1]):\n            return False\n        return True\n",
+"text":"class PageNotFound(Exception):\n    pass\n",
+"type":"code"
+}
+],
+"id":"ae32d0a26a90418282247d248e63c3cb",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class PageMeta(object):\n\n    def __init__(self, id, path, parent, index):\n        self.id = id\n        self.path = path\n        self.parent = parent\n        self.index = index\n",
 "type":"code"
 }
 ],
 "id":"a77747d6d48a47a5ace26ce65833b94a",
+"type":"code"
+}
+],
+"title":"Page index"
+},
+{
+"children":[],
+"id":"ebb83f4e43c84b4a8e042a9a8d162e88",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def create_new_page():\n    return {\n        \"id\": genid(),\n        \"title\": \"New page...\",\n        \"children\": [],\n        \"paragraphs\": [],\n    }\n",
+"type":"code"
+}
+],
+"id":"62b40e83cdde43209245d76e123bdb5a",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def get_page(self, page_id=None):\n    if page_id is None:\n        return self.get([\"doc\", \"root_page\"])\n    else:\n        return self.get(self._page_index[page_id].path)\n",
+"type":"code"
+}
+],
+"id":"9655c214448a4e5e802a86af9c7e38ba",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def count_pages(self):\n    return len(self._page_index)\n",
+"type":"code"
+}
+],
+"id":"130aab4fdd6744a9bbc3ca3072ddc4c2",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def can_move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        source_page = self._get_page_meta(source_page_id)\n        target_page = self._get_page_meta(target_page_id)\n    except PageNotFound:\n        return False\n    else:\n        return self._can_move_page(source_page, target_page, target_index)\n",
+"type":"code"
+}
+],
+"id":"1575fab0c145481cbc492c005c8bcb07",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        source_meta = self._get_page_meta(source_page_id)\n        target_meta = self._get_page_meta(target_page_id)\n    except PageNotFound:\n        pass\n    else:\n        self._move_page(source_meta, target_meta, target_index)\n",
+"type":"code"
+}
+],
+"id":"9b78672f3b9c42fb8e8abf0bffe58159",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _can_move_page(self, source_meta, target_meta, target_index):\n    page_meta = target_meta\n    while page_meta is not None:\n        if page_meta.id == source_meta.id:\n            return False\n        page_meta = page_meta.parent\n    if (target_meta.id == source_meta.parent.id and\n        target_index in [source_meta.index, source_meta.index+1]):\n        return False\n    return True\n",
+"type":"code"
+}
+],
+"id":"6ccc8611c05f46de94ec30938522c0a2",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _move_page(self, source_meta, target_meta, target_index):\n    if not self._can_move_page(source_meta, target_meta, target_index):\n        return\n    page_dict = self.get(source_meta.path)\n    operation_insert = (\n        target_meta.path + [\"children\"],\n        lambda children: (\n            children[:target_index] +\n            [page_dict] +\n            children[target_index:]\n        )\n    )\n    operation_remove = (\n        source_meta.parent.path + [\"children\"],\n        lambda children: (\n            children[:source_meta.index] +\n            children[source_meta.index+1:]\n        )\n    )\n    if target_meta.id == source_meta.parent.id:\n        insert_first = target_index > source_meta.index\n    else:\n        insert_first = len(target_meta.path) > len(source_meta.parent.path)\n    if insert_first:\n        operations = [operation_insert, operation_remove]\n    else:\n        operations = [operation_remove, operation_insert]\n    self.modify_many(operations)\n    self._build_page_index()\n",
+"type":"code"
+}
+],
+"id":"fb27c929fccb4d8fb0946a04a93a0d09",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"TODO: must rebuild page index before notifying",
+"type":"strong"
+}
+],
+"id":"0f40cc8d162643f99b4245ba1742f495",
+"type":"text"
+}
+],
+"title":"Pages"
+},
+{
+"children":[],
+"id":"d7019f6e73b340889e6e9d5b86f917c7",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def genid():\n    return uuid.uuid4().hex\n",
+"type":"code"
+}
+],
+"id":"e6bca528d2f94219b720e92cd5ddf925",
+"type":"code"
+}
+],
+"title":"Id generation"
+}
+],
+"id":"27c8072213a94090a6d0d5e1362ab3ed",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._build_page_index()\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"Document"
+],
+"prefix":"    ",
+"type":"chunk"
+}
+],
+"id":"fb0708b0726240f18415dd1e63cff22d",
 "type":"code"
 },
 {
@@ -890,38 +1114,6 @@
 }
 ],
 "id":"1c35c112ce9f41659a6a6c8a4062f564",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def create_new_page():\n    return {\n        \"id\": genid(),\n        \"title\": \"New page...\",\n        \"children\": [],\n        \"paragraphs\": [],\n    }\n",
-"type":"code"
-}
-],
-"id":"62b40e83cdde43209245d76e123bdb5a",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def genid():\n    return uuid.uuid4().hex\n",
-"type":"code"
-}
-],
-"id":"e6bca528d2f94219b720e92cd5ddf925",
 "type":"code"
 }
 ],
@@ -2416,7 +2608,7 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n\n    def listen(self, listener, prefix=[]):\n        self._listeners.append((listener, prefix))\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        self._notify(self._modify(*args, **kwargs))\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        changed_paths = []\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    self._value = im_modify(\n                        self._value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n                    changed_paths.append(path)\n            else:\n                self._value = im_modify(\n                    self._value,\n                    path,\n                    fn\n                )\n                changed_paths.append(path)\n        return changed_paths\n\n    def _notify(self, changed_paths):\n        listeners = []\n        for changed_path in changed_paths:\n            for listener, prefix in self._listeners:\n                if ((len(changed_path) < len(prefix) and\n                    changed_path == prefix[:len(changed_path)]) or\n                    changed_path[:len(prefix)] == prefix):\n                    if listener not in listeners:\n                        listeners.append(listener)\n        for listener in listeners:\n            listener()\n",
+"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n\n    def listen(self, listener, prefix=[]):\n        self._listeners.append((listener, prefix))\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        self._notify(self._modify(*args, **kwargs))\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        new_value = self._value\n        changed_paths = []\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    new_value = im_modify(\n                        new_value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n                    changed_paths.append(path)\n            else:\n                new_value = im_modify(\n                    new_value,\n                    path,\n                    fn\n                )\n                changed_paths.append(path)\n        self._value = new_value\n        return changed_paths\n\n    def _notify(self, changed_paths):\n        listeners = []\n        for changed_path in changed_paths:\n            for listener, prefix in self._listeners:\n                if ((len(changed_path) < len(prefix) and\n                    changed_path == prefix[:len(changed_path)]) or\n                    changed_path[:len(prefix)] == prefix):\n                    if listener not in listeners:\n                        listeners.append(listener)\n        for listener in listeners:\n            listener()\n",
 "type":"code"
 }
 ],

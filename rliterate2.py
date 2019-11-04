@@ -233,25 +233,27 @@ class Immutable(object):
 
     @profile_sub("im_modify")
     def _modify(self, items, only_if_differs=False):
+        new_value = self._value
         changed_paths = []
         for path, fn in items:
             if only_if_differs:
                 subvalue = self.get(path)
                 new_subvalue = fn(subvalue)
                 if new_subvalue != subvalue:
-                    self._value = im_modify(
-                        self._value,
+                    new_value = im_modify(
+                        new_value,
                         path,
                         lambda old: new_subvalue
                     )
                     changed_paths.append(path)
             else:
-                self._value = im_modify(
-                    self._value,
+                new_value = im_modify(
+                    new_value,
                     path,
                     fn
                 )
                 changed_paths.append(path)
+        self._value = new_value
         return changed_paths
 
     def _notify(self, changed_paths):
@@ -1098,6 +1100,7 @@ class TableOfContentsScrollAreaProps(Props):
                 session, ["toc", "dragged_page"]
             ),
             "can_move_page": document.can_move_page,
+            "move_page": document.move_page,
             "*": PropUpdate(
                 document,
                 session, ["toc", "collapsed"],
@@ -1201,7 +1204,13 @@ class TableOfContentsScrollArea(RLGuiVScroll):
         self._hide()
 
     def on_drag_drop_data(self, x, y, page_info):
-        print(f"page_info = {page_info}")
+        drop_point = self._get_drop_point(x, y)
+        if drop_point is not None:
+            self.prop(["move_page"])(
+                self.prop(["dragged_page"]),
+                drop_point.target_page,
+                drop_point.target_index
+            )
 
     def _hide(self):
         if self._last_drop_row is not None:
@@ -1404,55 +1413,94 @@ class Document(Immutable):
             "path": path,
             "doc": load_document_from_file(path),
         })
-        self._init_page_index()
+        self._build_page_index()
 
-    def _init_page_index(self):
-        def init(page, path, parent, index):
-            page_meta = PageMeta(self, page["id"], path, parent, index)
+    def _build_page_index(self):
+        def build(page, path, parent, index):
+            page_meta = PageMeta(page["id"], path, parent, index)
             self._page_index[page["id"]] = page_meta
             for index, child in enumerate(page["children"]):
-                init(child, path+["children", index], page_meta, index)
+                build(child, path+["children", index], page_meta, index)
         self._page_index = {}
         root_path = ["doc", "root_page"]
-        init(self.get(root_path), root_path, None, 0)
-
+        build(self.get(root_path), root_path, None, 0)
+    def _get_page_meta(self, page_id):
+        if page_id not in self._page_index:
+            raise PageNotFound()
+        return self._page_index[page_id]
     def get_page(self, page_id=None):
         if page_id is None:
             return self.get(["doc", "root_page"])
         else:
             return self.get(self._page_index[page_id].path)
-
     def count_pages(self):
         return len(self._page_index)
-
     def can_move_page(self, source_page_id, target_page_id, target_index):
-        source_page_meta = self._page_index.get(source_page_id, None)
-        if source_page_meta is None:
+        try:
+            source_page = self._get_page_meta(source_page_id)
+            target_page = self._get_page_meta(target_page_id)
+        except PageNotFound:
             return False
-        target_page_meta = self._page_index.get(target_page_id, None)
-        if target_page_meta is None:
+        else:
+            return self._can_move_page(source_page, target_page, target_index)
+    def move_page(self, source_page_id, target_page_id, target_index):
+        try:
+            source_meta = self._get_page_meta(source_page_id)
+            target_meta = self._get_page_meta(target_page_id)
+        except PageNotFound:
+            pass
+        else:
+            self._move_page(source_meta, target_meta, target_index)
+    def _can_move_page(self, source_meta, target_meta, target_index):
+        page_meta = target_meta
+        while page_meta is not None:
+            if page_meta.id == source_meta.id:
+                return False
+            page_meta = page_meta.parent
+        if (target_meta.id == source_meta.parent.id and
+            target_index in [source_meta.index, source_meta.index+1]):
             return False
-        return source_page_meta.can_move_to(target_page_meta, target_index)
+        return True
+    def _move_page(self, source_meta, target_meta, target_index):
+        if not self._can_move_page(source_meta, target_meta, target_index):
+            return
+        page_dict = self.get(source_meta.path)
+        operation_insert = (
+            target_meta.path + ["children"],
+            lambda children: (
+                children[:target_index] +
+                [page_dict] +
+                children[target_index:]
+            )
+        )
+        operation_remove = (
+            source_meta.parent.path + ["children"],
+            lambda children: (
+                children[:source_meta.index] +
+                children[source_meta.index+1:]
+            )
+        )
+        if target_meta.id == source_meta.parent.id:
+            insert_first = target_index > source_meta.index
+        else:
+            insert_first = len(target_meta.path) > len(source_meta.parent.path)
+        if insert_first:
+            operations = [operation_insert, operation_remove]
+        else:
+            operations = [operation_remove, operation_insert]
+        self.modify_many(operations)
+        self._build_page_index()
+
+class PageNotFound(Exception):
+    pass
 
 class PageMeta(object):
 
-    def __init__(self, doc, id, path, parent, index):
-        self.doc = doc
+    def __init__(self, id, path, parent, index):
         self.id = id
         self.path = path
         self.parent = parent
         self.index = index
-
-    def can_move_to(self, target_page, target_index):
-        page = target_page
-        while page is not None:
-            if page.id == self.id:
-                return False
-            page = page.parent
-        if (target_page.id == self.parent.id and
-            target_index in [self.index, self.index+1]):
-            return False
-        return True
 
 class Theme(Immutable):
 
