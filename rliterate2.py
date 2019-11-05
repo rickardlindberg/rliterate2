@@ -447,6 +447,10 @@ class WxWidgetMixin(WidgetMixin):
             "click": [
                 (wx.EVT_LEFT_UP, self._on_wx_left_up),
             ],
+            "hover": [
+                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),
+                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),
+            ],
         }
 
     def _setup_wx_events(self):
@@ -455,7 +459,7 @@ class WxWidgetMixin(WidgetMixin):
 
     def _update_gui(self, parent_updated):
         WidgetMixin._update_gui(self, parent_updated)
-        for name in ["drag"]:
+        for name in ["drag", "hover"]:
             if self._parent is not None and self._parent.has_event_handler(name):
                 self._register_wx_events(name)
 
@@ -496,8 +500,15 @@ class WxWidgetMixin(WidgetMixin):
                 self.initiate_drag_drop
             ), propagate=True)
 
+    def _on_wx_enter_window(self, wx_event):
+        self.call_event_handler("hover", HoverEvent(True), propagate=True)
+
+    def _on_wx_leave_window(self, wx_event):
+        self.call_event_handler("hover", HoverEvent(False), propagate=True)
+
     def initiate_drag_drop(self, kind, data):
         self._wx_down_pos = None
+        self.call_event_handler("hover", HoverEvent(False), propagate=True)
         obj = wx.CustomDataObject(f"rliterate/{kind}")
         obj.SetData(json.dumps(data).encode("utf-8"))
         drag_source = wx.DropSource(self)
@@ -1148,6 +1159,9 @@ class TableOfContentsRowExtraProps(Props):
             "foreground": PropUpdate(
                 theme, ["toc", "foreground"]
             ),
+            "hover_background": PropUpdate(
+                theme, ["toc", "hover_background"]
+            ),
             "set_hoisted_page": session.set_hoisted_page,
             "toggle_collapsed": session.toggle_collapsed,
             "divider_thickness": PropUpdate(
@@ -1282,9 +1296,11 @@ class TableOfContentsRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
+        name = 'title'
         props.update(self.prop([]))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['id']))
         handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['id']))
+        handlers['hover'] = lambda event: self._set_background(event.mouse_inside)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsTitle, props, sizer, handlers, name)
         props = {}
@@ -1308,6 +1324,15 @@ class TableOfContentsRow(Panel):
                 event.initiate_drag_drop("move_page", {})
             finally:
                 set_dragged_page(None)
+    def _set_background(self, hover):
+        if hover:
+            self.get_widget("title").update_props({
+                "background": self.prop(["hover_background"]),
+            })
+        else:
+            self.get_widget("title").update_props({
+                "background": None,
+            })
     def get_drop_line_y_offset(self):
         drop_line = self.get_widget("drop_line")
         return drop_line.get_y() + drop_line.get_height() / 2
@@ -1543,6 +1568,7 @@ class Theme(Immutable):
             "indent_size": 20,
             "row_margin": 2,
             "divider_thickness": 2,
+            "hover_background": "#cccccc",
         },
         "toc_divider": {
             "thickness": 3,
@@ -1570,6 +1596,7 @@ class Theme(Immutable):
             "indent_size": 22,
             "row_margin": 3,
             "divider_thickness": 3,
+            "hover_background": "#d0cabb",
         },
         "toc_divider": {
             "thickness": 5,
@@ -1623,6 +1650,8 @@ class Session(Immutable):
 DragEvent = namedtuple("DragEvent", "initial,dx,dy,initiate_drag_drop")
 
 SliderEvent = namedtuple("SliderEvent", "value")
+
+HoverEvent = namedtuple("HoverEvent", "mouse_inside")
 
 class PropUpdate(object):
 

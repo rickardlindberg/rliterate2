@@ -419,7 +419,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"set_dragged_page\": session.set_dragged_page,\n        })\n",
+"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"hover_background\": PropUpdate(\n                theme, [\"toc\", \"hover_background\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"set_dragged_page\": session.set_dragged_page,\n        })\n",
 "type":"code"
 }
 ],
@@ -633,7 +633,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle(\n        #\n        @drag  = self._on_drag(event #set_dragged_page #id)\n        @click = #set_hoisted_page(#id)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @drag  = self._on_drag(event #set_dragged_page #id)\n        @click = #set_hoisted_page(#id)\n        @hover = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -668,6 +668,25 @@
 }
 ],
 "id":"8644bf90994a4027b8e11e560c71cb7d",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TableOfContentsRow"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _set_background(self, hover):\n    if hover:\n        self.get_widget(\"title\").update_props({\n            \"background\": self.prop([\"hover_background\"]),\n        })\n    else:\n        self.get_widget(\"title\").update_props({\n            \"background\": None,\n        })\n",
+"type":"code"
+}
+],
+"id":"e21538b645a84d118720e42a62ee7702",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -1122,7 +1141,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
+"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
 "type":"code"
 }
 ],
@@ -1297,6 +1316,22 @@
 }
 ],
 "id":"b1c7ca14119b4dd4ad86f666c81806b3",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"HoverEvent = namedtuple(\"HoverEvent\", \"mouse_inside\")\n",
+"type":"code"
+}
+],
+"id":"06072ea4b6554dbd8aa0aa0af6e2ff2d",
 "type":"code"
 }
 ],
@@ -2183,7 +2218,7 @@
 ],
 "fragments":[
 {
-"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self.call_event_handler(\"click\", None)\n        self._wx_down_pos = None\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n",
+"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self.call_event_handler(\"click\", None)\n        self._wx_down_pos = None\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n",
 "type":"code"
 }
 ],
