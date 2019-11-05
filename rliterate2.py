@@ -447,6 +447,9 @@ class WxWidgetMixin(WidgetMixin):
             "click": [
                 (wx.EVT_LEFT_UP, self._on_wx_left_up),
             ],
+            "right_click": [
+                (wx.EVT_RIGHT_UP, self._on_wx_right_up),
+            ],
             "hover": [
                 (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),
                 (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),
@@ -459,7 +462,7 @@ class WxWidgetMixin(WidgetMixin):
 
     def _update_gui(self, parent_updated):
         WidgetMixin._update_gui(self, parent_updated)
-        for name in ["drag", "hover"]:
+        for name in ["drag", "hover", "click", "right_click"]:
             if self._parent is not None and self._parent.has_event_handler(name):
                 self._register_wx_events(name)
 
@@ -485,8 +488,19 @@ class WxWidgetMixin(WidgetMixin):
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self.call_event_handler("click", None)
+            self._call_click_event_handler("click")
         self._wx_down_pos = None
+
+    def _on_wx_right_up(self, wx_event):
+        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
+            self._call_click_event_handler("right_click")
+
+    def _call_click_event_handler(self, name):
+        self.call_event_handler(
+            name,
+            ClickEvent(self._show_context_menu),
+            propagate=True
+        )
 
     def _on_wx_motion(self, wx_event):
         if self._wx_down_pos is not None:
@@ -504,16 +518,19 @@ class WxWidgetMixin(WidgetMixin):
         self.call_event_handler("hover", HoverEvent(True), propagate=True)
 
     def _on_wx_leave_window(self, wx_event):
-        self.call_event_handler("hover", HoverEvent(False), propagate=True)
+        self._hover_leave()
 
     def initiate_drag_drop(self, kind, data):
         self._wx_down_pos = None
-        self.call_event_handler("hover", HoverEvent(False), propagate=True)
+        self._hover_leave()
         obj = wx.CustomDataObject(f"rliterate/{kind}")
         obj.SetData(json.dumps(data).encode("utf-8"))
         drag_source = wx.DropSource(self)
         drag_source.SetData(obj)
         result = drag_source.DoDragDrop(wx.Drag_DefaultMove)
+
+    def _hover_leave(self):
+        self.call_event_handler("hover", HoverEvent(False), propagate=True)
 
     def _set_drop_target(self, kind):
         self.SetDropTarget(RLiterateDropTarget(self, kind))
@@ -535,6 +552,24 @@ class WxWidgetMixin(WidgetMixin):
 
     def get_width(self):
         return self.Size.width
+
+    def _show_context_menu(self, items):
+        def create_handler(fn):
+            return lambda event: fn()
+        menu = wx.Menu()
+        for item in items:
+            if item is None:
+                menu.AppendSeparator()
+            else:
+                text, fn = item
+                menu.Bind(
+                    wx.EVT_MENU,
+                    create_handler(fn),
+                    menu.Append(wx.NewId(), text)
+                )
+        self.PopupMenu(menu)
+        menu.Destroy()
+        self._hover_leave()
 
 class RLiterateDropTarget(wx.DropTarget):
 
@@ -1299,7 +1334,7 @@ class TableOfContentsRow(Panel):
         name = 'title'
         props.update(self.prop([]))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['id']))
-        handlers['click'] = lambda event: self.prop(['set_hoisted_page'])(self.prop(['id']))
+        handlers['right_click'] = lambda event: self._on_right_click(event)
         handlers['hover'] = lambda event: self._set_background(event.mouse_inside)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsTitle, props, sizer, handlers, name)
@@ -1324,6 +1359,14 @@ class TableOfContentsRow(Panel):
                 event.initiate_drag_drop("move_page", {})
             finally:
                 set_dragged_page(None)
+    def _on_right_click(self, event):
+        event.show_context_menu([
+            ("Hoist", lambda:
+                self.prop(["set_hoisted_page"])(
+                    self.prop(["id"])
+                )
+            ),
+        ])
     def _set_background(self, hover):
         if hover:
             self.get_widget("title").update_props({
@@ -1371,6 +1414,7 @@ class TableOfContentsTitle(Panel):
             props['collapsed'] = self.prop(['collapsed'])
             handlers['click'] = lambda event: self.prop(['toggle_collapsed'])(self.prop(['id']))
             handlers['drag'] = lambda event: None
+            handlers['right_click'] = lambda event: None
             sizer["flag"] |= wx.EXPAND
             self._create_widget(ExpandCollapse, props, sizer, handlers, name)
         with self._loop():
@@ -1652,6 +1696,8 @@ DragEvent = namedtuple("DragEvent", "initial,dx,dy,initiate_drag_drop")
 SliderEvent = namedtuple("SliderEvent", "value")
 
 HoverEvent = namedtuple("HoverEvent", "mouse_inside")
+
+ClickEvent = namedtuple("ClickEvent", "show_context_menu")
 
 class PropUpdate(object):
 

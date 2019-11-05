@@ -524,7 +524,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor    = \"hand\"\n            size      = #indent_size\n            collapsed = #collapsed\n            @click    = #toggle_collapsed(#id)\n            @drag     = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -633,7 +633,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @drag  = self._on_drag(event #set_dragged_page #id)\n        @click = #set_hoisted_page(#id)\n        @hover = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @drag        = self._on_drag(event #set_dragged_page #id)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -668,6 +668,25 @@
 }
 ],
 "id":"8644bf90994a4027b8e11e560c71cb7d",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TableOfContentsRow"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _on_right_click(self, event):\n    event.show_context_menu([\n        (\"Hoist\", lambda:\n            self.prop([\"set_hoisted_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n    ])\n",
+"type":"code"
+}
+],
+"id":"d9e2a6d9ff384f1085c25a4157a1ba18",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -1332,6 +1351,22 @@
 }
 ],
 "id":"06072ea4b6554dbd8aa0aa0af6e2ff2d",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"ClickEvent = namedtuple(\"ClickEvent\", \"show_context_menu\")\n",
+"type":"code"
+}
+],
+"id":"a854e6c026b34722b31199261b5a91ca",
 "type":"code"
 }
 ],
@@ -2218,7 +2253,7 @@
 ],
 "fragments":[
 {
-"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self.call_event_handler(\"click\", None)\n        self._wx_down_pos = None\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n",
+"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"right_click\": [\n                (wx.EVT_RIGHT_UP, self._on_wx_right_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"right_click\")\n\n    def _call_click_event_handler(self, name):\n        self.call_event_handler(\n            name,\n            ClickEvent(self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, fn = item\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu.Append(wx.NewId(), text)\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n",
 "type":"code"
 }
 ],
