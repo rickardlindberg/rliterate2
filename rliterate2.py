@@ -1318,7 +1318,7 @@ class TableOfContentsRow(Panel):
         self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
 
     def _on_drag(self, event, set_dragged_page, page_id):
-        if math.sqrt(event.dx**2 + event.dy**2) > 3:
+        if not event.initial:
             set_dragged_page(page_id)
             try:
                 event.initiate_drag_drop("move_page", {})

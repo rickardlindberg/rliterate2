@@ -663,7 +663,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, set_dragged_page, page_id):\n    if math.sqrt(event.dx**2 + event.dy**2) > 3:\n        set_dragged_page(page_id)\n        try:\n            event.initiate_drag_drop(\"move_page\", {})\n        finally:\n            set_dragged_page(None)\n",
+"text":"def _on_drag(self, event, set_dragged_page, page_id):\n    if not event.initial:\n        set_dragged_page(page_id)\n        try:\n            event.initiate_drag_drop(\"move_page\", {})\n        finally:\n            set_dragged_page(None)\n",
 "type":"code"
 }
 ],
@@ -2810,35 +2810,6 @@
 "id":"359aefc7fbb54cb4b8e43182efb241a0",
 "paragraphs":[],
 "title":"History"
-},
-{
-"children":[],
-"id":"7b532b6306f9462b9c5e9487661ab014",
-"paragraphs":[
-{
-"fragments":[
-{
-"text":"wx.StaticText",
-"type":"code"
-},
-{
-"text":" does not seem to get mouse move events if drag is started in it and mouse moves outside it. But ",
-"type":"text"
-},
-{
-"text":"wx.Panel",
-"type":"code"
-},
-{
-"text":" does.",
-"type":"text"
-}
-],
-"id":"e7a53f88e6a047bf924be0003a65699a",
-"type":"text"
-}
-],
-"title":"Retro"
 },
 {
 "children":[],
