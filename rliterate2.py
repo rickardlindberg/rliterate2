@@ -49,7 +49,12 @@ def format_title(path):
         os.path.abspath(os.path.dirname(path))
     )
 
-def generate_rows_and_drop_points(document, collapsed, hoisted_page, dragged_page):
+def generate_rows_and_drop_points(
+    document,
+    collapsed,
+    hoisted_page,
+    dragged_page
+):
     def traverse(page, level=0, dragged=False):
         is_collapsed = page["id"] in collapsed
         num_children = len(page["children"])
@@ -1056,6 +1061,7 @@ class TableOfContentsProps(Props):
             "hoisted_page": PropUpdate(
                 session, ["toc", "hoisted_page"]
             ),
+            "set_hoisted_page": session.set_hoisted_page,
             "row_margin": PropUpdate(
                 theme, ["toc", "row_margin"]
             ),
@@ -1064,7 +1070,6 @@ class TableOfContentsProps(Props):
                 session,
                 theme
             ),
-            "set_hoisted_page": session.set_hoisted_page,
         })
 
 class TableOfContents(Panel):
@@ -1107,15 +1112,6 @@ class TableOfContentsScrollAreaProps(Props):
 
     def __init__(self, document, session, theme):
         Props.__init__(self, {
-            "total_num_pages": PropUpdate(
-                document,
-                lambda document: document.count_pages()
-            ),
-            "dragged_page": PropUpdate(
-                session, ["toc", "dragged_page"]
-            ),
-            "can_move_page": document.can_move_page,
-            "move_page": document.move_page,
             "*": PropUpdate(
                 document,
                 session, ["toc", "collapsed"],
@@ -1123,11 +1119,20 @@ class TableOfContentsScrollAreaProps(Props):
                 session, ["toc", "dragged_page"],
                 generate_rows_and_drop_points
             ),
+            "total_num_pages": PropUpdate(
+                document,
+                lambda document: document.count_pages()
+            ),
             "row_extra": TableOfContentsRowExtraProps(
                 document,
                 session,
                 theme
             ),
+            "dragged_page": PropUpdate(
+                session, ["toc", "dragged_page"]
+            ),
+            "can_move_page": document.can_move_page,
+            "move_page": document.move_page,
         })
 
 class TableOfContentsRowExtraProps(Props):

@@ -403,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        })\n",
 "type":"code"
 }
 ],
@@ -435,7 +435,7 @@
 ],
 "fragments":[
 {
-"text":"def generate_rows_and_drop_points(document, collapsed, hoisted_page, dragged_page):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    traverse(document.get_page(hoisted_page))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
+"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page\n):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title\": page[\"title\"],\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    traverse(document.get_page(hoisted_page))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
 "type":"code"
 }
 ],
@@ -744,7 +744,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"hoisted_page\": PropUpdate(\n                session, [\"toc\", \"hoisted_page\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -2787,7 +2787,7 @@
 "type":"code"
 },
 {
-"text":" does not seem to get mouse move events if drag is started in it. But ",
+"text":" does not seem to get mouse move events if drag is started in it and mouse moves outside it. But ",
 "type":"text"
 },
 {
@@ -2809,6 +2809,16 @@
 "children":[],
 "id":"6d92bc9005724ecdad6856ba67ec2121",
 "paragraphs":[
+{
+"fragments":[
+{
+"text":"Review TODO from old version.",
+"type":"text"
+}
+],
+"id":"d396782941ba41c5a7b1cc461e9b7496",
+"type":"text"
+},
 {
 "fragments":[
 {
