@@ -290,7 +290,7 @@ class Immutable(object):
             for listener in listeners:
                 listener()
 
-class RLGuiMixin(object):
+class WidgetMixin(object):
 
     def __init__(self, parent, handlers, props):
         self._parent = parent
@@ -424,10 +424,10 @@ class Props(Immutable):
     def _modify_item(self, name, value):
         return ([name], lambda old_value: value)
 
-class RLGuiWxMixin(RLGuiMixin):
+class WxWidgetMixin(WidgetMixin):
 
     def _setup_gui(self):
-        RLGuiMixin._setup_gui(self)
+        WidgetMixin._setup_gui(self)
         self._setup_wx_events()
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
@@ -454,13 +454,13 @@ class RLGuiWxMixin(RLGuiMixin):
         self._wx_down_pos = None
 
     def _update_gui(self, parent_updated):
-        RLGuiMixin._update_gui(self, parent_updated)
+        WidgetMixin._update_gui(self, parent_updated)
         for name in ["drag"]:
             if self._parent is not None and self._parent.has_event_handler(name):
                 self._register_wx_events(name)
 
     def update_event_handlers(self, handlers):
-        RLGuiMixin.update_event_handlers(self, handlers)
+        WidgetMixin.update_event_handlers(self, handlers)
         for name in handlers:
             self._register_wx_events(name)
 
@@ -552,10 +552,10 @@ class RLiterateDropTarget(wx.DropTarget):
     def OnLeave(self):
         self.widget.on_drag_drop_leave()
 
-class RLGuiWxContainerMixin(RLGuiWxMixin):
+class WxContainerWidgetMixin(WxWidgetMixin):
 
     def _setup_gui(self):
-        RLGuiWxMixin._setup_gui(self)
+        WxWidgetMixin._setup_gui(self)
         self._setup_layout()
         self._children = []
         self._inside_loop = False
@@ -565,7 +565,7 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
         self._wx_parent = self
 
     def _update_gui(self, parent_updated):
-        RLGuiWxMixin._update_gui(self, parent_updated)
+        WxWidgetMixin._update_gui(self, parent_updated)
         self._sizer_index = 0
         self._child_index = 0
         self._names = defaultdict(list)
@@ -694,14 +694,14 @@ class RLGuiWxContainerMixin(RLGuiWxMixin):
     def get_widget(self, name, index=0):
         return self._names[name][index]
 
-class RLGuiFrame(wx.Frame, RLGuiWxContainerMixin):
+class Frame(wx.Frame, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Frame.__init__(self, wx_parent)
-        RLGuiWxContainerMixin.__init__(self, *args)
+        WxContainerWidgetMixin.__init__(self, *args)
 
     def _setup_gui(self):
-        RLGuiWxContainerMixin._setup_gui(self)
+        WxContainerWidgetMixin._setup_gui(self)
         self._register_builtin("title", self.SetTitle)
 
     def _setup_layout(self):
@@ -710,11 +710,11 @@ class RLGuiFrame(wx.Frame, RLGuiWxContainerMixin):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
 
-class Panel(wx.Panel, RLGuiWxContainerMixin):
+class Panel(wx.Panel, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
-        RLGuiWxContainerMixin.__init__(self, *args)
+        WxContainerWidgetMixin.__init__(self, *args)
 
 class CompactScrolledWindow(wx.ScrolledWindow):
 
@@ -749,20 +749,20 @@ class CompactScrolledWindow(wx.ScrolledWindow):
     def _calc_scroll_pos_vscroll(self, x, y, delta):
         return (x, y-delta*self.step)
 
-class RLGuiVScroll(CompactScrolledWindow, RLGuiWxContainerMixin):
+class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         CompactScrolledWindow.__init__(self, wx_parent, wx.VERTICAL)
-        RLGuiWxContainerMixin.__init__(self, *args)
+        WxContainerWidgetMixin.__init__(self, *args)
 
-class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
+class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.BitmapButton.__init__(self, wx_parent, style=wx.NO_BORDER)
-        RLGuiWxMixin.__init__(self, *args)
+        WxWidgetMixin.__init__(self, *args)
 
     def _setup_gui(self):
-        RLGuiWxMixin._setup_gui(self)
+        WxWidgetMixin._setup_gui(self)
         self._register_builtin("icon", lambda value:
             self.SetBitmap(wx.ArtProvider.GetBitmap(
                 {
@@ -784,44 +784,44 @@ class ToolbarButton(wx.BitmapButton, RLGuiWxMixin):
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
 
-class Button(wx.Button, RLGuiWxMixin):
+class Button(wx.Button, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Button.__init__(self, wx_parent)
-        RLGuiWxMixin.__init__(self, *args)
+        WxWidgetMixin.__init__(self, *args)
 
     def _setup_gui(self):
-        RLGuiWxMixin._setup_gui(self)
+        WxWidgetMixin._setup_gui(self)
         self._register_builtin("label", self.SetLabel)
         self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
 
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
 
-class Slider(wx.Slider, RLGuiWxMixin):
+class Slider(wx.Slider, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Slider.__init__(self, wx_parent)
-        RLGuiWxMixin.__init__(self, *args)
+        WxWidgetMixin.__init__(self, *args)
 
     def _setup_gui(self):
-        RLGuiWxMixin._setup_gui(self)
+        WxWidgetMixin._setup_gui(self)
         self._register_builtin("min", self.SetMin)
         self._register_builtin("max", self.SetMax)
 
     def register_event_handler(self, name, fn):
-        RLGuiWxMixin.register_event_handler(self, name, fn)
+        WxWidgetMixin.register_event_handler(self, name, fn)
         if name == "slider":
             self._bind_wx_event(wx.EVT_SLIDER, self._on_wx_slider)
 
     def _on_wx_slider(self, wx_event):
         self._call_event_handler("slider", SliderEvent(self.Value))
 
-class ExpandCollapse(wx.Panel, RLGuiWxMixin):
+class ExpandCollapse(wx.Panel, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
-        RLGuiWxMixin.__init__(self, *args)
+        WxWidgetMixin.__init__(self, *args)
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
     def _get_local_props(self):
@@ -845,14 +845,14 @@ class ExpandCollapse(wx.Panel, RLGuiWxMixin):
             flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
         )
 
-class Text(wx.StaticText, RLGuiWxMixin):
+class Text(wx.StaticText, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
-        RLGuiWxMixin.__init__(self, *args)
+        WxWidgetMixin.__init__(self, *args)
 
     def _setup_gui(self):
-        RLGuiWxMixin._setup_gui(self)
+        WxWidgetMixin._setup_gui(self)
         self._register_builtin("text", self.SetLabel)
         self._register_builtin("foreground", self.SetForegroundColour)
 
@@ -890,7 +890,7 @@ class ToolbarDividerProps(Props):
             ),
         })
 
-class MainFrame(RLGuiFrame):
+class MainFrame(Frame):
 
     def _get_local_props(self):
         return {
@@ -1169,7 +1169,7 @@ TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "level",
 ])
 
-class TableOfContentsScrollArea(RLGuiVScroll):
+class TableOfContentsScrollArea(VScroll):
 
     def _get_local_props(self):
         return {
