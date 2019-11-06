@@ -51,9 +51,9 @@ def format_title(path):
 
 def is_valid_hoisted_page(document, page_id):
     try:
-        hoisted_page = document.get_page(page_id)
+        page = document.get_page(page_id)
         root_page = document.get_page()
-        if hoisted_page["id"] != root_page["id"]:
+        if page["id"] != root_page["id"]:
             return True
     except PageNotFound:
         pass

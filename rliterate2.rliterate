@@ -798,7 +798,7 @@
 ],
 "fragments":[
 {
-"text":"def is_valid_hoisted_page(document, page_id):\n    try:\n        hoisted_page = document.get_page(page_id)\n        root_page = document.get_page()\n        if hoisted_page[\"id\"] != root_page[\"id\"]:\n            return True\n    except PageNotFound:\n        pass\n    return False\n",
+"text":"def is_valid_hoisted_page(document, page_id):\n    try:\n        page = document.get_page(page_id)\n        root_page = document.get_page()\n        if page[\"id\"] != root_page[\"id\"]:\n            return True\n    except PageNotFound:\n        pass\n    return False\n",
 "type":"code"
 }
 ],
