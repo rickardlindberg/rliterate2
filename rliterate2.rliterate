@@ -1017,7 +1017,7 @@
 ],
 "fragments":[
 {
-"text":"def move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        self._move_page(\n            self._get_page_meta(source_page_id),\n            self._get_page_meta(target_page_id),\n            target_index\n        )\n    except PageNotFound:\n        pass\n",
+"text":"def move_page(self, source_id, target_id, target_index):\n    try:\n        self._move_page(\n            self._get_page_meta(source_id),\n            self._get_page_meta(target_id),\n            target_index\n        )\n    except PageNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -1034,7 +1034,7 @@
 ],
 "fragments":[
 {
-"text":"def can_move_page(self, source_page_id, target_page_id, target_index):\n    try:\n        return self._can_move_page(\n            self._get_page_meta(source_page_id),\n            self._get_page_meta(target_page_id),\n            target_index\n        )\n    except PageNotFound:\n        return False\n",
+"text":"def can_move_page(self, source_id, target_id, target_index):\n    try:\n        return self._can_move_page(\n            self._get_page_meta(source_id),\n            self._get_page_meta(target_id),\n            target_index\n        )\n    except PageNotFound:\n        return False\n",
 "type":"code"
 }
 ],
@@ -1051,7 +1051,7 @@
 ],
 "fragments":[
 {
-"text":"def _move_page(self, source_meta, target_meta, target_index):\n    if not self._can_move_page(source_meta, target_meta, target_index):\n        return\n    page_dict = self.get(source_meta.path)\n    operation_insert = (\n        target_meta.path + [\"children\"],\n        lambda children: (\n            children[:target_index] +\n            [page_dict] +\n            children[target_index:]\n        )\n    )\n    operation_remove = (\n        source_meta.parent.path + [\"children\"],\n        lambda children: (\n            children[:source_meta.index] +\n            children[source_meta.index+1:]\n        )\n    )\n    if target_meta.id == source_meta.parent.id:\n        insert_first = target_index > source_meta.index\n    else:\n        insert_first = len(target_meta.path) > len(source_meta.parent.path)\n    if insert_first:\n        operations = [operation_insert, operation_remove]\n    else:\n        operations = [operation_remove, operation_insert]\n    with self.transaction():\n        self.modify_many(operations)\n        self._build_page_index()\n",
+"text":"def _move_page(self, source_meta, target_meta, target_index):\n    if not self._can_move_page(source_meta, target_meta, target_index):\n        return\n    source_page = self.get(source_meta.path)\n    operation_insert = (\n        target_meta.path + [\"children\"],\n        lambda children: (\n            children[:target_index] +\n            [source_page] +\n            children[target_index:]\n        )\n    )\n    operation_remove = (\n        source_meta.parent.path + [\"children\"],\n        lambda children: (\n            children[:source_meta.index] +\n            children[source_meta.index+1:]\n        )\n    )\n    if target_meta.id == source_meta.parent.id:\n        insert_first = target_index > source_meta.index\n    else:\n        insert_first = len(target_meta.path) > len(source_meta.parent.path)\n    if insert_first:\n        operations = [operation_insert, operation_remove]\n    else:\n        operations = [operation_remove, operation_insert]\n    with self.transaction():\n        self.modify_many(operations)\n        self._build_page_index()\n",
 "type":"code"
 }
 ],

@@ -1543,20 +1543,20 @@ class Document(Immutable):
             return self.get(self._get_page_meta(page_id).path)
     def count_pages(self):
         return len(self._page_index)
-    def move_page(self, source_page_id, target_page_id, target_index):
+    def move_page(self, source_id, target_id, target_index):
         try:
             self._move_page(
-                self._get_page_meta(source_page_id),
-                self._get_page_meta(target_page_id),
+                self._get_page_meta(source_id),
+                self._get_page_meta(target_id),
                 target_index
             )
         except PageNotFound:
             pass
-    def can_move_page(self, source_page_id, target_page_id, target_index):
+    def can_move_page(self, source_id, target_id, target_index):
         try:
             return self._can_move_page(
-                self._get_page_meta(source_page_id),
-                self._get_page_meta(target_page_id),
+                self._get_page_meta(source_id),
+                self._get_page_meta(target_id),
                 target_index
             )
         except PageNotFound:
@@ -1564,12 +1564,12 @@ class Document(Immutable):
     def _move_page(self, source_meta, target_meta, target_index):
         if not self._can_move_page(source_meta, target_meta, target_index):
             return
-        page_dict = self.get(source_meta.path)
+        source_page = self.get(source_meta.path)
         operation_insert = (
             target_meta.path + ["children"],
             lambda children: (
                 children[:target_index] +
-                [page_dict] +
+                [source_page] +
                 children[target_index:]
             )
         )
