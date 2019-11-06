@@ -575,11 +575,13 @@ class WxWidgetMixin(WidgetMixin):
             if item is None:
                 menu.AppendSeparator()
             else:
-                text, fn = item
+                text, enabled, fn = item
+                menu_item = menu.Append(wx.NewId(), text)
+                menu_item.Enable(enabled)
                 menu.Bind(
                     wx.EVT_MENU,
                     create_handler(fn),
-                    menu.Append(wx.NewId(), text)
+                    menu_item
                 )
         self.PopupMenu(menu)
         menu.Destroy()
@@ -1377,7 +1379,7 @@ class TableOfContentsRow(Panel):
                 set_dragged_page(None)
     def _on_right_click(self, event):
         event.show_context_menu([
-            ("Hoist", lambda:
+            ("Hoist", self.prop(["level"]) > 0, lambda:
                 self.prop(["set_hoisted_page"])(
                     self.prop(["id"])
                 )
