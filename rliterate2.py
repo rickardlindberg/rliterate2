@@ -49,6 +49,16 @@ def format_title(path):
         os.path.abspath(os.path.dirname(path))
     )
 
+def is_valid_hoisted_page(document, page_id):
+    try:
+        hoisted_page = document.get_page(page_id)
+        root_page = document.get_page()
+        if hoisted_page["id"] != root_page["id"]:
+            return True
+    except PageNotFound:
+        pass
+    return False
+
 def generate_rows_and_drop_points(
     document,
     collapsed,
@@ -88,7 +98,11 @@ def generate_rows_and_drop_points(
                 ))
     rows = []
     drop_points = []
-    traverse(document.get_page(hoisted_page))
+    try:
+        root_page = document.get_page(hoisted_page)
+    except PageNotFound:
+        root_page = document.get_page(None)
+    traverse(root_page)
     return {
         "rows": rows,
         "drop_points": drop_points,
@@ -1104,8 +1118,10 @@ class TableOfContentsProps(Props):
                 session, ["toc", "width"],
                 lambda width: (max(50, width), -1)
             ),
-            "hoisted_page": PropUpdate(
-                session, ["toc", "hoisted_page"]
+            "has_valid_hoisted_page": PropUpdate(
+                document,
+                session, ["toc", "hoisted_page"],
+                is_valid_hoisted_page
             ),
             "set_hoisted_page": session.set_hoisted_page,
             "row_margin": PropUpdate(
@@ -1129,7 +1145,7 @@ class TableOfContents(Panel):
 
     def _create_widgets(self):
         pass
-        if_condition = self.prop(['hoisted_page'])
+        if_condition = self.prop(['has_valid_hoisted_page'])
         def loop_fn(loopvar):
             pass
             props = {}
