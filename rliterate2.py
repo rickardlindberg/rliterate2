@@ -996,7 +996,9 @@ class ToolbarProps(Props):
             "margin": PropUpdate(
                 theme, ["toolbar", "margin"]
             ),
-            "rotate_theme": theme.rotate,
+            "actions": {
+                "rotate_theme": theme.rotate,
+            },
         })
 
 class Toolbar(Panel):
@@ -1025,7 +1027,7 @@ class Toolbar(Panel):
         name = None
         handlers = {}
         props['icon'] = 'settings'
-        handlers['button'] = lambda event: self.prop(['rotate_theme'])()
+        handlers['button'] = lambda event: self.prop(['actions', 'rotate_theme'])()
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.TOP
         sizer["flag"] |= wx.BOTTOM
@@ -1047,7 +1049,9 @@ class MainAreaProps(Props):
             "workspace": WorkspaceProps(
                 theme
             ),
-            "set_toc_width": session.set_toc_width,
+            "actions": {
+                "set_toc_width": session.set_toc_width,
+            },
         })
 
 class TocDividerProps(Props):
@@ -1105,7 +1109,7 @@ class MainArea(Panel):
             toc = self.get_widget("toc")
             self._start_width = toc.get_width()
         else:
-            self.prop(["set_toc_width"])(
+            self.prop(["actions", "set_toc_width"])(
                 self._start_width + event.dx
             )
 
@@ -1125,7 +1129,6 @@ class TableOfContentsProps(Props):
                 session, ["toc", "hoisted_page"],
                 is_valid_hoisted_page
             ),
-            "set_hoisted_page": session.set_hoisted_page,
             "row_margin": PropUpdate(
                 theme, ["toc", "row_margin"]
             ),
@@ -1134,6 +1137,9 @@ class TableOfContentsProps(Props):
                 session,
                 theme
             ),
+            "actions": {
+                "set_hoisted_page": session.set_hoisted_page,
+            },
         })
 
 class TableOfContents(Panel):
@@ -1155,7 +1161,7 @@ class TableOfContents(Panel):
             name = None
             handlers = {}
             props['label'] = 'unhoist'
-            handlers['button'] = lambda event: self.prop(['set_hoisted_page'])(None)
+            handlers['button'] = lambda event: self.prop(['actions', 'set_hoisted_page'])(None)
             sizer["border"] = add(1, self.prop(['row_margin']))
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
@@ -1195,8 +1201,10 @@ class TableOfContentsScrollAreaProps(Props):
             "dragged_page": PropUpdate(
                 session, ["toc", "dragged_page"]
             ),
-            "can_move_page": document.can_move_page,
-            "move_page": document.move_page,
+            "actions": {
+                "can_move_page": document.can_move_page,
+                "move_page": document.move_page,
+            },
         })
 
 class TableOfContentsRowExtraProps(Props):
@@ -1215,8 +1223,6 @@ class TableOfContentsRowExtraProps(Props):
             "hover_background": PropUpdate(
                 theme, ["toc", "hover_background"]
             ),
-            "set_hoisted_page": session.set_hoisted_page,
-            "toggle_collapsed": session.toggle_collapsed,
             "divider_thickness": PropUpdate(
                 theme, ["toc", "divider_thickness"]
             ),
@@ -1226,7 +1232,11 @@ class TableOfContentsRowExtraProps(Props):
             "dragdrop_invalid_color": PropUpdate(
                 theme, ["dragdrop_invalid_color"]
             ),
-            "set_dragged_page": session.set_dragged_page,
+            "actions": {
+                "set_hoisted_page": session.set_hoisted_page,
+                "set_dragged_page": session.set_dragged_page,
+                "toggle_collapsed": session.toggle_collapsed,
+            },
         })
 
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
@@ -1275,7 +1285,7 @@ class TableOfContentsScrollArea(VScroll):
         if drop_point is not None:
             self._last_drop_row = self._get_drop_row(drop_point)
         if self._last_drop_row is not None:
-            valid = self.prop(["can_move_page"])(
+            valid = self.prop(["actions", "can_move_page"])(
                 self.prop(["dragged_page"]),
                 drop_point.target_page,
                 drop_point.target_index
@@ -1293,7 +1303,7 @@ class TableOfContentsScrollArea(VScroll):
     def on_drag_drop_data(self, x, y, page_info):
         drop_point = self._get_drop_point(x, y)
         if drop_point is not None:
-            self.prop(["move_page"])(
+            self.prop(["actions", "move_page"])(
                 self.prop(["dragged_page"]),
                 drop_point.target_page,
                 drop_point.target_index
@@ -1351,7 +1361,7 @@ class TableOfContentsRow(Panel):
         handlers = {}
         name = 'title'
         props.update(self.prop([]))
-        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['set_dragged_page']), self.prop(['id']))
+        handlers['drag'] = lambda event: self._on_drag(event)
         handlers['right_click'] = lambda event: self._on_right_click(event)
         handlers['hover'] = lambda event: self._set_background(event.mouse_inside)
         sizer["flag"] |= wx.EXPAND
@@ -1370,17 +1380,21 @@ class TableOfContentsRow(Panel):
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
 
-    def _on_drag(self, event, set_dragged_page, page_id):
+    def _on_drag(self, event):
         if not event.initial:
-            set_dragged_page(page_id)
+            self.prop(["actions", "set_dragged_page"])(
+                self.prop(["id"])
+            )
             try:
                 event.initiate_drag_drop("move_page", {})
             finally:
-                set_dragged_page(None)
+                self.prop(["actions", "set_dragged_page"])(
+                    None
+                )
     def _on_right_click(self, event):
         event.show_context_menu([
             ("Hoist", self.prop(["level"]) > 0, lambda:
-                self.prop(["set_hoisted_page"])(
+                self.prop(["actions", "set_hoisted_page"])(
                     self.prop(["id"])
                 )
             ),
@@ -1430,7 +1444,7 @@ class TableOfContentsTitle(Panel):
             props['cursor'] = 'hand'
             props['size'] = self.prop(['indent_size'])
             props['collapsed'] = self.prop(['collapsed'])
-            handlers['click'] = lambda event: self.prop(['toggle_collapsed'])(self.prop(['id']))
+            handlers['click'] = lambda event: self.prop(['actions', 'toggle_collapsed'])(self.prop(['id']))
             handlers['drag'] = lambda event: None
             handlers['right_click'] = lambda event: None
             sizer["flag"] |= wx.EXPAND

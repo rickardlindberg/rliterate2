@@ -270,7 +270,7 @@
 ],
 "fragments":[
 {
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"toolbar\", \"margin\"]\n            ),\n            \"rotate_theme\": theme.rotate,\n        })\n",
+"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"toolbar\", \"margin\"]\n            ),\n            \"actions\": {\n                \"rotate_theme\": theme.rotate,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -286,7 +286,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
 "type":"code"
 }
 ],
@@ -314,7 +314,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"set_toc_width\": session.set_toc_width,\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"actions\": {\n                \"set_toc_width\": session.set_toc_width,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -376,7 +376,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_toc_divider_drag(self, event):\n    if event.initial:\n        toc = self.get_widget(\"toc\")\n        self._start_width = toc.get_width()\n    else:\n        self.prop([\"set_toc_width\"])(\n            self._start_width + event.dx\n        )\n",
+"text":"def _on_toc_divider_drag(self, event):\n    if event.initial:\n        toc = self.get_widget(\"toc\")\n        self._start_width = toc.get_width()\n    else:\n        self.prop([\"actions\", \"set_toc_width\"])(\n            self._start_width + event.dx\n        )\n",
 "type":"code"
 }
 ],
@@ -403,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -419,7 +419,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"hover_background\": PropUpdate(\n                theme, [\"toc\", \"hover_background\"]\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"set_dragged_page\": session.set_dragged_page,\n        })\n",
+"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"hover_background\": PropUpdate(\n                theme, [\"toc\", \"hover_background\"]\n            ),\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"actions\": {\n                \"set_hoisted_page\": session.set_hoisted_page,\n                \"set_dragged_page\": session.set_dragged_page,\n                \"toggle_collapsed\": session.toggle_collapsed,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -497,7 +497,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self.prop([\"move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
+"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"actions\", \"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self.prop([\"actions\", \"move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -524,7 +524,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #actions.toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        text       = #title\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -633,7 +633,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @drag        = self._on_drag(event #set_dragged_page #id)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @drag        = self._on_drag(event)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -663,7 +663,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, set_dragged_page, page_id):\n    if not event.initial:\n        set_dragged_page(page_id)\n        try:\n            event.initiate_drag_drop(\"move_page\", {})\n        finally:\n            set_dragged_page(None)\n",
+"text":"def _on_drag(self, event):\n    if not event.initial:\n        self.prop([\"actions\", \"set_dragged_page\"])(\n            self.prop([\"id\"])\n        )\n        try:\n            event.initiate_drag_drop(\"move_page\", {})\n        finally:\n            self.prop([\"actions\", \"set_dragged_page\"])(\n                None\n            )\n",
 "type":"code"
 }
 ],
@@ -682,7 +682,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_right_click(self, event):\n    event.show_context_menu([\n        (\"Hoist\", self.prop([\"level\"]) > 0, lambda:\n            self.prop([\"set_hoisted_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n    ])\n",
+"text":"def _on_right_click(self, event):\n    event.show_context_menu([\n        (\"Hoist\", self.prop([\"level\"]) > 0, lambda:\n            self.prop([\"actions\", \"set_hoisted_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n    ])\n",
 "type":"code"
 }
 ],
@@ -782,7 +782,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"has_valid_hoisted_page\": PropUpdate(\n                document,\n                session, [\"toc\", \"hoisted_page\"],\n                is_valid_hoisted_page\n            ),\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"has_valid_hoisted_page\": PropUpdate(\n                document,\n                session, [\"toc\", \"hoisted_page\"],\n                is_valid_hoisted_page\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n            \"actions\": {\n                \"set_hoisted_page\": session.set_hoisted_page,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -814,7 +814,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button(\n            label   = \"unhoist\"\n            @button = #set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button(\n            label   = \"unhoist\"\n            @button = #actions.set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
 "type":"code"
 }
 ],
