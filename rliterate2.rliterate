@@ -22,7 +22,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul, floordiv\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -830,7 +830,36 @@
 "title":"Table of contents"
 },
 {
+"children":[
+{
 "children":[],
+"id":"813ec304685345a19b1688074000d296",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"vscroll Column %layout_rows {\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n}\n",
+"type":"code"
+}
+],
+"id":"fdc6b35bfad749f0a569ad426436e925",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Column"
+}
+],
 "id":"e6a157bbac8842a2b8c625bfa9255159",
 "paragraphs":[
 {
@@ -842,7 +871,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -858,7 +887,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    loop (#columns) {\n        Button(label=$ min_size=makeTuple(#width -1))\n    }\n}\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            label    = $\n            margin   = #margin\n            min_size = makeTuple(#width -1)\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1176,7 +1205,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
+"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
 "type":"code"
 }
 ],

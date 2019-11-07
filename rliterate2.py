@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple, defaultdict
-from operator import add, sub, mul
+from operator import add, sub, mul, floordiv
 import contextlib
 import cProfile
 import io
@@ -1521,6 +1521,9 @@ class WorkspaceProps(Props):
             "background": PropUpdate(
                 theme, ["workspace", "background"]
             ),
+            "margin": PropUpdate(
+                theme, ["workspace", "margin"]
+            ),
             "width": PropUpdate(
                 session, ["workspace", "column_width"]
             ),
@@ -1540,6 +1543,7 @@ class Workspace(HScroll):
 
     def _create_widgets(self):
         pass
+        self._create_space(self.prop(['margin']))
         def loop_fn(loopvar):
             pass
             props = {}
@@ -1547,12 +1551,51 @@ class Workspace(HScroll):
             name = None
             handlers = {}
             props['label'] = loopvar
+            props['margin'] = self.prop(['margin'])
             props['min_size'] = makeTuple(self.prop(['width']), -1)
-            self._create_widget(Button, props, sizer, handlers, name)
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(Column, props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['columns']):
                 loop_fn(loopvar)
+
+class Column(VScroll):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['margin']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = self.prop(['label'])
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+        self._create_space(self.prop(['margin']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = self.prop(['label'])
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+        self._create_space(self.prop(['margin']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = self.prop(['label'])
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+        self._create_space(self.prop(['margin']))
 
 class Document(Immutable):
 
@@ -1680,6 +1723,7 @@ class Theme(Immutable):
         },
         "workspace": {
             "background": "#cccccc",
+            "margin": 12,
         },
         "dragdrop_color": "#ff6400",
         "dragdrop_invalid_color": "#cccccc",
@@ -1708,6 +1752,7 @@ class Theme(Immutable):
         },
         "workspace": {
             "background": "#d0cabb",
+            "margin": 18,
         },
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
