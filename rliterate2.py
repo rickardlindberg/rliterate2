@@ -1189,9 +1189,9 @@ class TableOfContentsScrollAreaProps(Props):
                 session, ["toc", "dragged_page"],
                 generate_rows_and_drop_points
             ),
-            "total_num_pages": PropUpdate(
+            "rows_cache_limit": PropUpdate(
                 document,
-                lambda document: document.count_pages()
+                lambda document: document.count_pages() - 1
             ),
             "row_extra": TableOfContentsRowExtraProps(
                 document,
@@ -1272,7 +1272,7 @@ class TableOfContentsScrollArea(VScroll):
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TableOfContentsRow, props, sizer, handlers, name)
         loop_options = {}
-        loop_options['cache_limit'] = sub(self.prop(['total_num_pages']), 1)
+        loop_options['cache_limit'] = self.prop(['rows_cache_limit'])
         with self._loop(**loop_options):
             for loopvar in self.prop(['rows']):
                 loop_fn(loopvar)

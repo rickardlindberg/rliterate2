@@ -403,7 +403,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"total_num_pages\": PropUpdate(\n                document,\n                lambda document: document.count_pages()\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"rows_cache_limit\": PropUpdate(\n                document,\n                lambda document: document.count_pages() - 1\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -467,7 +467,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=sub(#total_num_pages 1)) {\n        TableOfContentsRow[rows](\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"vscroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=#rows_cache_limit) {\n        TableOfContentsRow[rows](\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
