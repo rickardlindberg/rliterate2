@@ -1530,6 +1530,9 @@ class WorkspaceProps(Props):
             "columns": PropUpdate(
                 session, ["workspace", "columns"]
             ),
+            "actions": {
+                "set_column_width": session.set_column_width,
+            },
         })
 
 class Workspace(HScroll):
@@ -1550,15 +1553,33 @@ class Workspace(HScroll):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['label'] = loopvar
+            props['pages'] = loopvar
             props['margin'] = self.prop(['margin'])
+            props['actions'] = self.prop(['actions'])
             props['min_size'] = makeTuple(self.prop(['width']), -1)
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Column, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['cursor'] = 'size_horizontal'
+            props['min_size'] = makeTuple(self.prop(['margin']), -1)
+            handlers['drag'] = lambda event: self._on_divider_drag(event)
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(Panel, props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['columns']):
                 loop_fn(loopvar)
+
+    def _on_divider_drag(self, event):
+        if event.initial:
+            self._initial_width = self.prop(["width"])
+        else:
+            self.prop(["actions", "set_column_width"])(
+                max(50, self._initial_width + event.dx)
+            )
 
 class Column(VScroll):
 
@@ -1572,30 +1593,39 @@ class Column(VScroll):
     def _create_widgets(self):
         pass
         self._create_space(self.prop(['margin']))
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['label'] = loopvar
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(Page, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+        loop_options = {}
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['pages']):
+                loop_fn(loopvar)
+
+class Page(Panel):
+
+    def _get_local_props(self):
+        return {
+            'background': '#ffffff',
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
         props['label'] = self.prop(['label'])
-        sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
-        self._create_space(self.prop(['margin']))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['label'] = self.prop(['label'])
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(Button, props, sizer, handlers, name)
-        self._create_space(self.prop(['margin']))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['label'] = self.prop(['label'])
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(Button, props, sizer, handlers, name)
-        self._create_space(self.prop(['margin']))
 
 class Document(Immutable):
 
@@ -1780,9 +1810,9 @@ class Session(Immutable):
             "workspace": {
                 "column_width": 300,
                 "columns": [
-                    "a",
-                    "b",
-                    "c",
+                    ["a", "a 2", "a 1"],
+                    ["b", "b 2", "b 2"],
+                    ["c", "c 2", "c 2"],
                 ],
             },
         })
@@ -1795,6 +1825,9 @@ class Session(Immutable):
 
     def set_toc_width(self, width):
         self.replace(["toc", "width"], width)
+
+    def set_column_width(self, width):
+        self.replace(["workspace", "column_width"], width)
 
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):

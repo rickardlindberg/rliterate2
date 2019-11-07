@@ -844,7 +844,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n    Button(\n        label=#label\n        %align[EXPAND]\n    )\n    %space[#margin]\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#margin]\n    loop (#pages) {\n        Page(\n            label=$\n            %align[EXPAND]\n        )\n        %space[#margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -858,6 +858,34 @@
 }
 ],
 "title":"Column"
+},
+{
+"children":[],
+"id":"004bc5a29bc94eeb95f4f6a56bd48729",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel Page %layout_rows {\n    background = \"#ffffff\"\n    Button(\n        label=#label\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"195077ffa8644199b5db2b961753fb19",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Page"
 }
 ],
 "id":"e6a157bbac8842a2b8c625bfa9255159",
@@ -871,7 +899,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n            \"actions\": {\n                \"set_column_width\": session.set_column_width,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -887,8 +915,16 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            label    = $\n            margin   = #margin\n            min_size = makeTuple(#width -1)\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            pages    = $\n            margin   = #margin\n            actions  = #actions\n            min_size = makeTuple(#width -1)\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"Workspace"
+],
+"prefix":"",
+"type":"chunk"
 }
 ],
 "id":"3e408b8af8bf432f9db783f07ea161d8",
@@ -897,6 +933,25 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Workspace"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _on_divider_drag(self, event):\n    if event.initial:\n        self._initial_width = self.prop([\"width\"])\n    else:\n        self.prop([\"actions\", \"set_column_width\"])(\n            max(50, self._initial_width + event.dx)\n        )\n",
+"type":"code"
+}
+],
+"id":"1a2ad7d6767e45caad0ab846e22a53dd",
+"language":"",
+"post_process":[],
 "type":"code"
 }
 ],
@@ -1228,7 +1283,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"column_width\": 300,\n                \"columns\": [\n                    \"a\",\n                    \"b\",\n                    \"c\",\n                ],\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"column_width\": 300,\n                \"columns\": [\n                    [\"a\", \"a 2\", \"a 1\"],\n                    [\"b\", \"b 2\", \"b 2\"],\n                    [\"c\", \"c 2\", \"c 2\"],\n                ],\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def set_column_width(self, width):\n        self.replace([\"workspace\", \"column_width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],
