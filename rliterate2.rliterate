@@ -314,7 +314,7 @@
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                theme\n            ),\n            \"actions\": {\n                \"set_toc_width\": session.set_toc_width,\n            },\n        })\n",
+"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                document,\n                session,\n                theme,\n            ),\n            \"actions\": {\n                \"set_toc_width\": session.set_toc_width,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -842,7 +842,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            )\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n        })\n",
 "type":"code"
 }
 ],
@@ -858,7 +858,7 @@
 ],
 "fragments":[
 {
-"text":"panel Workspace %layout_columns {\n}\n",
+"text":"panel Workspace %layout_columns {\n    loop (#columns) {\n        Button(label=$ min_size=makeTuple(#width -1))\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1199,7 +1199,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"column_width\": 300,\n                \"columns\": [\n                    \"a\",\n                    \"b\",\n                    \"c\",\n                ],\n            },\n        })\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],

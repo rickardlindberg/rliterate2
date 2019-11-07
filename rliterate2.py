@@ -1047,7 +1047,9 @@ class MainAreaProps(Props):
                 theme
             ),
             "workspace": WorkspaceProps(
-                theme
+                document,
+                session,
+                theme,
             ),
             "actions": {
                 "set_toc_width": session.set_toc_width,
@@ -1508,11 +1510,17 @@ class TableOfContentsDropLine(Panel):
 
 class WorkspaceProps(Props):
 
-    def __init__(self, theme):
+    def __init__(self, document, session, theme):
         Props.__init__(self, {
             "background": PropUpdate(
                 theme, ["workspace", "background"]
-            )
+            ),
+            "width": PropUpdate(
+                session, ["workspace", "column_width"]
+            ),
+            "columns": PropUpdate(
+                session, ["workspace", "columns"]
+            ),
         })
 
 class Workspace(Panel):
@@ -1526,6 +1534,19 @@ class Workspace(Panel):
 
     def _create_widgets(self):
         pass
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['label'] = loopvar
+            props['min_size'] = makeTuple(self.prop(['width']), -1)
+            self._create_widget(Button, props, sizer, handlers, name)
+        loop_options = {}
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['columns']):
+                loop_fn(loopvar)
 
 class Document(Immutable):
 
@@ -1704,6 +1725,14 @@ class Session(Immutable):
                 "collapsed": [],
                 "hoisted_page": None,
                 "dragged_page": None,
+            },
+            "workspace": {
+                "column_width": 300,
+                "columns": [
+                    "a",
+                    "b",
+                    "c",
+                ],
             },
         })
 
