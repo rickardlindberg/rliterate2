@@ -1529,6 +1529,8 @@ class Workspace(Panel):
 
 class Document(Immutable):
 
+    ROOT_PAGE_PATH = ["doc", "root_page"]
+
     def __init__(self, path):
         Immutable.__init__(self, {
             "path": path,
@@ -1543,8 +1545,7 @@ class Document(Immutable):
             for index, child in enumerate(page["children"]):
                 build(child, path+["children", index], page_meta, index)
         page_index = {}
-        root_path = ["doc", "root_page"]
-        build(self.get(root_path), root_path, None, 0)
+        build(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH, None, 0)
         self._page_index = page_index
     def _get_page_meta(self, page_id):
         if page_id not in self._page_index:
@@ -1552,7 +1553,7 @@ class Document(Immutable):
         return self._page_index[page_id]
     def get_page(self, page_id=None):
         if page_id is None:
-            return self.get(["doc", "root_page"])
+            return self.get(self.ROOT_PAGE_PATH)
         else:
             return self.get(self._get_page_meta(page_id).path)
     def count_pages(self):

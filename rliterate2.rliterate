@@ -894,7 +894,7 @@
 ],
 "fragments":[
 {
-"text":"def _build_page_index(self):\n    def build(page, path, parent, index):\n        page_meta = PageMeta(page[\"id\"], path, parent, index)\n        page_index[page[\"id\"]] = page_meta\n        for index, child in enumerate(page[\"children\"]):\n            build(child, path+[\"children\", index], page_meta, index)\n    page_index = {}\n    root_path = [\"doc\", \"root_page\"]\n    build(self.get(root_path), root_path, None, 0)\n    self._page_index = page_index\n",
+"text":"def _build_page_index(self):\n    def build(page, path, parent, index):\n        page_meta = PageMeta(page[\"id\"], path, parent, index)\n        page_index[page[\"id\"]] = page_meta\n        for index, child in enumerate(page[\"children\"]):\n            build(child, path+[\"children\", index], page_meta, index)\n    page_index = {}\n    build(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH, None, 0)\n    self._page_index = page_index\n",
 "type":"code"
 }
 ],
@@ -983,7 +983,7 @@
 ],
 "fragments":[
 {
-"text":"def get_page(self, page_id=None):\n    if page_id is None:\n        return self.get([\"doc\", \"root_page\"])\n    else:\n        return self.get(self._get_page_meta(page_id).path)\n",
+"text":"def get_page(self, page_id=None):\n    if page_id is None:\n        return self.get(self.ROOT_PAGE_PATH)\n    else:\n        return self.get(self._get_page_meta(page_id).path)\n",
 "type":"code"
 }
 ],
@@ -1113,7 +1113,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._build_page_index()\n\n",
+"text":"class Document(Immutable):\n\n    ROOT_PAGE_PATH = [\"doc\", \"root_page\"]\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._build_page_index()\n\n",
 "type":"code"
 },
 {
