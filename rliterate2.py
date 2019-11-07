@@ -817,6 +817,12 @@ class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):
         CompactScrolledWindow.__init__(self, wx_parent, wx.VERTICAL)
         WxContainerWidgetMixin.__init__(self, *args)
 
+class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        CompactScrolledWindow.__init__(self, wx_parent, wx.HORIZONTAL)
+        WxContainerWidgetMixin.__init__(self, *args)
+
 class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
@@ -1523,7 +1529,7 @@ class WorkspaceProps(Props):
             ),
         })
 
-class Workspace(Panel):
+class Workspace(HScroll):
 
     def _get_local_props(self):
         return {

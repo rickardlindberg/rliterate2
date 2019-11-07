@@ -11,7 +11,7 @@ class RLGuiLexer(RegexLexer):
         'root': [
             (r'"', String, "string"),
             (r'[=]', Name.Builtin),
-            (r'\b(vscroll|frame|panel|loop|if|else|True|False|None|cache_limit)\b', Keyword),
+            (r'\b(vscroll|hscroll|frame|panel|loop|if|else|True|False|None|cache_limit)\b', Keyword),
             (r'#(\w+([.]\w+)*)?', Name.Class),
             (r'[$]\w*', Name.Builtin),
             (r'@\w+', Name.Exception),
