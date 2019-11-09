@@ -945,6 +945,7 @@ class Text(wx.StaticText, WxWidgetMixin):
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
+        self._register_builtin("font", self._set_font)
         self._register_builtin("fragments", self._set_fragments)
         self._register_builtin("foreground", self.SetForegroundColour)
         self._register_builtin("max_width", lambda max_width:
@@ -956,6 +957,10 @@ class Text(wx.StaticText, WxWidgetMixin):
         for fragment in fragments:
             label += fragment["text"]
         self.SetLabel(label)
+
+    def _set_font(self, font):
+        self._font_info = wx.FontInfo(font.get("size", 10))
+        self.SetFont(wx.Font(self._font_info))
 
 class MainFrameProps(Props):
 
@@ -1775,6 +1780,7 @@ class PageBody(Panel):
         handlers = {}
         props['fragments'] = self.prop(['page', 'title_fragments'])
         props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['font'] = self.prop(['page_extra', 'title_font'])
         sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
@@ -1908,6 +1914,9 @@ class Theme(Immutable):
             "margin": 12,
         },
         "page": {
+            "title_font": {
+                "size": 16,
+            },
             "border": {
                 "size": 2,
                 "color": "#aaaaaf",
@@ -1945,6 +1954,9 @@ class Theme(Immutable):
             "margin": 18,
         },
         "page": {
+            "title_font": {
+                "size": 18,
+            },
             "border": {
                 "size": 3,
                 "color": "#b0ab9e",
