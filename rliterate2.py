@@ -108,6 +108,30 @@ def generate_rows_and_drop_points(
         "drop_points": drop_points,
     }
 
+def build_columns_prop(document, columns):
+    columns_prop = []
+    for column in columns:
+        columns_prop.append(
+            build_column_prop(document, column)
+        )
+    return columns_prop
+
+def build_column_prop(document, column):
+    column_prop = []
+    for page_id in column:
+        try:
+            column_prop.append(
+                build_page_prop(document.get_page(page_id))
+            )
+        except PageNotFound:
+            pass
+    return column_prop
+
+def build_page_prop(page):
+    return {
+        "title": page["title"],
+    }
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -1528,7 +1552,9 @@ class WorkspaceProps(Props):
                 session, ["workspace", "column_width"]
             ),
             "columns": PropUpdate(
-                session, ["workspace", "columns"]
+                document,
+                session, ["workspace", "columns"],
+                build_columns_prop
             ),
             "page_extra": PropUpdate(
                 theme, ["page"]
@@ -1728,7 +1754,7 @@ class PageBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['label'] = self.prop(['page'])
+        props['label'] = self.prop(['page', 'title'])
         sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Button, props, sizer, handlers, name)
@@ -1932,9 +1958,17 @@ class Session(Immutable):
             "workspace": {
                 "column_width": 300,
                 "columns": [
-                    ["a", "a 2", "a 1"],
-                    ["b", "b 2", "b 2"],
-                    ["c", "c 2", "c 2"],
+                    [
+                        "cf689824aa3641828343eba2b5fbde9f",
+                        "ef8200090225487eab4ae35d8910ba8e",
+                        "97827e5f0096482a9a4eadf0ce07764f"
+                    ],
+                    [
+                        "e6a157bbac8842a2b8c625bfa9255159",
+                        "813ec304685345a19b1688074000d296",
+                        "004bc5a29bc94eeb95f4f6a56bd48729",
+                        "b987445070e84067ba90e71695763f72"
+                    ]
                 ],
             },
         })
