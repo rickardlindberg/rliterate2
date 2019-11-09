@@ -1524,6 +1524,9 @@ class WorkspaceProps(Props):
             "margin": PropUpdate(
                 theme, ["workspace", "margin"]
             ),
+            "page": PropUpdate(
+                theme, ["page"]
+            ),
             "width": PropUpdate(
                 session, ["workspace", "column_width"]
             ),
@@ -1555,6 +1558,7 @@ class Workspace(HScroll):
             handlers = {}
             props['pages'] = loopvar
             props['margin'] = self.prop(['margin'])
+            props['page'] = self.prop(['page'])
             props['actions'] = self.prop(['actions'])
             props['min_size'] = makeTuple(self.prop(['width']), -1)
             sizer["flag"] |= wx.EXPAND
@@ -1600,6 +1604,7 @@ class Column(VScroll):
             name = None
             handlers = {}
             props['label'] = loopvar
+            props['page'] = self.prop(['page'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
             self._create_space(self.prop(['margin']))
@@ -1612,7 +1617,6 @@ class Page(Panel):
 
     def _get_local_props(self):
         return {
-            'background': '#ffffff',
         }
 
     def _create_sizer(self):
@@ -1625,6 +1629,109 @@ class Page(Panel):
         name = None
         handlers = {}
         props['label'] = self.prop(['label'])
+        props['page'] = self.prop(['page'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(PageTopRow, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['page', 'border']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(PageBottomBorder, props, sizer, handlers, name)
+
+class PageTopRow(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['background'] = self.prop(['page', 'background'])
+        props['margin'] = self.prop(['page', 'margin'])
+        props['label'] = self.prop(['label'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(PageBody, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['page', 'border']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(PageRightBorder, props, sizer, handlers, name)
+
+class PageRightBorder(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['size']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['min_size'] = makeTuple(self.prop(['size']), -1)
+        props['background'] = self.prop(['color'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(Panel, props, sizer, handlers, name)
+
+class PageBottomBorder(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['size']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['min_size'] = makeTuple(-1, self.prop(['size']))
+        props['background'] = self.prop(['color'])
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(Panel, props, sizer, handlers, name)
+
+class PageBody(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = self.prop(['label'])
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.ALL
         self._create_widget(Button, props, sizer, handlers, name)
 
 class Document(Immutable):
@@ -1755,6 +1862,14 @@ class Theme(Immutable):
             "background": "#cccccc",
             "margin": 12,
         },
+        "page": {
+            "border": {
+                "size": 2,
+                "color": "#aaaaaf",
+            },
+            "background": "#ffffff",
+            "margin": 10,
+        },
         "dragdrop_color": "#ff6400",
         "dragdrop_invalid_color": "#cccccc",
     }
@@ -1783,6 +1898,14 @@ class Theme(Immutable):
         "workspace": {
             "background": "#d0cabb",
             "margin": 18,
+        },
+        "page": {
+            "border": {
+                "size": 3,
+                "color": "#b0ab9e",
+            },
+            "background": "#fdf6e3",
+            "margin": 14,
         },
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
