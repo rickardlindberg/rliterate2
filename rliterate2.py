@@ -1583,7 +1583,7 @@ class Workspace(HScroll):
             name = None
             handlers = {}
             props['min_size'] = makeTuple(self.prop(['column_width']), -1)
-            props['pages'] = loopvar
+            props['column'] = loopvar
             props['workspace_margin'] = self.prop(['margin'])
             props['page_extra'] = self.prop(['page_extra'])
             sizer["flag"] |= wx.EXPAND
@@ -1635,7 +1635,7 @@ class Column(VScroll):
             self._create_space(self.prop(['workspace_margin']))
         loop_options = {}
         with self._loop(**loop_options):
-            for loopvar in self.prop(['pages']):
+            for loopvar in self.prop(['column']):
                 loop_fn(loopvar)
 
 class Page(Panel):

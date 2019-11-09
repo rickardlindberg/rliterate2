@@ -837,6 +837,24 @@
 "paragraphs":[
 {
 "chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_column_prop(document, column):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                build_page_prop(document.get_page(page_id))\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"type":"code"
+}
+],
+"id":"20e6044ebb3945b2b032812b89251265",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -844,7 +862,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#pages) {\n        Page(\n            page       = $\n            page_extra = #page_extra\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page       = $\n            page_extra = #page_extra\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -956,6 +974,24 @@
 "paragraphs":[
 {
 "chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_page_prop(page):\n    return {\n        \"title\": page[\"title\"],\n    }\n",
+"type":"code"
+}
+],
+"id":"7d57a90695e94413b8b9563166d097ac",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -1017,42 +1053,6 @@
 },
 {
 "chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def build_column_prop(document, column):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                build_page_prop(document.get_page(page_id))\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
-"type":"code"
-}
-],
-"id":"20e6044ebb3945b2b032812b89251265",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def build_page_prop(page):\n    return {\n        \"title\": page[\"title\"],\n    }\n",
-"type":"code"
-}
-],
-"id":"7d57a90695e94413b8b9563166d097ac",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -1060,7 +1060,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            pages            = $\n            workspace_margin = #margin\n            page_extra       = #page_extra\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            page_extra       = #page_extra\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
