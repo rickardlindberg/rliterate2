@@ -947,6 +947,9 @@ class Text(wx.StaticText, WxWidgetMixin):
         WxWidgetMixin._setup_gui(self)
         self._register_builtin("fragments", self._set_fragments)
         self._register_builtin("foreground", self.SetForegroundColour)
+        self._register_builtin("max_width", lambda max_width:
+            self.SetMinSize((max_width, -1))
+        )
 
     def _set_fragments(self, fragments):
         label = ""
@@ -1555,7 +1558,12 @@ class WorkspaceProps(Props):
                 theme, ["workspace", "margin"]
             ),
             "column_width": PropUpdate(
-                session, ["workspace", "column_width"]
+                session, ["workspace", "page_body_width"],
+                theme, ["page", "margin"],
+                theme, ["page", "border", "size"],
+                lambda body, margin, border: (
+                    body + 2*margin + border
+                )
             ),
             "columns": PropUpdate(
                 document,
@@ -1563,10 +1571,15 @@ class WorkspaceProps(Props):
                 build_columns_prop
             ),
             "page_extra": PropUpdate(
-                theme, ["page"]
+                theme, ["page"],
+                session, ["workspace", "page_body_width"],
+                lambda page, width: dict(
+                    page,
+                    body_width=width
+                )
             ),
             "actions": {
-                "set_column_width": session.set_column_width,
+                "set_page_body_width": session.set_page_body_width,
             },
         })
 
@@ -1610,9 +1623,9 @@ class Workspace(HScroll):
 
     def _on_divider_drag(self, event):
         if event.initial:
-            self._initial_width = self.prop(["column_width"])
+            self._initial_width = self.prop(["page_extra", "body_width"])
         else:
-            self.prop(["actions", "set_column_width"])(
+            self.prop(["actions", "set_page_body_width"])(
                 max(50, self._initial_width + event.dx)
             )
 
@@ -1761,6 +1774,7 @@ class PageBody(Panel):
         name = None
         handlers = {}
         props['fragments'] = self.prop(['page', 'title_fragments'])
+        props['max_width'] = self.prop(['page_extra', 'body_width'])
         sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
@@ -1962,7 +1976,7 @@ class Session(Immutable):
                 "dragged_page": None,
             },
             "workspace": {
-                "column_width": 300,
+                "page_body_width": 300,
                 "columns": [
                     [
                         "cf689824aa3641828343eba2b5fbde9f",
@@ -1988,8 +2002,8 @@ class Session(Immutable):
     def set_toc_width(self, width):
         self.replace(["toc", "width"], width)
 
-    def set_column_width(self, width):
-        self.replace(["workspace", "column_width"], width)
+    def set_page_body_width(self, width):
+        self.replace(["workspace", "page_body_width"], width)
 
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
