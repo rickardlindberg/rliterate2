@@ -844,7 +844,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#margin]\n    loop (#pages) {\n        Page(\n            label = $\n            page  = #page\n            %align[EXPAND]\n        )\n        %space[#margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#pages) {\n        Page(\n            page       = $\n            page_extra = #page_extra\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -872,7 +872,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow(\n        label = #label\n        page  = #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow(\n        page       = #page\n        page_extra = #page_extra\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page_extra.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -893,7 +893,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        background = #page.background\n        margin     = #page.margin\n        label      = #label\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        page       = #page\n        page_extra = #page_extra\n        background = #page_extra.background\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page_extra.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -963,7 +963,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Button(\n        label = #label\n        %margin[#margin,ALL]\n    )\n}\n",
+"text":"panel PageBody %layout_rows {\n    Button(\n        label = #page\n        %margin[#page_extra.margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -990,7 +990,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"page\": PropUpdate(\n                theme, [\"page\"]\n            ),\n            \"width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n            \"actions\": {\n                \"set_column_width\": session.set_column_width,\n            },\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"column_width\"]\n            ),\n            \"columns\": PropUpdate(\n                session, [\"workspace\", \"columns\"]\n            ),\n            \"page_extra\": PropUpdate(\n                theme, [\"page\"]\n            ),\n            \"actions\": {\n                \"set_column_width\": session.set_column_width,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -1006,7 +1006,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            pages    = $\n            margin   = #margin\n            page     = #page\n            actions  = #actions\n            min_size = makeTuple(#width -1)\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            pages            = $\n            workspace_margin = #margin\n            page_extra       = #page_extra\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -1036,7 +1036,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_divider_drag(self, event):\n    if event.initial:\n        self._initial_width = self.prop([\"width\"])\n    else:\n        self.prop([\"actions\", \"set_column_width\"])(\n            max(50, self._initial_width + event.dx)\n        )\n",
+"text":"def _on_divider_drag(self, event):\n    if event.initial:\n        self._initial_width = self.prop([\"column_width\"])\n    else:\n        self.prop([\"actions\", \"set_column_width\"])(\n            max(50, self._initial_width + event.dx)\n        )\n",
 "type":"code"
 }
 ],

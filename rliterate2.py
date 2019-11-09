@@ -1524,14 +1524,14 @@ class WorkspaceProps(Props):
             "margin": PropUpdate(
                 theme, ["workspace", "margin"]
             ),
-            "page": PropUpdate(
-                theme, ["page"]
-            ),
-            "width": PropUpdate(
+            "column_width": PropUpdate(
                 session, ["workspace", "column_width"]
             ),
             "columns": PropUpdate(
                 session, ["workspace", "columns"]
+            ),
+            "page_extra": PropUpdate(
+                theme, ["page"]
             ),
             "actions": {
                 "set_column_width": session.set_column_width,
@@ -1556,11 +1556,10 @@ class Workspace(HScroll):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
+            props['min_size'] = makeTuple(self.prop(['column_width']), -1)
             props['pages'] = loopvar
-            props['margin'] = self.prop(['margin'])
-            props['page'] = self.prop(['page'])
-            props['actions'] = self.prop(['actions'])
-            props['min_size'] = makeTuple(self.prop(['width']), -1)
+            props['workspace_margin'] = self.prop(['margin'])
+            props['page_extra'] = self.prop(['page_extra'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Column, props, sizer, handlers, name)
             props = {}
@@ -1579,7 +1578,7 @@ class Workspace(HScroll):
 
     def _on_divider_drag(self, event):
         if event.initial:
-            self._initial_width = self.prop(["width"])
+            self._initial_width = self.prop(["column_width"])
         else:
             self.prop(["actions", "set_column_width"])(
                 max(50, self._initial_width + event.dx)
@@ -1596,18 +1595,18 @@ class Column(VScroll):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop(['margin']))
+        self._create_space(self.prop(['workspace_margin']))
         def loop_fn(loopvar):
             pass
             props = {}
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['label'] = loopvar
-            props['page'] = self.prop(['page'])
+            props['page'] = loopvar
+            props['page_extra'] = self.prop(['page_extra'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
-            self._create_space(self.prop(['margin']))
+            self._create_space(self.prop(['workspace_margin']))
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['pages']):
@@ -1628,8 +1627,8 @@ class Page(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['label'] = self.prop(['label'])
         props['page'] = self.prop(['page'])
+        props['page_extra'] = self.prop(['page_extra'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageTopRow, props, sizer, handlers, name)
@@ -1637,7 +1636,7 @@ class Page(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page', 'border']))
+        props.update(self.prop(['page_extra', 'border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageBottomBorder, props, sizer, handlers, name)
 
@@ -1656,9 +1655,9 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['background'] = self.prop(['page', 'background'])
-        props['margin'] = self.prop(['page', 'margin'])
-        props['label'] = self.prop(['label'])
+        props['page'] = self.prop(['page'])
+        props['page_extra'] = self.prop(['page_extra'])
+        props['background'] = self.prop(['page_extra', 'background'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageBody, props, sizer, handlers, name)
@@ -1666,7 +1665,7 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page', 'border']))
+        props.update(self.prop(['page_extra', 'border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageRightBorder, props, sizer, handlers, name)
 
@@ -1729,8 +1728,8 @@ class PageBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['label'] = self.prop(['label'])
-        sizer["border"] = self.prop(['margin'])
+        props['label'] = self.prop(['page'])
+        sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Button, props, sizer, handlers, name)
 
