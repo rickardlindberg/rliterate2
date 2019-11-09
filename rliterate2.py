@@ -937,30 +937,57 @@ class ExpandCollapse(wx.Panel, WxWidgetMixin):
             flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
         )
 
-class Text(wx.StaticText, WxWidgetMixin):
+class Text(wx.Panel, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
         WxWidgetMixin.__init__(self, *args)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
-        self._register_builtin("font", self._set_font)
-        self._register_builtin("fragments", self._set_fragments)
         self._register_builtin("foreground", self.SetForegroundColour)
-        self._register_builtin("max_width", lambda max_width:
-            self.SetMinSize((max_width, -1))
+
+    def _update_gui(self, parent_updated):
+        WxWidgetMixin._update_gui(self, parent_updated)
+        self._measure(
+            self._props.get("font", {}),
+            self._props.get("fragments", []),
+            self._props.get("max_width", None)
         )
 
-    def _set_fragments(self, fragments):
-        label = ""
+    def _measure(self, font, fragments, max_width):
+        dc = wx.MemoryDC()
+        dc.SetFont(self.wx_font(font))
+        dc.SelectObject(wx.EmptyBitmap(1, 1))
+        self._draw_operations = []
+        x = 0
+        y = 0
         for fragment in fragments:
-            label += fragment["text"]
-        self.SetLabel(label)
+            w, h = dc.GetTextExtent(fragment["text"])
+            self._draw_operations.append((font, fragment["text"], x, 0))
+            x += w
+            y = max(y, h)
+        if max_width is None:
+            self.SetMinSize((
+                max(10, x),
+                max(10, y)
+            ))
+        else:
+            self.SetMinSize((
+                max_width,
+                max(10, y)
+            ))
 
-    def _set_font(self, font):
+    def _on_paint(self, wx_event):
+        dc = wx.PaintDC(self)
+        for font, text, x, y in self._draw_operations:
+            dc.SetFont(self.wx_font(font))
+            dc.DrawText(text, x, y)
+
+    def wx_font(self, font):
         self._font_info = wx.FontInfo(font.get("size", 10))
-        self.SetFont(wx.Font(self._font_info))
+        return wx.Font(self._font_info)
 
 class MainFrameProps(Props):
 
