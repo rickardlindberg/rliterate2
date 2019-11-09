@@ -71,7 +71,7 @@ def generate_rows_and_drop_points(
         dragged = dragged or page["id"] == dragged_page
         rows.append({
             "id": page["id"],
-            "title": page["title"],
+            "title_fragments": [{"text": page["title"]}],
             "level": level,
             "has_children": num_children > 0,
             "collapsed": is_collapsed,
@@ -129,7 +129,7 @@ def build_column_prop(document, column):
 
 def build_page_prop(page):
     return {
-        "title": page["title"],
+        "title_fragments": [{"text": page["title"]}],
     }
 
 def load_document_from_file(path):
@@ -945,8 +945,14 @@ class Text(wx.StaticText, WxWidgetMixin):
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
-        self._register_builtin("text", self.SetLabel)
+        self._register_builtin("fragments", self._set_fragments)
         self._register_builtin("foreground", self.SetForegroundColour)
+
+    def _set_fragments(self, fragments):
+        label = ""
+        for fragment in fragments:
+            label += fragment["text"]
+        self.SetLabel(label)
 
 class MainFrameProps(Props):
 
@@ -1494,7 +1500,7 @@ class TableOfContentsTitle(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['text'] = self.prop(['title'])
+        props['fragments'] = self.prop(['title_fragments'])
         props['foreground'] = self._foreground()
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['row_margin'])
@@ -1754,10 +1760,10 @@ class PageBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['label'] = self.prop(['page', 'title'])
+        props['fragments'] = self.prop(['page', 'title_fragments'])
         sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
-        self._create_widget(Button, props, sizer, handlers, name)
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class Document(Immutable):
 
