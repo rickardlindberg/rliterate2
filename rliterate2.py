@@ -952,37 +952,106 @@ class Text(wx.Panel, WxWidgetMixin):
         WxWidgetMixin._update_gui(self, parent_updated)
         self._measure(
             self._props.get("font", {}),
-            self._props.get("fragments", []),
+            self._props.get("fragments", [])
+        )
+        self._reflow(
             self._props.get("max_width", None)
         )
 
-    def _measure(self, font, fragments, max_width):
+    def _measure(self, font, fragments):
         dc = wx.MemoryDC()
-        dc.SetFont(self.wx_font(font))
-        dc.SelectObject(wx.EmptyBitmap(1, 1))
-        self._draw_operations = []
+        wx_font = self.wx_font(font)
+        dc.SetFont(wx_font)
+        dc.SelectObject(wx.Bitmap(1, 1))
+        self._measured_fragments = []
+        for fragment in fragments:
+            widths = dc.GetPartialTextExtents(fragment["text"])
+            w, h = dc.GetTextExtent(fragment["text"])
+            self._measured_fragments.append((fragment["text"], widths, h))
+
+    def _reflow(self, max_width):
+        self._draw_fragments = []
+        if max_width is None:
+            self._reflow_no_width_limit()
+        else:
+            self._reflow_width_limit(max_width)
+
+    def _reflow_no_width_limit(self):
+        x = 0
+        max_h = 10
+        for text, widths, height in self._measured_fragments:
+            self._draw_fragments.append((text, x, 0))
+            x += widths[-1]
+            max_h = max(max_h, height)
+        self.SetMinSize((x, max_h))
+
+    def _reflow_width_limit(self, max_width):
         x = 0
         y = 0
-        for fragment in fragments:
-            w, h = dc.GetTextExtent(fragment["text"])
-            self._draw_operations.append((font, fragment["text"], x, 0))
-            x += w
-            y = max(y, h)
-        if max_width is None:
-            self.SetMinSize((
-                max(10, x),
-                max(10, y)
-            ))
-        else:
-            self.SetMinSize((
-                max_width,
-                max(10, y)
-            ))
+        max_h = 10
+        for text, widths, height in self._measured_fragments:
+            widths_offset = 0
+            while text:
+                num_that_fit = self._find_num_characters_that_fit(
+                    widths,
+                    max_width-x+widths_offset
+                )
+                if num_that_fit < len(text):
+                    num_to_include = self._find_num_characters_to_include(
+                        text,
+                        widths,
+                        max_width-x+widths_offset
+                    )
+                    break_line = True
+                else:
+                    num_to_include = num_that_fit
+                    break_line = False
+                if num_to_include == 0:
+                    if x > 0:
+                        break_line = True
+                    else:
+                        num_to_include = 1
+                self._draw_fragments.append((text[:num_to_include], x, y))
+                x += widths[num_to_include-1]
+                widths_offset += widths[num_to_include-1]
+                max_h = max(max_h, height)
+                text = text[num_to_include:]
+                widths = widths[num_to_include:]
+                if break_line:
+                    x = 0
+                    y += max_h
+                    max_h = 10
+        self.SetMinSize((max_width, y+max_h))
+
+    def _find_num_characters_to_include(self, text, widths, with_limit):
+        num_that_fit = self._find_num_characters_that_fit(
+            widths,
+            with_limit
+        )
+        if num_that_fit == len(text):
+            return num_that_fit
+        index = num_that_fit - 1
+        while index >= 0 and text[index] == " ":
+            index -= 1
+        while index >= 0:
+            if text[index] == " ":
+                return index + 1
+            index -= 1
+        return num_that_fit
+
+    def _find_num_characters_that_fit(self, widths, with_limit):
+        index = len(widths) - 1
+        while index >= 0:
+            if widths[index] > with_limit:
+                index -= 1
+            else:
+                return index + 1
+        return 0
 
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
-        for font, text, x, y in self._draw_operations:
-            dc.SetFont(self.wx_font(font))
+        dc.SetFont(self.wx_font(self._props.get("font", {})))
+        for text, x, y in self._draw_fragments:
             dc.DrawText(text, x, y)
 
     def wx_font(self, font):
