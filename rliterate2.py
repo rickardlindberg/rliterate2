@@ -964,8 +964,8 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _measure(self, font, fragments):
         dc = wx.MemoryDC()
-        wx_font = self.wx_font(font)
-        dc.SetFont(wx_font)
+        self._font = self.wx_font(font)
+        dc.SetFont(self._font)
         dc.SelectObject(wx.Bitmap(1, 1))
         self._measured_fragments = []
         for fragment in fragments:
@@ -1017,7 +1017,7 @@ class Text(wx.Panel, WxWidgetMixin):
                         num_to_include = 1
                 self._draw_fragments.append((text[:num_to_include], x, y))
                 x += widths[num_to_include-1]
-                widths_offset += widths[num_to_include-1]
+                widths_offset = widths[num_to_include-1]
                 max_h = max(max_h, height)
                 text = text[num_to_include:]
                 widths = widths[num_to_include:]
@@ -1054,7 +1054,7 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
-        dc.SetFont(self.wx_font(self._props.get("font", {})))
+        dc.SetFont(self._font)
         for text, x, y in self._draw_fragments:
             dc.DrawText(text, x, y)
 
