@@ -130,7 +130,26 @@ def build_column_prop(document, column):
 def build_page_prop(page):
     return {
         "title_fragments": [{"text": page["title"]}],
+        "paragraphs": build_paragraphs(page["paragraphs"]),
     }
+
+def build_paragraphs(paragraphs):
+    out = []
+    for paragraph in paragraphs:
+        if paragraph["type"] == "code":
+            out.append({
+                "type": "code",
+                "body_fragments": code_fragments(paragraph["fragments"])
+            })
+    return out
+
+
+def code_fragments(fragments):
+    text = ""
+    for fragment in fragments:
+        if fragment["type"] == "code":
+            text += fragment["text"]
+    return [{"text": text}]
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -976,9 +995,13 @@ class Text(wx.Panel, WxWidgetMixin):
         dc.SelectObject(wx.Bitmap(1, 1))
         self._measured_fragments = []
         for fragment in fragments:
-            widths = dc.GetPartialTextExtents(fragment["text"])
-            w, h = dc.GetTextExtent(fragment["text"])
-            self._measured_fragments.append((fragment["text"], widths, h))
+            for line in fragment["text"].splitlines(True):
+                text = line.rstrip("\r\n")
+                widths = dc.GetPartialTextExtents(text)
+                w, h = dc.GetTextExtent(text)
+                self._measured_fragments.append((text, widths, h))
+                if text != line:
+                    self._measured_fragments.append((None, [], 0))
 
     def _reflow(self, max_width, break_at_word):
         self._draw_fragments = []
@@ -989,11 +1012,17 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _reflow_no_width_limit(self):
         x = 0
+        y = 0
         max_h = 10
         for text, widths, height in self._measured_fragments:
-            self._draw_fragments.append((text, x, 0))
-            x += widths[-1]
-            max_h = max(max_h, height)
+            if text is None:
+                x = 0
+                y += max_h
+                max_h = 10
+            else:
+                self._draw_fragments.append((text, x, y))
+                x += widths[-1]
+                max_h = max(max_h, height)
         self.SetMinSize((x, max_h))
 
     def _reflow_width_limit(self, max_width, break_at_word):
@@ -1032,6 +1061,10 @@ class Text(wx.Panel, WxWidgetMixin):
                     x = 0
                     y += max_h
                     max_h = 10
+            if text is None:
+                x = 0
+                y += max_h
+                max_h = 10
         self.SetMinSize((max_width, y+max_h))
 
     def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
@@ -1062,6 +1095,11 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def wx_font(self, font):
         self._font_info = wx.FontInfo(font.get("size", 10))
+        if "family" in font:
+            families = {
+                "Monospace": wx.FONTFAMILY_TELETYPE,
+            }
+            self._font_info.Family(families[font["family"]])
         return wx.Font(self._font_info)
 
 class MainFrameProps(Props):
@@ -1886,6 +1924,23 @@ class PageBody(Panel):
         sizer["border"] = self.prop(['page_extra', 'margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['fragments'] = loopvar['body_fragments']
+            props['max_width'] = self.prop(['page_extra', 'body_width'])
+            props['font'] = self.prop(['page_extra', 'code_font'])
+            props['break_at_word'] = False
+            sizer["border"] = self.prop(['page_extra', 'margin'])
+            sizer["flag"] |= wx.ALL
+            self._create_widget(Text, props, sizer, handlers, name)
+        loop_options = {}
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['page', 'paragraphs']):
+                loop_fn(loopvar)
 
 class Document(Immutable):
 
@@ -2019,6 +2074,10 @@ class Theme(Immutable):
             "title_font": {
                 "size": 16,
             },
+            "code_font": {
+                "size": 10,
+                "family": "Monospace",
+            },
             "border": {
                 "size": 2,
                 "color": "#aaaaaf",
@@ -2058,6 +2117,10 @@ class Theme(Immutable):
         "page": {
             "title_font": {
                 "size": 18,
+            },
+            "code_font": {
+                "size": 12,
+                "family": "Monospace",
             },
             "border": {
                 "size": 3,
