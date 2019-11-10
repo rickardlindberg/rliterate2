@@ -384,6 +384,9 @@ class WidgetMixin(object):
                     self._changed_props.append(key)
         return len(self._changed_props) > 0
 
+    def prop_changed(self, name):
+        return (name in self._changed_props)
+
     def _get_local_props(self):
         return {}
 
@@ -951,24 +954,25 @@ class Text(wx.Panel, WxWidgetMixin):
     def _update_gui(self, parent_updated):
         WxWidgetMixin._update_gui(self, parent_updated)
         did_measure = False
-        if "font" in self._changed_props or "fragments" in self._changed_props:
+        if (self.prop_changed("font") or
+            self.prop_changed("fragments")):
             self._measure(
-                self._props.get("font", {}),
-                self._props.get("fragments", [])
+                self.prop_with_default(["font"], {}),
+                self.prop_with_default(["fragments"], [])
             )
             did_measure = True
         if (did_measure or
-            "max_width" in self._changed_props or
-            "break_at_word" in self._changed_props):
+            self.prop_changed("max_width") or
+            self.prop_changed("break_at_word")):
             self._reflow(
-                self._props.get("max_width", None),
-                self._props.get("break_at_word", True)
+                self.prop_with_default(["max_width"], None),
+                self.prop_with_default(["break_at_word"], True)
             )
 
     def _measure(self, font, fragments):
         dc = wx.MemoryDC()
-        self._font = self.wx_font(font)
-        dc.SetFont(self._font)
+        self._wx_font = self.wx_font(font)
+        dc.SetFont(self._wx_font)
         dc.SelectObject(wx.Bitmap(1, 1))
         self._measured_fragments = []
         for fragment in fragments:
@@ -1052,7 +1056,7 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
-        dc.SetFont(self._font)
+        dc.SetFont(self._wx_font)
         for text, x, y in self._draw_fragments:
             dc.DrawText(text, x, y)
 
