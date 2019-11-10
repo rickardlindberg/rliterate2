@@ -1035,7 +1035,10 @@ class Text(wx.Panel, WxWidgetMixin):
                 w, h = dc.GetTextExtent(text)
                 self._measured_fragments.append((text, widths, h))
                 if text != line:
-                    self._measured_fragments.append((None, [], 0))
+                    w, h = dc.GetTextExtent(line[len(text):])
+                    self._measured_fragments.append((None, [], h//2))
+        if self._measured_fragments and self._measured_fragments[-1][0] is None:
+            self._measured_fragments.pop(-1)
 
     @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word):
@@ -1048,12 +1051,12 @@ class Text(wx.Panel, WxWidgetMixin):
     def _reflow_no_width_limit(self):
         x = 0
         y = 0
-        max_h = 10
+        max_h = 0
         for text, widths, height in self._measured_fragments:
             if text is None:
                 x = 0
                 y += max_h
-                max_h = 10
+                max_h = height
             else:
                 self._draw_fragments.append((text, x, y))
                 x += widths[-1]
@@ -1063,7 +1066,7 @@ class Text(wx.Panel, WxWidgetMixin):
     def _reflow_width_limit(self, max_width, break_at_word):
         x = 0
         y = 0
-        max_h = 10
+        max_h = 0
         for text, widths, height in self._measured_fragments:
             widths_offset = 0
             while text:
@@ -1095,11 +1098,11 @@ class Text(wx.Panel, WxWidgetMixin):
                 if break_line:
                     x = 0
                     y += max_h
-                    max_h = 10
+                    max_h = 0
             if text is None:
                 x = 0
-                y += max_h
-                max_h = 10
+                y += height
+                max_h = 0
         self.SetMinSize((max_width, y+max_h))
 
     def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
