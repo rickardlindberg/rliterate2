@@ -950,13 +950,17 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _update_gui(self, parent_updated):
         WxWidgetMixin._update_gui(self, parent_updated)
-        self._measure(
-            self._props.get("font", {}),
-            self._props.get("fragments", [])
-        )
-        self._reflow(
-            self._props.get("max_width", None)
-        )
+        did_measure = False
+        if "font" in self._changed_props or "fragments" in self._changed_props:
+            self._measure(
+                self._props.get("font", {}),
+                self._props.get("fragments", [])
+            )
+            did_measure = True
+        if did_measure or "max_width" in self._changed_props:
+            self._reflow(
+                self._props.get("max_width", None)
+            )
 
     def _measure(self, font, fragments):
         dc = wx.MemoryDC()
