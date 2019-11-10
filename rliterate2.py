@@ -148,10 +148,30 @@ def build_paragraphs(paragraphs):
 def build_code_paragraph(paragraph):
     return {
         "widget": CodeParagraph,
-        "body_fragments": code_fragments(paragraph["fragments"])
+        "path_fragments": code_path_fragments(
+            paragraph["filepath"],
+            paragraph["chunkpath"]
+        ),
+        "body_fragments": code_body_fragments(
+            paragraph["fragments"]
+        )
     }
 
-def code_fragments(fragments):
+def code_path_fragments(filepath, chunkpath):
+    fragments = []
+    for index, x in enumerate(filepath):
+        if index > 0:
+            fragments.append({"text": "/"})
+        fragments.append({"text": x})
+    if filepath and chunkpath:
+        fragments.append({"text": " "})
+    for index, x in enumerate(chunkpath):
+        if index > 0:
+            fragments.append({"text": "/"})
+        fragments.append({"text": x})
+    return fragments
+
+def code_body_fragments(fragments):
     text = ""
     for fragment in fragments:
         if fragment["type"] == "code":
@@ -1001,6 +1021,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 self.prop_with_default(["break_at_word"], True)
             )
 
+    @profile_sub("text measure")
     def _measure(self, font, fragments):
         dc = wx.MemoryDC()
         self._wx_font = self.wx_font(font)
@@ -1016,6 +1037,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 if text != line:
                     self._measured_fragments.append((None, [], 0))
 
+    @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word):
         self._draw_fragments = []
         if max_width is None:
@@ -1100,6 +1122,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 return index + 1
         return 0
 
+    @profile_sub("text paint")
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
         dc.SetFont(self._wx_font)
@@ -1968,12 +1991,46 @@ class CodeParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
+        props['background'] = '#000000'
+        props['min_size'] = makeTuple(-1, 1)
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Panel, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['path_fragments'])
+        props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['font'] = self.prop(['page_extra', 'code_font'])
+        props['break_at_word'] = False
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['background'] = '#000000'
+        props['min_size'] = makeTuple(-1, 1)
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Panel, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
         props['fragments'] = self.prop(['body_fragments'])
         props['max_width'] = self.prop(['page_extra', 'body_width'])
         props['font'] = self.prop(['page_extra', 'code_font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['background'] = '#000000'
+        props['min_size'] = makeTuple(-1, 1)
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Panel, props, sizer, handlers, name)
 
 class UnknownParagraph(Panel):
 
