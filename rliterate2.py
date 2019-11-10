@@ -1991,8 +1991,8 @@ class CodeParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['background'] = '#000000'
-        props['min_size'] = makeTuple(-1, 1)
+        props['background'] = self.prop(['page_extra', 'code', 'border_color'])
+        props['min_size'] = makeTuple(-1, 2)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Panel, props, sizer, handlers, name)
         props = {}
@@ -2000,17 +2000,19 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props['fragments'] = self.prop(['path_fragments'])
-        props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['max_width'] = sub(self.prop(['page_extra', 'body_width']), mul(2, self.prop(['page_extra', 'code', 'margin'])))
         props['font'] = self.prop(['page_extra', 'code_font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['page_extra', 'code', 'margin'])
+        sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['background'] = '#000000'
-        props['min_size'] = makeTuple(-1, 1)
+        props['background'] = self.prop(['page_extra', 'code', 'border_color'])
+        props['min_size'] = makeTuple(-1, 2)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Panel, props, sizer, handlers, name)
         props = {}
@@ -2018,17 +2020,19 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props['fragments'] = self.prop(['body_fragments'])
-        props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['max_width'] = sub(self.prop(['page_extra', 'body_width']), mul(2, self.prop(['page_extra', 'code', 'margin'])))
         props['font'] = self.prop(['page_extra', 'code_font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['page_extra', 'code', 'margin'])
+        sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['background'] = '#000000'
-        props['min_size'] = makeTuple(-1, 1)
+        props['background'] = self.prop(['page_extra', 'code', 'border_color'])
+        props['min_size'] = makeTuple(-1, 2)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Panel, props, sizer, handlers, name)
 
@@ -2196,6 +2200,10 @@ class Theme(Immutable):
             },
             "background": "#ffffff",
             "margin": 10,
+            "code": {
+                "margin": 2,
+                "border_color": "#aaaaaf",
+            }
         },
         "dragdrop_color": "#ff6400",
         "dragdrop_invalid_color": "#cccccc",
@@ -2240,6 +2248,10 @@ class Theme(Immutable):
             },
             "background": "#fdf6e3",
             "margin": 14,
+            "code": {
+                "margin": 3,
+                "border_color": "#dcd6c6",
+            }
         },
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
