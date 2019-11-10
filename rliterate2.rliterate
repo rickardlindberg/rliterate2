@@ -969,6 +969,52 @@
 "title":"Page"
 },
 {
+"children":[],
+"id":"b987445070e84067ba90e71695763f72",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_page_prop(page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": build_paragraphs(page[\"paragraphs\"]),\n    }\n",
+"type":"code"
+}
+],
+"id":"7d57a90695e94413b8b9563166d097ac",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,ALL]\n        )\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"0b3455a8cf6f4289bc8a97bf35fd6f76",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Page body"
+},
+{
 "children":[
 {
 "children":[],
@@ -1081,7 +1127,7 @@
 "title":"Unknown paragraph"
 }
 ],
-"id":"b987445070e84067ba90e71695763f72",
+"id":"46857302627c4bd78edc4bbfc07fb2ea",
 "paragraphs":[
 {
 "chunkpath":[
@@ -1092,38 +1138,17 @@
 ],
 "fragments":[
 {
-"text":"def build_page_prop(page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": build_paragraphs(page[\"paragraphs\"]),\n    }\n\ndef build_paragraphs(paragraphs):\n    BUILDERS = {\n        \"code\": build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
+"text":"def build_paragraphs(paragraphs):\n    BUILDERS = {\n        \"code\": build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
-"id":"7d57a90695e94413b8b9563166d097ac",
+"id":"54eda3b0bd174c19b156169bfbe13268",
 "language":"",
 "post_process":[],
 "type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,ALL]\n        )\n    }\n}\n",
-"type":"code"
 }
 ],
-"id":"0b3455a8cf6f4289bc8a97bf35fd6f76",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-}
-],
-"title":"Page body"
+"title":"Paragraphs"
 }
 ],
 "id":"e6a157bbac8842a2b8c625bfa9255159",
