@@ -969,7 +969,118 @@
 "title":"Page"
 },
 {
+"children":[
+{
 "children":[],
+"id":"cf40e71cfdd1418d93a71ef216d5fcb5",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_code_paragraph(paragraph):\n    return {\n        \"widget\": CodeParagraph,\n        \"body_fragments\": code_fragments(paragraph[\"fragments\"])\n    }\n",
+"type":"code"
+}
+],
+"id":"ef879ac029fd435690d5f33562b1c634",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def code_fragments(fragments):\n    text = \"\"\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            text += fragment[\"text\"]\n    return [{\"text\": text}]\n",
+"type":"code"
+}
+],
+"id":"d3402ff19e7e4284b44e3ff7d0ca4f8f",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel CodeParagraph %layout_rows {\n    Text(\n        fragments     = #body_fragments\n        max_width     = #page_extra.body_width\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"5ca19e9549664244b75c2c7a384b1f91",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Code paragraph"
+},
+{
+"children":[],
+"id":"f8ed6dda3c214937971991b5c925bf62",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_unknown_paragraph(paragraph):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n    }\n",
+"type":"code"
+}
+],
+"id":"41d293e0a4e34fa88796df1d0a86e215",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        fragments     = #fragments\n        max_width     = #page_extra.body_width\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"dc2387e3965244f493954c40286d3a9f",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Unknown paragraph"
+}
+],
 "id":"b987445070e84067ba90e71695763f72",
 "paragraphs":[
 {
@@ -981,7 +1092,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page_prop(page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": build_paragraphs(page[\"paragraphs\"]),\n    }\n\ndef build_paragraphs(paragraphs):\n    out = []\n    for paragraph in paragraphs:\n        if paragraph[\"type\"] == \"code\":\n            out.append({\n                \"type\": \"code\",\n                \"body_fragments\": code_fragments(paragraph[\"fragments\"])\n            })\n    return out\n\n\ndef code_fragments(fragments):\n    text = \"\"\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            text += fragment[\"text\"]\n    return [{\"text\": text}]\n",
+"text":"def build_page_prop(page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": build_paragraphs(page[\"paragraphs\"]),\n    }\n\ndef build_paragraphs(paragraphs):\n    BUILDERS = {\n        \"code\": build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
@@ -999,7 +1110,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        Text(\n            fragments     = $body_fragments\n            max_width     = #page_extra.body_width\n            font          = #page_extra.code_font\n            break_at_word = False\n            %margin[#page_extra.margin,ALL]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,ALL]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1814,7 +1925,7 @@
 "type":"tabstop"
 },
 {
-"text":"-> [\"instance\" \"%space\" x]\n    | WS NAME:x instanceName:ys WS\n      '(' instanceBody*:zs WS ')' ",
+"text":"-> [\"instance\" \"%space\" x]\n    | WS expr:x instanceName:ys WS\n      '(' instanceBody*:zs WS ')' ",
 "type":"code"
 },
 {
@@ -2470,7 +2581,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | .:name [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" name \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"panel\"   -> \"Panel\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | ast:class [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" class \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"panel\"   -> \"Panel\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],

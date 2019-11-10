@@ -134,15 +134,22 @@ def build_page_prop(page):
     }
 
 def build_paragraphs(paragraphs):
-    out = []
-    for paragraph in paragraphs:
-        if paragraph["type"] == "code":
-            out.append({
-                "type": "code",
-                "body_fragments": code_fragments(paragraph["fragments"])
-            })
-    return out
+    BUILDERS = {
+        "code": build_code_paragraph,
+    }
+    return [
+        BUILDERS.get(
+            paragraph["type"],
+            build_unknown_paragraph
+        )(paragraph)
+        for paragraph in paragraphs
+    ]
 
+def build_code_paragraph(paragraph):
+    return {
+        "widget": CodeParagraph,
+        "body_fragments": code_fragments(paragraph["fragments"])
+    }
 
 def code_fragments(fragments):
     text = ""
@@ -150,6 +157,12 @@ def code_fragments(fragments):
         if fragment["type"] == "code":
             text += fragment["text"]
     return [{"text": text}]
+
+def build_unknown_paragraph(paragraph):
+    return {
+        "widget": UnknownParagraph,
+        "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
+    }
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -1930,17 +1943,59 @@ class PageBody(Panel):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['fragments'] = loopvar['body_fragments']
-            props['max_width'] = self.prop(['page_extra', 'body_width'])
-            props['font'] = self.prop(['page_extra', 'code_font'])
-            props['break_at_word'] = False
+            props.update(loopvar)
+            props['page_extra'] = self.prop(['page_extra'])
             sizer["border"] = self.prop(['page_extra', 'margin'])
             sizer["flag"] |= wx.ALL
-            self._create_widget(Text, props, sizer, handlers, name)
+            self._create_widget(loopvar['widget'], props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['page', 'paragraphs']):
                 loop_fn(loopvar)
+
+class CodeParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['body_fragments'])
+        props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['font'] = self.prop(['page_extra', 'code_font'])
+        props['break_at_word'] = False
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
+
+class UnknownParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['fragments'])
+        props['max_width'] = self.prop(['page_extra', 'body_width'])
+        props['font'] = self.prop(['page_extra', 'code_font'])
+        props['break_at_word'] = False
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class Document(Immutable):
 
