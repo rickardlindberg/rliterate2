@@ -2282,22 +2282,22 @@ class Text(wx.Panel, WxWidgetMixin):
     def _reflow_no_width_limit(self):
         x = 0
         y = 0
-        max_h = 0
+        row_max_h = 0
         for text, widths, height in self._measured_fragments:
             if text is None:
                 x = 0
-                y += max_h
-                max_h = height
-            else:
+                y += row_max_h
+                row_max_h = height
+            elif text:
                 self._draw_fragments.append((text, x, y))
                 x += widths[-1]
-                max_h = max(max_h, height)
-        self.SetMinSize((x, max_h))
+                row_max_h = max(row_max_h, height)
+        self.SetMinSize((x, y+row_max_h))
 
     def _reflow_width_limit(self, max_width, break_at_word):
         x = 0
         y = 0
-        max_h = 0
+        row_max_h = 0
         for text, widths, height in self._measured_fragments:
             widths_offset = 0
             while text:
@@ -2323,18 +2323,18 @@ class Text(wx.Panel, WxWidgetMixin):
                 self._draw_fragments.append((text[:num_to_include], x, y))
                 x += widths[num_to_include-1]
                 widths_offset = widths[num_to_include-1]
-                max_h = max(max_h, height)
+                row_max_h = max(row_max_h, height)
                 text = text[num_to_include:]
                 widths = widths[num_to_include:]
                 if break_line:
                     x = 0
-                    y += max_h
-                    max_h = 0
+                    y += row_max_h
+                    row_max_h = 0
             if text is None:
                 x = 0
                 y += height
-                max_h = 0
-        self.SetMinSize((max_width, y+max_h))
+                row_max_h = 0
+        self.SetMinSize((max_width, y+row_max_h))
 
     def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
         if break_at_word:
