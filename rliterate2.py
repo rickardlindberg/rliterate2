@@ -876,25 +876,40 @@ class CompactScrolledWindow(wx.ScrolledWindow):
         size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))
         wx.ScrolledWindow.__init__(self, parent, style=style, size=size)
         self.Size = size
+        self._style = style
         if style == wx.HSCROLL:
             self.SetScrollRate(1, 0)
-            self._calc_scroll_pos = self._calc_scroll_pos_hscroll
         elif style == wx.VSCROLL:
             self.SetScrollRate(0, 1)
-            self._calc_scroll_pos = self._calc_scroll_pos_vscroll
         else:
             self.SetScrollRate(1, 1)
-            self._calc_scroll_pos = self._calc_scroll_pos_vscroll
         self.step = step
         self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)
 
     def _on_mousewheel(self, event):
-        x, y = self.GetViewStart()
-        delta = event.GetWheelRotation() / event.GetWheelDelta()
-        self.Scroll(*self._calc_scroll_pos(x, y, delta))
+        if self._style == wx.HSCROLL and not wx.GetKeyState(wx.WXK_SHIFT):
+            self._forward_scroll_event(event)
+        if self._style == wx.VSCROLL and wx.GetKeyState(wx.WXK_SHIFT):
+            self._forward_scroll_event(event)
+        else:
+            x, y = self.GetViewStart()
+            delta = event.GetWheelRotation() / event.GetWheelDelta()
+            if wx.GetKeyState(wx.WXK_SHIFT):
+                pos = self._calc_scroll_pos_hscroll(x, y, delta)
+            else:
+                pos = self._calc_scroll_pos_vscroll(x, y, delta)
+            self.Scroll(*pos)
+
+    def _forward_scroll_event(self, event):
+        parent = self.Parent
+        while parent:
+            if isinstance(parent, CompactScrolledWindow):
+                parent._on_mousewheel(event)
+                return
+            parent = parent.Parent
 
     def _calc_scroll_pos_hscroll(self, x, y, delta):
-        return (x+delta*self.step, y)
+        return (x-delta*self.step, y)
 
     def _calc_scroll_pos_vscroll(self, x, y, delta):
         return (x, y-delta*self.step)
@@ -909,6 +924,12 @@ class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         CompactScrolledWindow.__init__(self, wx_parent, wx.HSCROLL)
+        WxContainerWidgetMixin.__init__(self, *args)
+
+class Scroll(CompactScrolledWindow, WxContainerWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        CompactScrolledWindow.__init__(self, wx_parent)
         WxContainerWidgetMixin.__init__(self, *args)
 
 class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
@@ -1331,7 +1352,7 @@ TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
     "level",
 ])
 
-class TableOfContentsScrollArea(VScroll):
+class TableOfContentsScrollArea(Scroll):
 
     def _get_local_props(self):
         return {
