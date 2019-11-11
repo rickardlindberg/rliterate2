@@ -999,7 +999,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,ALL]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],

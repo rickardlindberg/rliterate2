@@ -1832,7 +1832,9 @@ class PageBody(Panel):
             props.update(loopvar)
             props['page_extra'] = self.prop(['page_extra'])
             sizer["border"] = self.prop(['page_extra', 'margin'])
-            sizer["flag"] |= wx.ALL
+            sizer["flag"] |= wx.LEFT
+            sizer["flag"] |= wx.BOTTOM
+            sizer["flag"] |= wx.RIGHT
             self._create_widget(loopvar['widget'], props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
