@@ -210,6 +210,15 @@ def genid():
 def makeTuple(*args):
     return tuple(args)
 
+def wx_font(font):
+    font_info = wx.FontInfo(font.get("size", 10))
+    if "family" in font:
+        families = {
+            "Monospace": wx.FONTFAMILY_TELETYPE,
+        }
+        font_info.Family(families[font["family"]])
+    return wx.Font(font_info)
+
 def start_app(frame_cls, props):
     @profile_sub("render")
     def update(props):
@@ -991,155 +1000,6 @@ class ExpandCollapse(wx.Panel, WxWidgetMixin):
             ),
             flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
         )
-
-class Text(wx.Panel, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.Panel.__init__(self, wx_parent)
-        WxWidgetMixin.__init__(self, *args)
-        self.Bind(wx.EVT_PAINT, self._on_paint)
-
-    def _setup_gui(self):
-        WxWidgetMixin._setup_gui(self)
-        self._register_builtin("foreground", self.SetForegroundColour)
-
-    def _update_gui(self, parent_updated):
-        WxWidgetMixin._update_gui(self, parent_updated)
-        did_measure = False
-        if (self.prop_changed("font") or
-            self.prop_changed("fragments")):
-            self._measure(
-                self.prop_with_default(["font"], {}),
-                self.prop_with_default(["fragments"], [])
-            )
-            did_measure = True
-        if (did_measure or
-            self.prop_changed("max_width") or
-            self.prop_changed("break_at_word")):
-            self._reflow(
-                self.prop_with_default(["max_width"], None),
-                self.prop_with_default(["break_at_word"], True)
-            )
-
-    @profile_sub("text measure")
-    def _measure(self, font, fragments):
-        dc = wx.MemoryDC()
-        self._wx_font = self.wx_font(font)
-        dc.SetFont(self._wx_font)
-        dc.SelectObject(wx.Bitmap(1, 1))
-        self._measured_fragments = []
-        for fragment in fragments:
-            for line in fragment["text"].splitlines(True):
-                text = line.rstrip("\r\n")
-                widths = dc.GetPartialTextExtents(text)
-                w, h = dc.GetTextExtent(text)
-                self._measured_fragments.append((text, widths, h))
-                if text != line:
-                    w, h = dc.GetTextExtent(line[len(text):])
-                    self._measured_fragments.append((None, [], h//2))
-        if self._measured_fragments and self._measured_fragments[-1][0] is None:
-            self._measured_fragments.pop(-1)
-
-    @profile_sub("text reflow")
-    def _reflow(self, max_width, break_at_word):
-        self._draw_fragments = []
-        if max_width is None:
-            self._reflow_no_width_limit()
-        else:
-            self._reflow_width_limit(max_width, break_at_word)
-
-    def _reflow_no_width_limit(self):
-        x = 0
-        y = 0
-        max_h = 0
-        for text, widths, height in self._measured_fragments:
-            if text is None:
-                x = 0
-                y += max_h
-                max_h = height
-            else:
-                self._draw_fragments.append((text, x, y))
-                x += widths[-1]
-                max_h = max(max_h, height)
-        self.SetMinSize((x, max_h))
-
-    def _reflow_width_limit(self, max_width, break_at_word):
-        x = 0
-        y = 0
-        max_h = 0
-        for text, widths, height in self._measured_fragments:
-            widths_offset = 0
-            while text:
-                num_that_fit = self._find_num_characters_that_fit(
-                    widths,
-                    max_width-x+widths_offset
-                )
-                if num_that_fit < len(text):
-                    num_to_include = self._find_num_characters_to_include(
-                        text,
-                        num_that_fit,
-                        break_at_word
-                    )
-                    break_line = True
-                else:
-                    num_to_include = num_that_fit
-                    break_line = False
-                if num_to_include == 0:
-                    if x > 0:
-                        break_line = True
-                    else:
-                        num_to_include = 1
-                self._draw_fragments.append((text[:num_to_include], x, y))
-                x += widths[num_to_include-1]
-                widths_offset = widths[num_to_include-1]
-                max_h = max(max_h, height)
-                text = text[num_to_include:]
-                widths = widths[num_to_include:]
-                if break_line:
-                    x = 0
-                    y += max_h
-                    max_h = 0
-            if text is None:
-                x = 0
-                y += height
-                max_h = 0
-        self.SetMinSize((max_width, y+max_h))
-
-    def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
-        if break_at_word:
-            index = num_that_fit - 1
-            while index >= 0 and text[index] == " ":
-                index -= 1
-            while index >= 0:
-                if text[index] == " ":
-                    return index + 1
-                index -= 1
-        return num_that_fit
-
-    def _find_num_characters_that_fit(self, widths, with_limit):
-        index = len(widths) - 1
-        while index >= 0:
-            if widths[index] > with_limit:
-                index -= 1
-            else:
-                return index + 1
-        return 0
-
-    @profile_sub("text paint")
-    def _on_paint(self, wx_event):
-        dc = wx.PaintDC(self)
-        dc.SetFont(self._wx_font)
-        for text, x, y in self._draw_fragments:
-            dc.DrawText(text, x, y)
-
-    def wx_font(self, font):
-        self._font_info = wx.FontInfo(font.get("size", 10))
-        if "family" in font:
-            families = {
-                "Monospace": wx.FONTFAMILY_TELETYPE,
-            }
-            self._font_info.Family(families[font["family"]])
-        return wx.Font(self._font_info)
 
 class MainFrameProps(Props):
 
@@ -2362,6 +2222,146 @@ class PropUpdate(object):
             else:
                 args.append(obj.get(path))
         return self._fn(*args)
+
+class Text(wx.Panel, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Panel.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def _setup_gui(self):
+        WxWidgetMixin._setup_gui(self)
+        self._register_builtin("foreground", self.SetForegroundColour)
+
+    def _update_gui(self, parent_updated):
+        WxWidgetMixin._update_gui(self, parent_updated)
+        did_measure = False
+        if (self.prop_changed("font") or
+            self.prop_changed("fragments")):
+            self._measure(
+                self.prop_with_default(["font"], {}),
+                self.prop_with_default(["fragments"], [])
+            )
+            did_measure = True
+        if (did_measure or
+            self.prop_changed("max_width") or
+            self.prop_changed("break_at_word")):
+            self._reflow(
+                self.prop_with_default(["max_width"], None),
+                self.prop_with_default(["break_at_word"], True)
+            )
+
+    @profile_sub("text measure")
+    def _measure(self, font, fragments):
+        dc = wx.MemoryDC()
+        self._wx_font = wx_font(font)
+        dc.SetFont(self._wx_font)
+        dc.SelectObject(wx.Bitmap(1, 1))
+        self._measured_fragments = []
+        for fragment in fragments:
+            for line in fragment["text"].splitlines(True):
+                text = line.rstrip("\r\n")
+                widths = dc.GetPartialTextExtents(text)
+                w, h = dc.GetTextExtent(text)
+                self._measured_fragments.append((text, widths, h))
+                if text != line:
+                    w, h = dc.GetTextExtent(line[len(text):])
+                    self._measured_fragments.append((None, [], h//2))
+        if self._measured_fragments and self._measured_fragments[-1][0] is None:
+            self._measured_fragments.pop(-1)
+
+    @profile_sub("text reflow")
+    def _reflow(self, max_width, break_at_word):
+        self._draw_fragments = []
+        if max_width is None:
+            self._reflow_no_width_limit()
+        else:
+            self._reflow_width_limit(max_width, break_at_word)
+
+    def _reflow_no_width_limit(self):
+        x = 0
+        y = 0
+        max_h = 0
+        for text, widths, height in self._measured_fragments:
+            if text is None:
+                x = 0
+                y += max_h
+                max_h = height
+            else:
+                self._draw_fragments.append((text, x, y))
+                x += widths[-1]
+                max_h = max(max_h, height)
+        self.SetMinSize((x, max_h))
+
+    def _reflow_width_limit(self, max_width, break_at_word):
+        x = 0
+        y = 0
+        max_h = 0
+        for text, widths, height in self._measured_fragments:
+            widths_offset = 0
+            while text:
+                num_that_fit = self._find_num_characters_that_fit(
+                    widths,
+                    max_width-x+widths_offset
+                )
+                if num_that_fit < len(text):
+                    num_to_include = self._find_num_characters_to_include(
+                        text,
+                        num_that_fit,
+                        break_at_word
+                    )
+                    break_line = True
+                else:
+                    num_to_include = num_that_fit
+                    break_line = False
+                if num_to_include == 0:
+                    if x > 0:
+                        break_line = True
+                    else:
+                        num_to_include = 1
+                self._draw_fragments.append((text[:num_to_include], x, y))
+                x += widths[num_to_include-1]
+                widths_offset = widths[num_to_include-1]
+                max_h = max(max_h, height)
+                text = text[num_to_include:]
+                widths = widths[num_to_include:]
+                if break_line:
+                    x = 0
+                    y += max_h
+                    max_h = 0
+            if text is None:
+                x = 0
+                y += height
+                max_h = 0
+        self.SetMinSize((max_width, y+max_h))
+
+    def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
+        if break_at_word:
+            index = num_that_fit - 1
+            while index >= 0 and text[index] == " ":
+                index -= 1
+            while index >= 0:
+                if text[index] == " ":
+                    return index + 1
+                index -= 1
+        return num_that_fit
+
+    def _find_num_characters_that_fit(self, widths, with_limit):
+        index = len(widths) - 1
+        while index >= 0:
+            if widths[index] > with_limit:
+                index -= 1
+            else:
+                return index + 1
+        return 0
+
+    @profile_sub("text paint")
+    def _on_paint(self, wx_event):
+        dc = wx.PaintDC(self)
+        dc.SetFont(self._wx_font)
+        for text, x, y in self._draw_fragments:
+            dc.DrawText(text, x, y)
 
 if __name__ == "__main__":
     main()
