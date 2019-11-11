@@ -2258,6 +2258,7 @@ class Text(wx.Panel, WxWidgetMixin):
         self._wx_font = wx_font(font)
         dc.SetFont(self._wx_font)
         dc.SelectObject(wx.Bitmap(1, 1))
+        _, blank_line_height = dc.GetTextExtent("I")
         self._measured_fragments = []
         for fragment in fragments:
             for line in fragment["text"].splitlines(True):
@@ -2266,10 +2267,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 w, h = dc.GetTextExtent(text)
                 self._measured_fragments.append((text, widths, h))
                 if text != line:
-                    w, h = dc.GetTextExtent(line[len(text):])
-                    self._measured_fragments.append((None, [], h//2))
-        if self._measured_fragments and self._measured_fragments[-1][0] is None:
-            self._measured_fragments.pop(-1)
+                    self._measured_fragments.append((None, [], blank_line_height))
 
     @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word):
@@ -2282,17 +2280,19 @@ class Text(wx.Panel, WxWidgetMixin):
     def _reflow_no_width_limit(self):
         x = 0
         y = 0
+        max_x = 0
         row_max_h = 0
         for text, widths, height in self._measured_fragments:
             if text is None:
                 x = 0
-                y += row_max_h
-                row_max_h = height
+                y += row_max_h if row_max_h > 0 else height
+                row_max_h = 0
             elif text:
                 self._draw_fragments.append((text, x, y))
                 x += widths[-1]
+                max_x = max(max_x, x)
                 row_max_h = max(row_max_h, height)
-        self.SetMinSize((x, y+row_max_h))
+        self.SetMinSize((max_x, y+row_max_h))
 
     def _reflow_width_limit(self, max_width, break_at_word):
         x = 0
@@ -2332,7 +2332,7 @@ class Text(wx.Panel, WxWidgetMixin):
                     row_max_h = 0
             if text is None:
                 x = 0
-                y += height
+                y += row_max_h if row_max_h > 0 else height
                 row_max_h = 0
         self.SetMinSize((max_width, y+row_max_h))
 
