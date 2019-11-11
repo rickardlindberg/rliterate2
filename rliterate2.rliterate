@@ -2778,7 +2778,7 @@
 ],
 "fragments":[
 {
-"text":"class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.VERTICAL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"text":"class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.VSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
 "type":"code"
 }
 ],
@@ -2794,7 +2794,7 @@
 ],
 "fragments":[
 {
-"text":"class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.HORIZONTAL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"text":"class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.HSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
 "type":"code"
 }
 ],

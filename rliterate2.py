@@ -902,13 +902,13 @@ class CompactScrolledWindow(wx.ScrolledWindow):
 class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
-        CompactScrolledWindow.__init__(self, wx_parent, wx.VERTICAL)
+        CompactScrolledWindow.__init__(self, wx_parent, wx.VSCROLL)
         WxContainerWidgetMixin.__init__(self, *args)
 
 class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
-        CompactScrolledWindow.__init__(self, wx_parent, wx.HORIZONTAL)
+        CompactScrolledWindow.__init__(self, wx_parent, wx.HSCROLL)
         WxContainerWidgetMixin.__init__(self, *args)
 
 class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
