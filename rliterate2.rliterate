@@ -1083,11 +1083,53 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraph %layout_rows {\n    Panel(\n        background = #page_extra.code.border_color\n        min_size   = makeTuple(-1 2)\n        %align[EXPAND]\n    )\n    Text(\n        fragments     = #path_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n    Panel(\n        background = #page_extra.code.border_color\n        min_size   = makeTuple(-1 2)\n        %align[EXPAND]\n    )\n    Text(\n        fragments     = #body_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n    Panel(\n        background = #page_extra.code.border_color\n        min_size   = makeTuple(-1 2)\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        background     = #page_extra.code.header_background\n        page_extra     = #page_extra\n        path_fragments = #path_fragments\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        background     = #page_extra.code.body_background\n        page_extra     = #page_extra\n        body_fragments = #body_fragments\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
 "id":"5ca19e9549664244b75c2c7a384b1f91",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        fragments     = #path_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"f05f963c674f440792465f60f2fd065f",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        fragments     = #body_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"4f52524fee7a4f54b3a0b18bc7ad68ca",
 "language":"rlgui",
 "post_process":[
 "python",
@@ -1559,7 +1601,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 16,\n            },\n            \"code_font\": {\n                \"size\": 10,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 2,\n                \"color\": \"#aaaaaf\",\n            },\n            \"background\": \"#ffffff\",\n            \"margin\": 10,\n            \"code\": {\n                \"margin\": 2,\n                \"border_color\": \"#aaaaaf\",\n            }\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 18,\n            },\n            \"code_font\": {\n                \"size\": 12,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 3,\n                \"color\": \"#b0ab9e\",\n            },\n            \"background\": \"#fdf6e3\",\n            \"margin\": 14,\n            \"code\": {\n                \"margin\": 3,\n                \"border_color\": \"#dcd6c6\",\n            }\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
+"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 16,\n            },\n            \"code_font\": {\n                \"size\": 10,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 2,\n                \"color\": \"#aaaaaf\",\n            },\n            \"background\": \"#ffffff\",\n            \"margin\": 10,\n            \"code\": {\n                \"margin\": 5,\n                \"header_background\": \"#eeeeee\",\n                \"body_background\": \"#f8f8f8\",\n            }\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 18,\n            },\n            \"code_font\": {\n                \"size\": 12,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 3,\n                \"color\": \"#b0ab9e\",\n            },\n            \"background\": \"#fdf6e3\",\n            \"margin\": 14,\n            \"code\": {\n                \"margin\": 7,\n                \"header_background\": \"#eae4d2\",\n                \"body_background\": \"#f3ecdb\",\n            }\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
 "type":"code"
 }
 ],
