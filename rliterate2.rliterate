@@ -3125,7 +3125,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"text paint\")\ndef _on_paint(self, wx_event):\n    dc = wx.PaintDC(self)\n    dc.SetFont(self._wx_font)\n    for text, x, y, color in self._draw_fragments:\n        dc.SetTextForeground(color or self.GetForegroundColour())\n        dc.DrawText(text, x, y)\n",
+"text":"def _on_paint(self, wx_event):\n    dc = wx.PaintDC(self)\n    dc.SetFont(self._wx_font)\n    for text, x, y, color in self._draw_fragments:\n        dc.SetTextForeground(color or self.GetForegroundColour())\n        dc.DrawText(text, x, y)\n",
 "type":"code"
 }
 ],

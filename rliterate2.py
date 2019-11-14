@@ -2530,7 +2530,6 @@ class Text(wx.Panel, WxWidgetMixin):
                 return index + 1
         return 0
 
-    @profile_sub("text paint")
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
         dc.SetFont(self._wx_font)
