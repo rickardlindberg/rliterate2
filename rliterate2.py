@@ -14,10 +14,46 @@ import textwrap
 import time
 import uuid
 
+from pygments.token import Token as TokenType
+import pygments.lexers
+import pygments.token
 import wx
 
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
+
+def profile_sub(text):
+    def wrap(fn):
+        def fn_with_timing(*args, **kwargs):
+            t1 = time.perf_counter()
+            value = fn(*args, **kwargs)
+            t2 = time.perf_counter()
+            PROFILING_TIMES[text].append(t2-t1)
+            return value
+        if PROFILING_ENABLED:
+            return fn_with_timing
+        else:
+            return fn
+    return wrap
+
+def profile(text):
+    def wrap(fn):
+        def fn_with_cprofile(*args, **kwargs):
+            pr = cProfile.Profile()
+            pr.enable()
+            value = fn(*args, **kwargs)
+            pr.disable()
+            s = io.StringIO()
+            ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
+            ps.print_stats(10)
+            profile_print_summary(text, s.getvalue())
+            PROFILING_TIMES.clear()
+            return value
+        if PROFILING_ENABLED:
+            return fn_with_cprofile
+        else:
+            return fn
+    return wrap
 
 def usage(script):
     sys.exit(f"usage: {script} <path>")
@@ -145,6 +181,7 @@ def build_paragraphs(paragraphs):
         for paragraph in paragraphs
     ]
 
+@profile_sub("build_code_paragraph")
 def build_code_paragraph(paragraph):
     return {
         "widget": CodeParagraph,
@@ -153,9 +190,25 @@ def build_code_paragraph(paragraph):
             paragraph["chunkpath"]
         ),
         "body_fragments": code_body_fragments(
-            paragraph["fragments"]
+            paragraph["fragments"],
+            code_pygments_lexer(paragraph)
         )
     }
+
+def code_pygments_lexer(paragraph):
+    try:
+        if paragraph.get("raw_language", ""):
+            return pygments.lexers.get_lexer_by_name(
+                paragraph.get("raw_language", ""),
+                stripnl=False
+            )
+        else:
+            return pygments.lexers.get_lexer_for_filename(
+                paragraph["filepath"][-1] if paragraph["filepath"] else "",
+                stripnl=False
+            )
+    except:
+        return pygments.lexers.TextLexer(stripnl=False)
 
 def code_path_fragments(filepath, chunkpath):
     fragments = []
@@ -171,12 +224,67 @@ def code_path_fragments(filepath, chunkpath):
         fragments.append({"text": x})
     return fragments
 
-def code_body_fragments(fragments):
-    text = ""
+def code_body_fragments(fragments, pygments_lexer):
+    code_chunk = CodeChunk()
     for fragment in fragments:
         if fragment["type"] == "code":
-            text += fragment["text"]
-    return [{"text": text}]
+            code_chunk.add(fragment["text"])
+        elif fragment["type"] == "chunk":
+            code_chunk.add(
+                "{}<<{}>>\n".format(
+                    fragment["prefix"],
+                    "/".join(fragment["path"])
+                ),
+                {"token_type": TokenType.Comment.Preproc}
+            )
+
+    code_chunk.colorize(pygments_lexer)
+    return code_chunk._parts
+
+@profile_sub("apply_colorscheme")
+def apply_colorscheme(fragments, theme_style):
+    base00  = "#657b83"
+    base1   = "#93a1a1"
+    yellow  = "#b58900"
+    orange  = "#cb4b16"
+    red     = "#dc322f"
+    magenta = "#d33682"
+    violet  = "#6c71c4"
+    blue    = "#268bd2"
+    cyan    = "#2aa198"
+    green   = "#859900"
+    styles = {
+        TokenType:                    base00,
+        TokenType.Keyword:            green,
+        TokenType.Keyword.Constant:   cyan,
+        TokenType.Keyword.Declaration:blue,
+        TokenType.Keyword.Namespace:  orange,
+        TokenType.Name.Builtin:       red,
+        TokenType.Name.Builtin.Pseudo:blue,
+        TokenType.Name.Class:         blue,
+        TokenType.Name.Decorator:     blue,
+        TokenType.Name.Entity:        violet,
+        TokenType.Name.Exception:     yellow,
+        TokenType.Name.Function:      blue,
+        TokenType.String:             cyan,
+        TokenType.Number:             cyan,
+        TokenType.Operator.Word:      green,
+        TokenType.Comment:            base1,
+        TokenType.Comment.Preproc:    magenta,
+    }
+    def color_for_token(token_type):
+        while token_type not in styles:
+            token_type = token_type.parent
+        return styles[token_type]
+    return [
+        dict(fragment, color=color_for_token(fragment["token_type"]))
+        for fragment in fragments
+    ]
+
+
+
+
+
 
 def build_unknown_paragraph(paragraph):
     return {
@@ -239,39 +347,6 @@ def start_app(frame_cls, props):
 def load_json_from_file(path):
     with open(path) as f:
         return json.load(f)
-
-def profile_sub(text):
-    def wrap(fn):
-        def fn_with_timing(*args, **kwargs):
-            t1 = time.perf_counter()
-            value = fn(*args, **kwargs)
-            t2 = time.perf_counter()
-            PROFILING_TIMES[text].append(t2-t1)
-            return value
-        if PROFILING_ENABLED:
-            return fn_with_timing
-        else:
-            return fn
-    return wrap
-
-def profile(text):
-    def wrap(fn):
-        def fn_with_cprofile(*args, **kwargs):
-            pr = cProfile.Profile()
-            pr.enable()
-            value = fn(*args, **kwargs)
-            pr.disable()
-            s = io.StringIO()
-            ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
-            ps.print_stats(10)
-            profile_print_summary(text, s.getvalue())
-            PROFILING_TIMES.clear()
-            return value
-        if PROFILING_ENABLED:
-            return fn_with_cprofile
-        else:
-            return fn
-    return wrap
 
 def profile_print_summary(text, cprofile_out):
     text_width = 0
@@ -1862,6 +1937,53 @@ class PageBody(Panel):
             for loopvar in self.prop(['page', 'paragraphs']):
                 loop_fn(loopvar)
 
+class CodeChunk(object):
+
+    def __init__(self):
+        self._parts = []
+
+    def add(self, text, extra={}):
+        part = {"text": text}
+        part.update(extra)
+        self._parts.append(part)
+
+    def colorize(self, pygments_lexer):
+        self._apply_token_types(
+            pygments_lexer.get_tokens(
+                self._get_uncolorized_text()
+            )
+        )
+
+    def _get_uncolorized_text(self):
+        return "".join(
+            part["text"]
+            for part in self._parts
+            if "token_type" not in part
+        )
+
+    def _apply_token_types(self, pygments_tokens):
+        part_index = 0
+        for token_type, text in pygments_tokens:
+            while "token_type" in self._parts[part_index]:
+                part_index += 1
+            while text:
+                if len(self._parts[part_index]["text"]) > len(text):
+                    part = self._parts[part_index]
+                    pre = dict(part)
+                    pre["text"] = pre["text"][:len(text)]
+                    pre["token_type"] = token_type
+                    self._parts[part_index] = pre
+                    part_index += 1
+                    post = dict(part)
+                    post["text"] = post["text"][len(text):]
+                    self._parts.insert(part_index, post)
+                    text = ""
+                else:
+                    part = self._parts[part_index]
+                    part["token_type"] = token_type
+                    part_index += 1
+                    text = text[len(part["text"]):]
+
 class CodeParagraph(Panel):
 
     def _get_local_props(self):
@@ -1888,7 +2010,7 @@ class CodeParagraph(Panel):
         handlers = {}
         props['background'] = self.prop(['page_extra', 'code', 'body_background'])
         props['page_extra'] = self.prop(['page_extra'])
-        props['body_fragments'] = self.prop(['body_fragments'])
+        props['body_fragments'] = apply_colorscheme(self.prop(['body_fragments']), self.prop(['page_extra', 'token_style']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(CodeParagraphBody, props, sizer, handlers, name)
 
@@ -2108,7 +2230,9 @@ class Theme(Immutable):
                 "margin": 5,
                 "header_background": "#eeeeee",
                 "body_background": "#f8f8f8",
-            }
+            },
+            "token_style": {
+            },
         },
         "dragdrop_color": "#ff6400",
         "dragdrop_invalid_color": "#cccccc",
@@ -2157,7 +2281,9 @@ class Theme(Immutable):
                 "margin": 7,
                 "header_background": "#eae4d2",
                 "body_background": "#f3ecdb",
-            }
+            },
+            "token_style": {
+            },
         },
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
@@ -2308,9 +2434,14 @@ class Text(wx.Panel, WxWidgetMixin):
                 text = line.rstrip("\r\n")
                 widths = dc.GetPartialTextExtents(text)
                 w, h = dc.GetTextExtent(text)
-                self._measured_fragments.append((text, widths, h))
+                self._measured_fragments.append((
+                    text,
+                    widths,
+                    h,
+                    fragment.get("color", None)
+                ))
                 if text != line:
-                    self._measured_fragments.append((None, [], blank_line_height))
+                    self._measured_fragments.append((None, [], blank_line_height, None))
 
     @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word):
@@ -2325,13 +2456,13 @@ class Text(wx.Panel, WxWidgetMixin):
         y = 0
         max_x = 0
         row_max_h = 0
-        for text, widths, height in self._measured_fragments:
+        for text, widths, height, color in self._measured_fragments:
             if text is None:
                 x = 0
                 y += row_max_h if row_max_h > 0 else height
                 row_max_h = 0
             elif text:
-                self._draw_fragments.append((text, x, y))
+                self._draw_fragments.append((text, x, y, color))
                 x += widths[-1]
                 max_x = max(max_x, x)
                 row_max_h = max(row_max_h, height)
@@ -2341,7 +2472,7 @@ class Text(wx.Panel, WxWidgetMixin):
         x = 0
         y = 0
         row_max_h = 0
-        for text, widths, height in self._measured_fragments:
+        for text, widths, height, color in self._measured_fragments:
             widths_offset = 0
             while text:
                 num_that_fit = self._find_num_characters_that_fit(
@@ -2363,7 +2494,7 @@ class Text(wx.Panel, WxWidgetMixin):
                         break_line = True
                     else:
                         num_to_include = 1
-                self._draw_fragments.append((text[:num_to_include], x, y))
+                self._draw_fragments.append((text[:num_to_include], x, y, color))
                 x += widths[num_to_include-1]
                 widths_offset = widths[num_to_include-1]
                 row_max_h = max(row_max_h, height)
@@ -2403,7 +2534,8 @@ class Text(wx.Panel, WxWidgetMixin):
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
         dc.SetFont(self._wx_font)
-        for text, x, y in self._draw_fragments:
+        for text, x, y, color in self._draw_fragments:
+            dc.SetTextForeground(color or self.GetForegroundColour())
             dc.DrawText(text, x, y)
 
 if __name__ == "__main__":
