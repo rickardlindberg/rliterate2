@@ -2071,7 +2071,7 @@ class UnknownParagraph(Panel):
         handlers = {}
         props['fragments'] = self.prop(['fragments'])
         props['max_width'] = self.prop(['body_width'])
-        props['font'] = self.prop(['code_font'])
+        props['font'] = self.prop(['font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)

@@ -1242,7 +1242,7 @@
 ],
 "fragments":[
 {
-"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        fragments     = #fragments\n        max_width     = #body_width\n        font          = #code_font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        fragments     = #fragments\n        max_width     = #body_width\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
