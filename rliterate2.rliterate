@@ -857,7 +857,7 @@
 ],
 "fragments":[
 {
-"text":"def build_column(self, document, column):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                self.build_page(document.get_page(page_id))\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def build_column(self, document, column, page_body_width, page_theme):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                self.build_page(\n                    document.get_page(page_id),\n                    page_body_width,\n                    page_theme\n                )\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
 "type":"code"
 }
 ],
@@ -875,7 +875,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page       = $\n            page_extra = #page_extra\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page = $\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -903,7 +903,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow(\n        page       = #page\n        page_extra = #page_extra\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page_extra.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow(\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -924,7 +924,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        page       = #page\n        page_extra = #page_extra\n        background = #page_extra.background\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page_extra.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -995,7 +995,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(self, page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": self.build_paragraphs(page[\"paragraphs\"]),\n    }\n",
+"text":"def build_page(self, page, page_body_width, page_theme):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_body_width,\n            page_theme\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"title_font\": page_theme[\"title_font\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1013,7 +1013,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #page.title_fragments\n        max_width = #page_extra.body_width\n        font      = #page_extra.title_font\n        %margin[#page_extra.margin,ALL]\n    )\n    loop (#page.paragraphs) {\n        $widget(\n            $\n            page_extra = #page_extra\n            %margin[#page_extra.margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1044,7 +1044,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph):\n    return {\n        \"widget\": CodeParagraph,\n        \"path_fragments\": code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n        \"body_fragments\": code_body_fragments(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(paragraph)\n        )\n    }\n",
+"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph, page_body_width, page_theme):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": self.build_code_paragraph_header(\n            paragraph,\n            page_body_width,\n            page_theme\n        ),\n        \"body\": self.build_code_paragraph_body(\n            paragraph,\n            page_body_width,\n            page_theme\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1055,32 +1055,55 @@
 },
 {
 "chunkpath":[
-"functions"
+"classes"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def code_pygments_lexer(paragraph):\n    try:\n        if paragraph.get(\"raw_language\", \"\"):\n            return pygments.lexers.get_lexer_by_name(\n                paragraph.get(\"raw_language\", \"\"),\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
+"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        #header\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        #body\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
-"id":"0ca12bad04b74488a5e4190e255d75ac",
+"id":"5ca19e9549664244b75c2c7a384b1f91",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_code_paragraph_header(self, paragraph, page_body_width, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"path_fragments\": self.build_code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n        \"body_width\": page_body_width,\n    }\n",
+"type":"code"
+}
+],
+"id":"596f98c6015f431eac968255559b02fa",
 "language":"",
 "post_process":[],
 "type":"code"
 },
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def code_path_fragments(filepath, chunkpath):\n    fragments = []\n    for index, x in enumerate(filepath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    if filepath and chunkpath:\n        fragments.append({\"text\": \" \"})\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    return fragments\n",
+"text":"@memo\ndef build_code_path_fragments(self, filepath, chunkpath):\n    fragments = []\n    for index, x in enumerate(filepath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    if filepath and chunkpath:\n        fragments.append({\"text\": \" \"})\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    return fragments\n",
 "type":"code"
 }
 ],
@@ -1091,14 +1114,74 @@
 },
 {
 "chunkpath":[
-"functions"
+"classes"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def code_body_fragments(fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n\n    code_chunk.colorize(pygments_lexer)\n    return code_chunk._parts\n",
+"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        fragments     = #path_fragments\n        max_width     = sub(#body_width mul(2 #margin))\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"f05f963c674f440792465f60f2fd065f",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_code_paragraph_body(self, paragraph, page_body_width, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"body_fragments\": self.apply_colorscheme(\n            self.build_code_body_fragments(\n                paragraph[\"fragments\"],\n                self.code_pygments_lexer(\n                    paragraph.get(\"raw_langauge\", \"\"),\n                    paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                )\n            ),\n            page_theme[\"token_style\"]\n        ),\n        \"body_width\": page_body_width,\n    }\n",
+"type":"code"
+}
+],
+"id":"3487e5683a9f4a3bbe70c16313722dc8",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@memo\ndef code_pygments_lexer(self, raw_language, filename):\n    try:\n        if raw_language:\n            return pygments.lexers.get_lexer_by_name(\n                raw_language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
+"type":"code"
+}
+],
+"id":"0ca12bad04b74488a5e4190e255d75ac",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@memo\ndef build_code_body_fragments(self, fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    code_chunk.colorize(pygments_lexer)\n    return code_chunk._parts\n",
 "type":"code"
 }
 ],
@@ -1127,14 +1210,15 @@
 },
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"apply_colorscheme\")\ndef apply_colorscheme(fragments, theme_style):\n    base00  = \"#657b83\"\n    base1   = \"#93a1a1\"\n    yellow  = \"#b58900\"\n    orange  = \"#cb4b16\"\n    red     = \"#dc322f\"\n    magenta = \"#d33682\"\n    violet  = \"#6c71c4\"\n    blue    = \"#268bd2\"\n    cyan    = \"#2aa198\"\n    green   = \"#859900\"\n    styles = {\n        TokenType:                    base00,\n        TokenType.Keyword:            green,\n        TokenType.Keyword.Constant:   cyan,\n        TokenType.Keyword.Declaration:blue,\n        TokenType.Keyword.Namespace:  orange,\n        TokenType.Name.Builtin:       red,\n        TokenType.Name.Builtin.Pseudo:blue,\n        TokenType.Name.Class:         blue,\n        TokenType.Name.Decorator:     blue,\n        TokenType.Name.Entity:        violet,\n        TokenType.Name.Exception:     yellow,\n        TokenType.Name.Function:      blue,\n        TokenType.String:             cyan,\n        TokenType.Number:             cyan,\n        TokenType.Operator.Word:      green,\n        TokenType.Comment:            base1,\n        TokenType.Comment.Preproc:    magenta,\n    }\n    def color_for_token(token_type):\n        while token_type not in styles:\n            token_type = token_type.parent\n        return styles[token_type]\n    return [\n        dict(fragment, color=color_for_token(fragment[\"token_type\"]))\n        for fragment in fragments\n    ]\n\n\n\n\n\n",
+"text":"@profile_sub(\"apply_colorscheme\")\n@memo\ndef apply_colorscheme(self, fragments, theme_style):\n    base00  = \"#657b83\"\n    base1   = \"#93a1a1\"\n    yellow  = \"#b58900\"\n    orange  = \"#cb4b16\"\n    red     = \"#dc322f\"\n    magenta = \"#d33682\"\n    violet  = \"#6c71c4\"\n    blue    = \"#268bd2\"\n    cyan    = \"#2aa198\"\n    green   = \"#859900\"\n    styles = {\n        TokenType:                    base00,\n        TokenType.Keyword:            green,\n        TokenType.Keyword.Constant:   cyan,\n        TokenType.Keyword.Declaration:blue,\n        TokenType.Keyword.Namespace:  orange,\n        TokenType.Name.Builtin:       red,\n        TokenType.Name.Builtin.Pseudo:blue,\n        TokenType.Name.Class:         blue,\n        TokenType.Name.Decorator:     blue,\n        TokenType.Name.Entity:        violet,\n        TokenType.Name.Exception:     yellow,\n        TokenType.Name.Function:      blue,\n        TokenType.String:             cyan,\n        TokenType.Number:             cyan,\n        TokenType.Operator.Word:      green,\n        TokenType.Comment:            base1,\n        TokenType.Comment.Preproc:    magenta,\n    }\n    def color_for_token(token_type):\n        while token_type not in styles:\n            token_type = token_type.parent\n        return styles[token_type]\n    return [\n        dict(fragment, color=color_for_token(fragment[\"token_type\"]))\n        for fragment in fragments\n    ]\n\n\n\n\n\n",
 "type":"code"
 }
 ],
@@ -1152,49 +1236,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        background     = #page_extra.code.header_background\n        page_extra     = #page_extra\n        path_fragments = #path_fragments\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        background     = #page_extra.code.body_background\n        page_extra     = #page_extra\n        body_fragments = apply_colorscheme(#body_fragments #page_extra.token_style)\n        %align[EXPAND]\n    )\n}\n",
-"type":"code"
-}
-],
-"id":"5ca19e9549664244b75c2c7a384b1f91",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        fragments     = #path_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n}\n",
-"type":"code"
-}
-],
-"id":"f05f963c674f440792465f60f2fd065f",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        fragments     = #body_fragments\n        max_width     = sub(#page_extra.body_width mul(2 #page_extra.code.margin))\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#page_extra.code.margin,ALL]\n    )\n}\n",
+"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        fragments     = #body_fragments\n        max_width     = sub(#body_width mul(2 #margin))\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1223,7 +1265,7 @@
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(self, paragraph):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n    }\n",
+"text":"def build_unknown_paragraph(self, paragraph, page_body_width, page_theme):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n        \"font\": page_theme[\"code_font\"],\n        \"body_width\": page_body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1241,7 +1283,7 @@
 ],
 "fragments":[
 {
-"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        fragments     = #fragments\n        max_width     = #page_extra.body_width\n        font          = #page_extra.code_font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        fragments     = #fragments\n        max_width     = #body_width\n        font          = #code_font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1269,7 +1311,7 @@
 ],
 "fragments":[
 {
-"text":"@memo\ndef build_paragraphs(self, paragraphs):\n    BUILDERS = {\n        \"code\": self.build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            self.build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
+"text":"@memo\ndef build_paragraphs(self, paragraphs, page_body_width, page_theme):\n    BUILDERS = {\n        \"code\": self.build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            self.build_unknown_paragraph\n        )(paragraph, page_body_width, page_theme)\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
@@ -1293,7 +1335,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                self.build_columns\n            ),\n            \"page_extra\": PropUpdate(\n                theme, [\"page\"],\n                session, [\"workspace\", \"page_body_width\"],\n                lambda page, width: dict(\n                    page,\n                    body_width=width\n                )\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n            },\n        })\n\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\"],\n                self.build_columns\n            ),\n            \"page_body_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"]\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n            },\n        })\n\n",
 "type":"code"
 },
 {
@@ -1318,7 +1360,7 @@
 ],
 "fragments":[
 {
-"text":"@memo_reset\ndef build_columns(self, document, columns, page_body_width):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            self.build_column(document, column)\n        )\n    return columns_prop\n",
+"text":"@memo_reset\ndef build_columns(self, document, columns, page_body_width, page_theme):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            self.build_column(document, column, page_body_width, page_theme)\n        )\n    return columns_prop\n",
 "type":"code"
 }
 ],
@@ -1336,7 +1378,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            page_extra       = #page_extra\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -1366,7 +1408,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_divider_drag(self, event):\n    if event.initial:\n        self._initial_width = self.prop([\"page_extra\", \"body_width\"])\n    else:\n        self.prop([\"actions\", \"set_page_body_width\"])(\n            max(50, self._initial_width + event.dx)\n        )\n",
+"text":"def _on_divider_drag(self, event):\n    if event.initial:\n        self._initial_width = self.prop([\"page_body_width\"])\n    else:\n        self.prop([\"actions\", \"set_page_body_width\"])(\n            max(50, self._initial_width + event.dx)\n        )\n",
 "type":"code"
 }
 ],

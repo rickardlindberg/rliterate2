@@ -162,97 +162,6 @@ def generate_rows_and_drop_points(
         "drop_points": drop_points,
     }
 
-def code_pygments_lexer(paragraph):
-    try:
-        if paragraph.get("raw_language", ""):
-            return pygments.lexers.get_lexer_by_name(
-                paragraph.get("raw_language", ""),
-                stripnl=False
-            )
-        else:
-            return pygments.lexers.get_lexer_for_filename(
-                paragraph["filepath"][-1] if paragraph["filepath"] else "",
-                stripnl=False
-            )
-    except:
-        return pygments.lexers.TextLexer(stripnl=False)
-
-def code_path_fragments(filepath, chunkpath):
-    fragments = []
-    for index, x in enumerate(filepath):
-        if index > 0:
-            fragments.append({"text": "/"})
-        fragments.append({"text": x})
-    if filepath and chunkpath:
-        fragments.append({"text": " "})
-    for index, x in enumerate(chunkpath):
-        if index > 0:
-            fragments.append({"text": "/"})
-        fragments.append({"text": x})
-    return fragments
-
-def code_body_fragments(fragments, pygments_lexer):
-    code_chunk = CodeChunk()
-    for fragment in fragments:
-        if fragment["type"] == "code":
-            code_chunk.add(fragment["text"])
-        elif fragment["type"] == "chunk":
-            code_chunk.add(
-                "{}<<{}>>\n".format(
-                    fragment["prefix"],
-                    "/".join(fragment["path"])
-                ),
-                {"token_type": TokenType.Comment.Preproc}
-            )
-
-    code_chunk.colorize(pygments_lexer)
-    return code_chunk._parts
-
-@profile_sub("apply_colorscheme")
-def apply_colorscheme(fragments, theme_style):
-    base00  = "#657b83"
-    base1   = "#93a1a1"
-    yellow  = "#b58900"
-    orange  = "#cb4b16"
-    red     = "#dc322f"
-    magenta = "#d33682"
-    violet  = "#6c71c4"
-    blue    = "#268bd2"
-    cyan    = "#2aa198"
-    green   = "#859900"
-    styles = {
-        TokenType:                    base00,
-        TokenType.Keyword:            green,
-        TokenType.Keyword.Constant:   cyan,
-        TokenType.Keyword.Declaration:blue,
-        TokenType.Keyword.Namespace:  orange,
-        TokenType.Name.Builtin:       red,
-        TokenType.Name.Builtin.Pseudo:blue,
-        TokenType.Name.Class:         blue,
-        TokenType.Name.Decorator:     blue,
-        TokenType.Name.Entity:        violet,
-        TokenType.Name.Exception:     yellow,
-        TokenType.Name.Function:      blue,
-        TokenType.String:             cyan,
-        TokenType.Number:             cyan,
-        TokenType.Operator.Word:      green,
-        TokenType.Comment:            base1,
-        TokenType.Comment.Preproc:    magenta,
-    }
-    def color_for_token(token_type):
-        while token_type not in styles:
-            token_type = token_type.parent
-        return styles[token_type]
-    return [
-        dict(fragment, color=color_for_token(fragment["token_type"]))
-        for fragment in fragments
-    ]
-
-
-
-
-
-
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -1672,15 +1581,11 @@ class WorkspaceProps(Props):
                 document,
                 session, ["workspace", "columns"],
                 session, ["workspace", "page_body_width"],
+                theme, ["page"],
                 self.build_columns
             ),
-            "page_extra": PropUpdate(
-                theme, ["page"],
-                session, ["workspace", "page_body_width"],
-                lambda page, width: dict(
-                    page,
-                    body_width=width
-                )
+            "page_body_width": PropUpdate(
+                session, ["workspace", "page_body_width"]
             ),
             "actions": {
                 "set_page_body_width": session.set_page_body_width,
@@ -1688,33 +1593,46 @@ class WorkspaceProps(Props):
         })
 
     @memo_reset
-    def build_columns(self, document, columns, page_body_width):
+    def build_columns(self, document, columns, page_body_width, page_theme):
         columns_prop = []
         for column in columns:
             columns_prop.append(
-                self.build_column(document, column)
+                self.build_column(document, column, page_body_width, page_theme)
             )
         return columns_prop
 
-    def build_column(self, document, column):
+    def build_column(self, document, column, page_body_width, page_theme):
         column_prop = []
         for page_id in column:
             try:
                 column_prop.append(
-                    self.build_page(document.get_page(page_id))
+                    self.build_page(
+                        document.get_page(page_id),
+                        page_body_width,
+                        page_theme
+                    )
                 )
             except PageNotFound:
                 pass
         return column_prop
 
-    def build_page(self, page):
+    def build_page(self, page, page_body_width, page_theme):
         return {
             "title_fragments": [{"text": page["title"]}],
-            "paragraphs": self.build_paragraphs(page["paragraphs"]),
+            "paragraphs": self.build_paragraphs(
+                page["paragraphs"],
+                page_body_width,
+                page_theme
+            ),
+            "border": page_theme["border"],
+            "background": page_theme["background"],
+            "title_font": page_theme["title_font"],
+            "margin": page_theme["margin"],
+            "body_width": page_body_width,
         }
 
     @memo
-    def build_paragraphs(self, paragraphs):
+    def build_paragraphs(self, paragraphs, page_body_width, page_theme):
         BUILDERS = {
             "code": self.build_code_paragraph,
         }
@@ -1722,28 +1640,156 @@ class WorkspaceProps(Props):
             BUILDERS.get(
                 paragraph["type"],
                 self.build_unknown_paragraph
-            )(paragraph)
+            )(paragraph, page_body_width, page_theme)
             for paragraph in paragraphs
         ]
 
     @profile_sub("build_code_paragraph")
-    def build_code_paragraph(self, paragraph):
+    def build_code_paragraph(self, paragraph, page_body_width, page_theme):
         return {
             "widget": CodeParagraph,
-            "path_fragments": code_path_fragments(
+            "header": self.build_code_paragraph_header(
+                paragraph,
+                page_body_width,
+                page_theme
+            ),
+            "body": self.build_code_paragraph_body(
+                paragraph,
+                page_body_width,
+                page_theme
+            ),
+        }
+
+    def build_code_paragraph_header(self, paragraph, page_body_width, page_theme):
+        return {
+            "background": page_theme["code"]["header_background"],
+            "margin": page_theme["code"]["margin"],
+            "font": page_theme["code_font"],
+            "path_fragments": self.build_code_path_fragments(
                 paragraph["filepath"],
                 paragraph["chunkpath"]
             ),
-            "body_fragments": code_body_fragments(
-                paragraph["fragments"],
-                code_pygments_lexer(paragraph)
-            )
+            "body_width": page_body_width,
         }
 
-    def build_unknown_paragraph(self, paragraph):
+    @memo
+    def build_code_path_fragments(self, filepath, chunkpath):
+        fragments = []
+        for index, x in enumerate(filepath):
+            if index > 0:
+                fragments.append({"text": "/"})
+            fragments.append({"text": x})
+        if filepath and chunkpath:
+            fragments.append({"text": " "})
+        for index, x in enumerate(chunkpath):
+            if index > 0:
+                fragments.append({"text": "/"})
+            fragments.append({"text": x})
+        return fragments
+
+    def build_code_paragraph_body(self, paragraph, page_body_width, page_theme):
+        return {
+            "background": page_theme["code"]["body_background"],
+            "margin": page_theme["code"]["margin"],
+            "font": page_theme["code_font"],
+            "body_fragments": self.apply_colorscheme(
+                self.build_code_body_fragments(
+                    paragraph["fragments"],
+                    self.code_pygments_lexer(
+                        paragraph.get("raw_langauge", ""),
+                        paragraph["filepath"][-1] if paragraph["filepath"] else "",
+                    )
+                ),
+                page_theme["token_style"]
+            ),
+            "body_width": page_body_width,
+        }
+
+    @memo
+    def code_pygments_lexer(self, raw_language, filename):
+        try:
+            if raw_language:
+                return pygments.lexers.get_lexer_by_name(
+                    raw_language,
+                    stripnl=False
+                )
+            else:
+                return pygments.lexers.get_lexer_for_filename(
+                    filename,
+                    stripnl=False
+                )
+        except:
+            return pygments.lexers.TextLexer(stripnl=False)
+
+    @memo
+    def build_code_body_fragments(self, fragments, pygments_lexer):
+        code_chunk = CodeChunk()
+        for fragment in fragments:
+            if fragment["type"] == "code":
+                code_chunk.add(fragment["text"])
+            elif fragment["type"] == "chunk":
+                code_chunk.add(
+                    "{}<<{}>>\n".format(
+                        fragment["prefix"],
+                        "/".join(fragment["path"])
+                    ),
+                    {"token_type": TokenType.Comment.Preproc}
+                )
+        code_chunk.colorize(pygments_lexer)
+        return code_chunk._parts
+
+    @profile_sub("apply_colorscheme")
+    @memo
+    def apply_colorscheme(self, fragments, theme_style):
+        base00  = "#657b83"
+        base1   = "#93a1a1"
+        yellow  = "#b58900"
+        orange  = "#cb4b16"
+        red     = "#dc322f"
+        magenta = "#d33682"
+        violet  = "#6c71c4"
+        blue    = "#268bd2"
+        cyan    = "#2aa198"
+        green   = "#859900"
+        styles = {
+            TokenType:                    base00,
+            TokenType.Keyword:            green,
+            TokenType.Keyword.Constant:   cyan,
+            TokenType.Keyword.Declaration:blue,
+            TokenType.Keyword.Namespace:  orange,
+            TokenType.Name.Builtin:       red,
+            TokenType.Name.Builtin.Pseudo:blue,
+            TokenType.Name.Class:         blue,
+            TokenType.Name.Decorator:     blue,
+            TokenType.Name.Entity:        violet,
+            TokenType.Name.Exception:     yellow,
+            TokenType.Name.Function:      blue,
+            TokenType.String:             cyan,
+            TokenType.Number:             cyan,
+            TokenType.Operator.Word:      green,
+            TokenType.Comment:            base1,
+            TokenType.Comment.Preproc:    magenta,
+        }
+        def color_for_token(token_type):
+            while token_type not in styles:
+                token_type = token_type.parent
+            return styles[token_type]
+        return [
+            dict(fragment, color=color_for_token(fragment["token_type"]))
+            for fragment in fragments
+        ]
+
+
+
+
+
+
+    def build_unknown_paragraph(self, paragraph, page_body_width, page_theme):
         return {
             "widget": UnknownParagraph,
             "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
+            "font": page_theme["code_font"],
+            "body_width": page_body_width,
         }
 
 class Workspace(HScroll):
@@ -1767,7 +1813,6 @@ class Workspace(HScroll):
             props['min_size'] = makeTuple(self.prop(['column_width']), -1)
             props['column'] = loopvar
             props['workspace_margin'] = self.prop(['margin'])
-            props['page_extra'] = self.prop(['page_extra'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Column, props, sizer, handlers, name)
             props = {}
@@ -1786,7 +1831,7 @@ class Workspace(HScroll):
 
     def _on_divider_drag(self, event):
         if event.initial:
-            self._initial_width = self.prop(["page_extra", "body_width"])
+            self._initial_width = self.prop(["page_body_width"])
         else:
             self.prop(["actions", "set_page_body_width"])(
                 max(50, self._initial_width + event.dx)
@@ -1811,7 +1856,6 @@ class Column(VScroll):
             name = None
             handlers = {}
             props['page'] = loopvar
-            props['page_extra'] = self.prop(['page_extra'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
             self._create_space(self.prop(['workspace_margin']))
@@ -1836,7 +1880,6 @@ class Page(Panel):
         name = None
         handlers = {}
         props['page'] = self.prop(['page'])
-        props['page_extra'] = self.prop(['page_extra'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageTopRow, props, sizer, handlers, name)
@@ -1844,7 +1887,7 @@ class Page(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page_extra', 'border']))
+        props.update(self.prop(['page', 'border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageBottomBorder, props, sizer, handlers, name)
 
@@ -1863,9 +1906,7 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['page'] = self.prop(['page'])
-        props['page_extra'] = self.prop(['page_extra'])
-        props['background'] = self.prop(['page_extra', 'background'])
+        props.update(self.prop(['page']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageBody, props, sizer, handlers, name)
@@ -1873,7 +1914,7 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page_extra', 'border']))
+        props.update(self.prop(['page', 'border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageRightBorder, props, sizer, handlers, name)
 
@@ -1936,10 +1977,10 @@ class PageBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['page', 'title_fragments'])
-        props['max_width'] = self.prop(['page_extra', 'body_width'])
-        props['font'] = self.prop(['page_extra', 'title_font'])
-        sizer["border"] = self.prop(['page_extra', 'margin'])
+        props['fragments'] = self.prop(['title_fragments'])
+        props['max_width'] = self.prop(['body_width'])
+        props['font'] = self.prop(['title_font'])
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
         def loop_fn(loopvar):
@@ -1949,16 +1990,65 @@ class PageBody(Panel):
             name = None
             handlers = {}
             props.update(loopvar)
-            props['page_extra'] = self.prop(['page_extra'])
-            sizer["border"] = self.prop(['page_extra', 'margin'])
+            sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.LEFT
             sizer["flag"] |= wx.BOTTOM
             sizer["flag"] |= wx.RIGHT
             self._create_widget(loopvar['widget'], props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
-            for loopvar in self.prop(['page', 'paragraphs']):
+            for loopvar in self.prop(['paragraphs']):
                 loop_fn(loopvar)
+
+class CodeParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['header']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(CodeParagraphHeader, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['body']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(CodeParagraphBody, props, sizer, handlers, name)
+
+class CodeParagraphHeader(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['path_fragments'])
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
+        props['font'] = self.prop(['font'])
+        props['break_at_word'] = False
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.ALL
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class CodeChunk(object):
 
@@ -2007,60 +2097,6 @@ class CodeChunk(object):
                     part_index += 1
                     text = text[len(part["text"]):]
 
-class CodeParagraph(Panel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
-
-    def _create_widgets(self):
-        pass
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['background'] = self.prop(['page_extra', 'code', 'header_background'])
-        props['page_extra'] = self.prop(['page_extra'])
-        props['path_fragments'] = self.prop(['path_fragments'])
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(CodeParagraphHeader, props, sizer, handlers, name)
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['background'] = self.prop(['page_extra', 'code', 'body_background'])
-        props['page_extra'] = self.prop(['page_extra'])
-        props['body_fragments'] = apply_colorscheme(self.prop(['body_fragments']), self.prop(['page_extra', 'token_style']))
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(CodeParagraphBody, props, sizer, handlers, name)
-
-class CodeParagraphHeader(Panel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
-
-    def _create_widgets(self):
-        pass
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['fragments'] = self.prop(['path_fragments'])
-        props['max_width'] = sub(self.prop(['page_extra', 'body_width']), mul(2, self.prop(['page_extra', 'code', 'margin'])))
-        props['font'] = self.prop(['page_extra', 'code_font'])
-        props['break_at_word'] = False
-        sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['page_extra', 'code', 'margin'])
-        sizer["flag"] |= wx.ALL
-        self._create_widget(Text, props, sizer, handlers, name)
-
 class CodeParagraphBody(Panel):
 
     def _get_local_props(self):
@@ -2077,11 +2113,11 @@ class CodeParagraphBody(Panel):
         name = None
         handlers = {}
         props['fragments'] = self.prop(['body_fragments'])
-        props['max_width'] = sub(self.prop(['page_extra', 'body_width']), mul(2, self.prop(['page_extra', 'code', 'margin'])))
-        props['font'] = self.prop(['page_extra', 'code_font'])
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
+        props['font'] = self.prop(['font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['page_extra', 'code', 'margin'])
+        sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
@@ -2101,8 +2137,8 @@ class UnknownParagraph(Panel):
         name = None
         handlers = {}
         props['fragments'] = self.prop(['fragments'])
-        props['max_width'] = self.prop(['page_extra', 'body_width'])
-        props['font'] = self.prop(['page_extra', 'code_font'])
+        props['max_width'] = self.prop(['body_width'])
+        props['font'] = self.prop(['code_font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
