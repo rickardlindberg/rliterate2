@@ -1289,6 +1289,7 @@ class TableOfContentsRowExtraProps(Props):
                 "set_hoisted_page": session.set_hoisted_page,
                 "set_dragged_page": session.set_dragged_page,
                 "toggle_collapsed": session.toggle_collapsed,
+                "open_page": session.open_page,
             },
         })
 
@@ -1414,6 +1415,7 @@ class TableOfContentsRow(Panel):
         handlers = {}
         name = 'title'
         props.update(self.prop([]))
+        handlers['click'] = lambda event: self.prop(['actions', 'open_page'])(self.prop(['id']))
         handlers['drag'] = lambda event: self._on_drag(event)
         handlers['right_click'] = lambda event: self._on_right_click(event)
         handlers['hover'] = lambda event: self._set_background(event.mouse_inside)
@@ -2408,6 +2410,9 @@ class Session(Immutable):
                 ],
             },
         })
+
+    def open_page(self, page_id):
+        self.replace(["workspace", "columns"], [[page_id]])
 
     def set_hoisted_page(self, page_id):
         self.replace(["toc", "hoisted_page"], page_id)
