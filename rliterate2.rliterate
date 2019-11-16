@@ -995,7 +995,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(self, page, page_body_width, page_theme):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_body_width,\n            page_theme\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"title_font\": page_theme[\"title_font\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_page(self, page, page_body_width, page_theme):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"title_font\": page_theme[\"title_font\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1013,7 +1013,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1046,7 +1046,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_header(self, paragraph, page_body_width, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"path_fragments\": self.build_code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_code_paragraph_header(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"path_fragments\": self.build_code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1112,7 +1112,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_body(self, paragraph, page_body_width, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"body_fragments\": self.apply_colorscheme(\n            self.build_code_body_fragments(\n                paragraph[\"fragments\"],\n                self.code_pygments_lexer(\n                    paragraph.get(\"raw_langauge\", \"\"),\n                    paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                )\n            ),\n            page_theme[\"token_style\"]\n        ),\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_code_paragraph_body(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"body_fragments\": self.apply_colorscheme(\n            self.build_code_body_fragments(\n                paragraph[\"fragments\"],\n                self.code_pygments_lexer(\n                    paragraph.get(\"raw_langauge\", \"\"),\n                    paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                )\n            ),\n            page_theme[\"token_style\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1233,7 +1233,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph, page_body_width, page_theme):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": self.build_code_paragraph_header(\n            paragraph,\n            page_body_width,\n            page_theme\n        ),\n        \"body\": self.build_code_paragraph_body(\n            paragraph,\n            page_body_width,\n            page_theme\n        ),\n    }\n",
+"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph, page_theme):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": self.build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": self.build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1251,7 +1251,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        #header\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        #body\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        #header\n        body_width = #body_width\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        #body\n        body_width = #body_width\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1280,7 +1280,7 @@
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(self, paragraph, page_body_width, page_theme):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n        \"font\": page_theme[\"code_font\"],\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_unknown_paragraph(self, paragraph, page_theme):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n        \"font\": page_theme[\"code_font\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1326,7 +1326,7 @@
 ],
 "fragments":[
 {
-"text":"@memo\ndef build_paragraphs(self, paragraphs, page_body_width, page_theme):\n    BUILDERS = {\n        \"code\": self.build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            self.build_unknown_paragraph\n        )(paragraph, page_body_width, page_theme)\n        for paragraph in paragraphs\n    ]\n",
+"text":"@memo\ndef build_paragraphs(self, paragraphs, page_theme):\n    BUILDERS = {\n        \"code\": self.build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            self.build_unknown_paragraph\n        )(paragraph, page_theme)\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
@@ -1375,7 +1375,7 @@
 ],
 "fragments":[
 {
-"text":"@memo_reset\ndef build_columns(self, document, columns, page_body_width, page_theme):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            self.build_column(document, column, page_body_width, page_theme)\n        )\n    return columns_prop\n",
+"text":"@profile_sub(\"build_columns\")\n@memo_reset\ndef build_columns(self, document, columns, page_body_width, page_theme):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            self.build_column(document, column, page_body_width, page_theme)\n        )\n    return columns_prop\n",
 "type":"code"
 }
 ],

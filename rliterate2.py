@@ -1591,6 +1591,7 @@ class WorkspaceProps(Props):
             },
         })
 
+    @profile_sub("build_columns")
     @memo_reset
     def build_columns(self, document, columns, page_body_width, page_theme):
         columns_prop = []
@@ -1620,7 +1621,6 @@ class WorkspaceProps(Props):
             "title_fragments": [{"text": page["title"]}],
             "paragraphs": self.build_paragraphs(
                 page["paragraphs"],
-                page_body_width,
                 page_theme
             ),
             "border": page_theme["border"],
@@ -1631,7 +1631,7 @@ class WorkspaceProps(Props):
         }
 
     @memo
-    def build_paragraphs(self, paragraphs, page_body_width, page_theme):
+    def build_paragraphs(self, paragraphs, page_theme):
         BUILDERS = {
             "code": self.build_code_paragraph,
         }
@@ -1639,27 +1639,25 @@ class WorkspaceProps(Props):
             BUILDERS.get(
                 paragraph["type"],
                 self.build_unknown_paragraph
-            )(paragraph, page_body_width, page_theme)
+            )(paragraph, page_theme)
             for paragraph in paragraphs
         ]
 
     @profile_sub("build_code_paragraph")
-    def build_code_paragraph(self, paragraph, page_body_width, page_theme):
+    def build_code_paragraph(self, paragraph, page_theme):
         return {
             "widget": CodeParagraph,
             "header": self.build_code_paragraph_header(
                 paragraph,
-                page_body_width,
                 page_theme
             ),
             "body": self.build_code_paragraph_body(
                 paragraph,
-                page_body_width,
                 page_theme
             ),
         }
 
-    def build_code_paragraph_header(self, paragraph, page_body_width, page_theme):
+    def build_code_paragraph_header(self, paragraph, page_theme):
         return {
             "background": page_theme["code"]["header_background"],
             "margin": page_theme["code"]["margin"],
@@ -1668,7 +1666,6 @@ class WorkspaceProps(Props):
                 paragraph["filepath"],
                 paragraph["chunkpath"]
             ),
-            "body_width": page_body_width,
         }
 
     @memo
@@ -1686,7 +1683,7 @@ class WorkspaceProps(Props):
             fragments.append({"text": x})
         return fragments
 
-    def build_code_paragraph_body(self, paragraph, page_body_width, page_theme):
+    def build_code_paragraph_body(self, paragraph, page_theme):
         return {
             "background": page_theme["code"]["body_background"],
             "margin": page_theme["code"]["margin"],
@@ -1701,7 +1698,6 @@ class WorkspaceProps(Props):
                 ),
                 page_theme["token_style"]
             ),
-            "body_width": page_body_width,
         }
 
     @memo
@@ -1783,12 +1779,11 @@ class WorkspaceProps(Props):
 
 
 
-    def build_unknown_paragraph(self, paragraph, page_body_width, page_theme):
+    def build_unknown_paragraph(self, paragraph, page_theme):
         return {
             "widget": UnknownParagraph,
             "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
             "font": page_theme["code_font"],
-            "body_width": page_body_width,
         }
 
 class Workspace(HScroll):
@@ -1989,6 +1984,7 @@ class PageBody(Panel):
             name = None
             handlers = {}
             props.update(loopvar)
+            props['body_width'] = self.prop(['body_width'])
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.LEFT
             sizer["flag"] |= wx.BOTTOM
@@ -2015,6 +2011,7 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['header']))
+        props['body_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(CodeParagraphHeader, props, sizer, handlers, name)
         props = {}
@@ -2022,6 +2019,7 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['body']))
+        props['body_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(CodeParagraphBody, props, sizer, handlers, name)
 
