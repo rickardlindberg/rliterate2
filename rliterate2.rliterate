@@ -2821,7 +2821,7 @@
 ],
 "fragments":[
 {
-"text":"#!/bin/sh\n\nset -e\n\npip install --upgrade --user .\n",
+"text":"#!/bin/sh\n\nset -e\n\npip install --upgrade --user .\n\npip3 install --upgrade --user .\n",
 "type":"code"
 }
 ],
