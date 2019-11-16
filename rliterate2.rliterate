@@ -22,7 +22,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul, floordiv\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict\nfrom operator import add, sub, mul, floordiv\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nfrom pygments.token import string_to_tokentype\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -1131,67 +1131,11 @@
 ],
 "fragments":[
 {
-"text":"@memo\ndef code_pygments_lexer(self, raw_language, filename):\n    try:\n        if raw_language:\n            return pygments.lexers.get_lexer_by_name(\n                raw_language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
-"type":"code"
-}
-],
-"id":"0ca12bad04b74488a5e4190e255d75ac",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"WorkspaceProps"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"@memo\ndef build_code_body_fragments(self, fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    code_chunk.colorize(pygments_lexer)\n    return code_chunk._parts\n",
+"text":"@memo\ndef build_code_body_fragments(self, fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    return code_chunk.tokenize(pygments_lexer)\n",
 "type":"code"
 }
 ],
 "id":"d3402ff19e7e4284b44e3ff7d0ca4f8f",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class CodeChunk(object):\n\n    def __init__(self):\n        self._parts = []\n\n    def add(self, text, extra={}):\n        part = {\"text\": text}\n        part.update(extra)\n        self._parts.append(part)\n\n    def colorize(self, pygments_lexer):\n        self._apply_token_types(\n            pygments_lexer.get_tokens(\n                self._get_uncolorized_text()\n            )\n        )\n\n    def _get_uncolorized_text(self):\n        return \"\".join(\n            part[\"text\"]\n            for part in self._parts\n            if \"token_type\" not in part\n        )\n\n    def _apply_token_types(self, pygments_tokens):\n        part_index = 0\n        for token_type, text in pygments_tokens:\n            while \"token_type\" in self._parts[part_index]:\n                part_index += 1\n            while text:\n                if len(self._parts[part_index][\"text\"]) > len(text):\n                    part = self._parts[part_index]\n                    pre = dict(part)\n                    pre[\"text\"] = pre[\"text\"][:len(text)]\n                    pre[\"token_type\"] = token_type\n                    self._parts[part_index] = pre\n                    part_index += 1\n                    post = dict(part)\n                    post[\"text\"] = post[\"text\"][len(text):]\n                    self._parts.insert(part_index, post)\n                    text = \"\"\n                else:\n                    part = self._parts[part_index]\n                    part[\"token_type\"] = token_type\n                    part_index += 1\n                    text = text[len(part[\"text\"]):]\n",
-"type":"code"
-}
-],
-"id":"80100fee7bd246978095eb0a6bbe6688",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"WorkspaceProps"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"@profile_sub(\"apply_colorscheme\")\n@memo\ndef apply_colorscheme(self, fragments, theme_style):\n    base00  = \"#657b83\"\n    base1   = \"#93a1a1\"\n    yellow  = \"#b58900\"\n    orange  = \"#cb4b16\"\n    red     = \"#dc322f\"\n    magenta = \"#d33682\"\n    violet  = \"#6c71c4\"\n    blue    = \"#268bd2\"\n    cyan    = \"#2aa198\"\n    green   = \"#859900\"\n    styles = {\n        TokenType:                    base00,\n        TokenType.Keyword:            green,\n        TokenType.Keyword.Constant:   cyan,\n        TokenType.Keyword.Declaration:blue,\n        TokenType.Keyword.Namespace:  orange,\n        TokenType.Name.Builtin:       red,\n        TokenType.Name.Builtin.Pseudo:blue,\n        TokenType.Name.Class:         blue,\n        TokenType.Name.Decorator:     blue,\n        TokenType.Name.Entity:        violet,\n        TokenType.Name.Exception:     yellow,\n        TokenType.Name.Function:      blue,\n        TokenType.String:             cyan,\n        TokenType.Number:             cyan,\n        TokenType.Operator.Word:      green,\n        TokenType.Comment:            base1,\n        TokenType.Comment.Preproc:    magenta,\n    }\n    def color_for_token(token_type):\n        while token_type not in styles:\n            token_type = token_type.parent\n        return styles[token_type]\n    return [\n        dict(fragment, color=color_for_token(fragment[\"token_type\"]))\n        for fragment in fragments\n    ]\n\n\n\n\n\n",
-"type":"code"
-}
-],
-"id":"0d3b25e79dc044d4bcb344de82287574",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -1312,6 +1256,70 @@
 }
 ],
 "title":"Unknown paragraph"
+},
+{
+"children":[],
+"id":"b6d0f6d9038d47038f76c77c837e0a81",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@memo\ndef code_pygments_lexer(self, raw_language, filename):\n    try:\n        if raw_language:\n            return pygments.lexers.get_lexer_by_name(\n                raw_language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
+"type":"code"
+}
+],
+"id":"0ca12bad04b74488a5e4190e255d75ac",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"apply_colorscheme\")\n@memo\ndef apply_colorscheme(self, fragments, theme_style):\n    styles = self.style_dict(theme_style)\n    def style_fragment(fragment):\n        if \"token_type\" in fragment:\n            token_type = fragment[\"token_type\"]\n            while token_type not in styles:\n                token_type = token_type.parent\n            style = styles[token_type]\n            new_fragment = dict(fragment)\n            new_fragment.update(style)\n            return new_fragment\n        else:\n            return fragment\n    return [\n        style_fragment(fragment)\n        for fragment in fragments\n    ]\n",
+"type":"code"
+}
+],
+"id":"0d3b25e79dc044d4bcb344de82287574",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@memo\ndef style_dict(self, theme_style):\n    styles = {}\n    for name, value in theme_style.items():\n        styles[string_to_tokentype(name)] = value\n    return styles\n",
+"type":"code"
+}
+],
+"id":"615b0bb9c0c847649c08d06940c904ae",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Utilities"
 }
 ],
 "id":"46857302627c4bd78edc4bbfc07fb2ea",
@@ -1662,6 +1670,31 @@
 }
 ],
 "title":"Id generation"
+},
+{
+"children":[],
+"id":"0c7e0f7ca9884bb0b06d89ef217c0392",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class CodeChunk(object):\n\n    def __init__(self):\n        self._fragments = []\n\n    def add(self, text, extra={}):\n        part = {\"text\": text}\n        part.update(extra)\n        self._fragments.append(part)\n\n    def tokenize(self, pygments_lexer):\n        self._apply_token_types(\n            pygments_lexer.get_tokens(\n                self._get_uncolorized_text()\n            )\n        )\n        return self._fragments\n\n    def _get_uncolorized_text(self):\n        return \"\".join(\n            part[\"text\"]\n            for part in self._fragments\n            if \"token_type\" not in part\n        )\n\n    def _apply_token_types(self, pygments_tokens):\n        part_index = 0\n        for token_type, text in pygments_tokens:\n            while \"token_type\" in self._fragments[part_index]:\n                part_index += 1\n            while text:\n                if len(self._fragments[part_index][\"text\"]) > len(text):\n                    part = self._fragments[part_index]\n                    pre = dict(part)\n                    pre[\"text\"] = pre[\"text\"][:len(text)]\n                    pre[\"token_type\"] = token_type\n                    self._fragments[part_index] = pre\n                    part_index += 1\n                    post = dict(part)\n                    post[\"text\"] = post[\"text\"][len(text):]\n                    self._fragments.insert(part_index, post)\n                    text = \"\"\n                else:\n                    part = self._fragments[part_index]\n                    part[\"token_type\"] = token_type\n                    part_index += 1\n                    text = text[len(part[\"text\"]):]\n",
+"type":"code"
+}
+],
+"id":"80100fee7bd246978095eb0a6bbe6688",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Code paragraph utilities"
 }
 ],
 "id":"27c8072213a94090a6d0d5e1362ab3ed",
@@ -1738,7 +1771,7 @@
 ],
 "fragments":[
 {
-"text":"class Theme(Immutable):\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 16,\n            },\n            \"code_font\": {\n                \"size\": 10,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 2,\n                \"color\": \"#aaaaaf\",\n            },\n            \"background\": \"#ffffff\",\n            \"margin\": 10,\n            \"code\": {\n                \"margin\": 5,\n                \"header_background\": \"#eeeeee\",\n                \"body_background\": \"#f8f8f8\",\n            },\n            \"token_style\": {\n            },\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 18,\n            },\n            \"code_font\": {\n                \"size\": 12,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 3,\n                \"color\": \"#b0ab9e\",\n            },\n            \"background\": \"#fdf6e3\",\n            \"margin\": 14,\n            \"code\": {\n                \"margin\": 7,\n                \"header_background\": \"#eae4d2\",\n                \"body_background\": \"#f3ecdb\",\n            },\n            \"token_style\": {\n            },\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
+"text":"class Theme(Immutable):\n\n    base00  = \"#657b83\"\n    base1   = \"#93a1a1\"\n    yellow  = \"#b58900\"\n    orange  = \"#cb4b16\"\n    red     = \"#dc322f\"\n    magenta = \"#d33682\"\n    violet  = \"#6c71c4\"\n    blue    = \"#268bd2\"\n    cyan    = \"#2aa198\"\n    green   = \"#859900\"\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 16,\n            },\n            \"code_font\": {\n                \"size\": 10,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 2,\n                \"color\": \"#aaaaaf\",\n            },\n            \"background\": \"#ffffff\",\n            \"margin\": 10,\n            \"code\": {\n                \"margin\": 5,\n                \"header_background\": \"#eeeeee\",\n                \"body_background\": \"#f8f8f8\",\n            },\n            \"token_style\": {\n                \"\":                    {\"color\": base00},\n                \"Keyword\":             {\"color\": green},\n                \"Keyword.Constant\":    {\"color\": cyan},\n                \"Keyword.Declaration\": {\"color\": blue},\n                \"Keyword.Namespace\":   {\"color\": orange},\n                \"Name.Builtin\":        {\"color\": red},\n                \"Name.Builtin.Pseudo\": {\"color\": blue},\n                \"Name.Class\":          {\"color\": blue},\n                \"Name.Decorator\":      {\"color\": blue},\n                \"Name.Entity\":         {\"color\": violet},\n                \"Name.Exception\":      {\"color\": yellow},\n                \"Name.Function\":       {\"color\": blue},\n                \"String\":              {\"color\": cyan},\n                \"Number\":              {\"color\": cyan},\n                \"Operator.Word\":       {\"color\": green},\n                \"Comment\":             {\"color\": base1},\n                \"Comment.Preproc\":     {\"color\": magenta},\n            },\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 18,\n            },\n            \"code_font\": {\n                \"size\": 12,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 3,\n                \"color\": \"#b0ab9e\",\n            },\n            \"background\": \"#fdf6e3\",\n            \"margin\": 14,\n            \"code\": {\n                \"margin\": 7,\n                \"header_background\": \"#eae4d2\",\n                \"body_background\": \"#f3ecdb\",\n            },\n            \"token_style\": {\n                \"\":                    {\"color\": base00},\n                \"Keyword\":             {\"color\": green},\n                \"Keyword.Constant\":    {\"color\": cyan},\n                \"Keyword.Declaration\": {\"color\": blue},\n                \"Keyword.Namespace\":   {\"color\": orange},\n                \"Name.Builtin\":        {\"color\": red},\n                \"Name.Builtin.Pseudo\": {\"color\": blue},\n                \"Name.Class\":          {\"color\": blue},\n                \"Name.Decorator\":      {\"color\": blue},\n                \"Name.Entity\":         {\"color\": violet},\n                \"Name.Exception\":      {\"color\": yellow},\n                \"Name.Function\":       {\"color\": blue},\n                \"String\":              {\"color\": cyan},\n                \"Number\":              {\"color\": cyan},\n                \"Operator.Word\":       {\"color\": green},\n                \"Comment\":             {\"color\": base1},\n                \"Comment.Preproc\":     {\"color\": magenta},\n           },\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
 "type":"code"
 }
 ],

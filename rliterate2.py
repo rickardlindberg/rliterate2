@@ -15,6 +15,7 @@ import time
 import uuid
 
 from pygments.token import Token as TokenType
+from pygments.token import string_to_tokentype
 import pygments.lexers
 import pygments.token
 import wx
@@ -1701,6 +1702,29 @@ class WorkspaceProps(Props):
         }
 
     @memo
+    def build_code_body_fragments(self, fragments, pygments_lexer):
+        code_chunk = CodeChunk()
+        for fragment in fragments:
+            if fragment["type"] == "code":
+                code_chunk.add(fragment["text"])
+            elif fragment["type"] == "chunk":
+                code_chunk.add(
+                    "{}<<{}>>\n".format(
+                        fragment["prefix"],
+                        "/".join(fragment["path"])
+                    ),
+                    {"token_type": TokenType.Comment.Preproc}
+                )
+        return code_chunk.tokenize(pygments_lexer)
+
+    def build_unknown_paragraph(self, paragraph, page_theme):
+        return {
+            "widget": UnknownParagraph,
+            "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
+            "font": page_theme["code_font"],
+        }
+
+    @memo
     def code_pygments_lexer(self, raw_language, filename):
         try:
             if raw_language:
@@ -1716,75 +1740,32 @@ class WorkspaceProps(Props):
         except:
             return pygments.lexers.TextLexer(stripnl=False)
 
-    @memo
-    def build_code_body_fragments(self, fragments, pygments_lexer):
-        code_chunk = CodeChunk()
-        for fragment in fragments:
-            if fragment["type"] == "code":
-                code_chunk.add(fragment["text"])
-            elif fragment["type"] == "chunk":
-                code_chunk.add(
-                    "{}<<{}>>\n".format(
-                        fragment["prefix"],
-                        "/".join(fragment["path"])
-                    ),
-                    {"token_type": TokenType.Comment.Preproc}
-                )
-        code_chunk.colorize(pygments_lexer)
-        return code_chunk._parts
-
     @profile_sub("apply_colorscheme")
     @memo
     def apply_colorscheme(self, fragments, theme_style):
-        base00  = "#657b83"
-        base1   = "#93a1a1"
-        yellow  = "#b58900"
-        orange  = "#cb4b16"
-        red     = "#dc322f"
-        magenta = "#d33682"
-        violet  = "#6c71c4"
-        blue    = "#268bd2"
-        cyan    = "#2aa198"
-        green   = "#859900"
-        styles = {
-            TokenType:                    base00,
-            TokenType.Keyword:            green,
-            TokenType.Keyword.Constant:   cyan,
-            TokenType.Keyword.Declaration:blue,
-            TokenType.Keyword.Namespace:  orange,
-            TokenType.Name.Builtin:       red,
-            TokenType.Name.Builtin.Pseudo:blue,
-            TokenType.Name.Class:         blue,
-            TokenType.Name.Decorator:     blue,
-            TokenType.Name.Entity:        violet,
-            TokenType.Name.Exception:     yellow,
-            TokenType.Name.Function:      blue,
-            TokenType.String:             cyan,
-            TokenType.Number:             cyan,
-            TokenType.Operator.Word:      green,
-            TokenType.Comment:            base1,
-            TokenType.Comment.Preproc:    magenta,
-        }
-        def color_for_token(token_type):
-            while token_type not in styles:
-                token_type = token_type.parent
-            return styles[token_type]
+        styles = self.style_dict(theme_style)
+        def style_fragment(fragment):
+            if "token_type" in fragment:
+                token_type = fragment["token_type"]
+                while token_type not in styles:
+                    token_type = token_type.parent
+                style = styles[token_type]
+                new_fragment = dict(fragment)
+                new_fragment.update(style)
+                return new_fragment
+            else:
+                return fragment
         return [
-            dict(fragment, color=color_for_token(fragment["token_type"]))
+            style_fragment(fragment)
             for fragment in fragments
         ]
 
-
-
-
-
-
-    def build_unknown_paragraph(self, paragraph, page_theme):
-        return {
-            "widget": UnknownParagraph,
-            "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
-            "font": page_theme["code_font"],
-        }
+    @memo
+    def style_dict(self, theme_style):
+        styles = {}
+        for name, value in theme_style.items():
+            styles[string_to_tokentype(name)] = value
+        return styles
 
 class Workspace(HScroll):
 
@@ -2047,53 +2028,6 @@ class CodeParagraphHeader(Panel):
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
-class CodeChunk(object):
-
-    def __init__(self):
-        self._parts = []
-
-    def add(self, text, extra={}):
-        part = {"text": text}
-        part.update(extra)
-        self._parts.append(part)
-
-    def colorize(self, pygments_lexer):
-        self._apply_token_types(
-            pygments_lexer.get_tokens(
-                self._get_uncolorized_text()
-            )
-        )
-
-    def _get_uncolorized_text(self):
-        return "".join(
-            part["text"]
-            for part in self._parts
-            if "token_type" not in part
-        )
-
-    def _apply_token_types(self, pygments_tokens):
-        part_index = 0
-        for token_type, text in pygments_tokens:
-            while "token_type" in self._parts[part_index]:
-                part_index += 1
-            while text:
-                if len(self._parts[part_index]["text"]) > len(text):
-                    part = self._parts[part_index]
-                    pre = dict(part)
-                    pre["text"] = pre["text"][:len(text)]
-                    pre["token_type"] = token_type
-                    self._parts[part_index] = pre
-                    part_index += 1
-                    post = dict(part)
-                    post["text"] = post["text"][len(text):]
-                    self._parts.insert(part_index, post)
-                    text = ""
-                else:
-                    part = self._parts[part_index]
-                    part["token_type"] = token_type
-                    part_index += 1
-                    text = text[len(part["text"]):]
-
 class CodeParagraphBody(Panel):
 
     def _get_local_props(self):
@@ -2241,7 +2175,66 @@ class PageMeta(object):
         self.parent = parent
         self.index = index
 
+class CodeChunk(object):
+
+    def __init__(self):
+        self._fragments = []
+
+    def add(self, text, extra={}):
+        part = {"text": text}
+        part.update(extra)
+        self._fragments.append(part)
+
+    def tokenize(self, pygments_lexer):
+        self._apply_token_types(
+            pygments_lexer.get_tokens(
+                self._get_uncolorized_text()
+            )
+        )
+        return self._fragments
+
+    def _get_uncolorized_text(self):
+        return "".join(
+            part["text"]
+            for part in self._fragments
+            if "token_type" not in part
+        )
+
+    def _apply_token_types(self, pygments_tokens):
+        part_index = 0
+        for token_type, text in pygments_tokens:
+            while "token_type" in self._fragments[part_index]:
+                part_index += 1
+            while text:
+                if len(self._fragments[part_index]["text"]) > len(text):
+                    part = self._fragments[part_index]
+                    pre = dict(part)
+                    pre["text"] = pre["text"][:len(text)]
+                    pre["token_type"] = token_type
+                    self._fragments[part_index] = pre
+                    part_index += 1
+                    post = dict(part)
+                    post["text"] = post["text"][len(text):]
+                    self._fragments.insert(part_index, post)
+                    text = ""
+                else:
+                    part = self._fragments[part_index]
+                    part["token_type"] = token_type
+                    part_index += 1
+                    text = text[len(part["text"]):]
+
 class Theme(Immutable):
+
+    base00  = "#657b83"
+    base1   = "#93a1a1"
+    yellow  = "#b58900"
+    orange  = "#cb4b16"
+    red     = "#dc322f"
+    magenta = "#d33682"
+    violet  = "#6c71c4"
+    blue    = "#268bd2"
+    cyan    = "#2aa198"
+    green   = "#859900"
 
     DEFAULT = {
         "toolbar": {
@@ -2288,6 +2281,23 @@ class Theme(Immutable):
                 "body_background": "#f8f8f8",
             },
             "token_style": {
+                "":                    {"color": base00},
+                "Keyword":             {"color": green},
+                "Keyword.Constant":    {"color": cyan},
+                "Keyword.Declaration": {"color": blue},
+                "Keyword.Namespace":   {"color": orange},
+                "Name.Builtin":        {"color": red},
+                "Name.Builtin.Pseudo": {"color": blue},
+                "Name.Class":          {"color": blue},
+                "Name.Decorator":      {"color": blue},
+                "Name.Entity":         {"color": violet},
+                "Name.Exception":      {"color": yellow},
+                "Name.Function":       {"color": blue},
+                "String":              {"color": cyan},
+                "Number":              {"color": cyan},
+                "Operator.Word":       {"color": green},
+                "Comment":             {"color": base1},
+                "Comment.Preproc":     {"color": magenta},
             },
         },
         "dragdrop_color": "#ff6400",
@@ -2339,7 +2349,24 @@ class Theme(Immutable):
                 "body_background": "#f3ecdb",
             },
             "token_style": {
-            },
+                "":                    {"color": base00},
+                "Keyword":             {"color": green},
+                "Keyword.Constant":    {"color": cyan},
+                "Keyword.Declaration": {"color": blue},
+                "Keyword.Namespace":   {"color": orange},
+                "Name.Builtin":        {"color": red},
+                "Name.Builtin.Pseudo": {"color": blue},
+                "Name.Class":          {"color": blue},
+                "Name.Decorator":      {"color": blue},
+                "Name.Entity":         {"color": violet},
+                "Name.Exception":      {"color": yellow},
+                "Name.Function":       {"color": blue},
+                "String":              {"color": cyan},
+                "Number":              {"color": cyan},
+                "Operator.Word":       {"color": green},
+                "Comment":             {"color": base1},
+                "Comment.Preproc":     {"color": magenta},
+           },
         },
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
