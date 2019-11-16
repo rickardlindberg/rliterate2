@@ -22,6 +22,24 @@ import wx
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
 
+def memo_reset(fn):
+    def with_memo_reset(self, *args):
+        self.old_cache = self.new_cache
+        self.new_cache = {}
+        return fn(self, *args)
+    return with_memo_reset
+
+def memo(fn):
+    def with_memo(self, *args):
+        key = tuple([fn.__name__]+[id(x) for x in args])
+        if key in self.old_cache:
+            print("cache hit")
+            self.new_cache[key] = self.old_cache[key]
+        else:
+            self.new_cache[key] = (fn(self, *args), args)
+        return self.new_cache[key][0]
+    return with_memo
+
 def profile_sub(text):
     def wrap(fn):
         def fn_with_timing(*args, **kwargs):
@@ -144,57 +162,6 @@ def generate_rows_and_drop_points(
         "drop_points": drop_points,
     }
 
-def build_columns_prop(document, columns):
-    columns_prop = []
-    for column in columns:
-        columns_prop.append(
-            build_column_prop(document, column)
-        )
-    return columns_prop
-
-def build_column_prop(document, column):
-    column_prop = []
-    for page_id in column:
-        try:
-            column_prop.append(
-                build_page_prop(document.get_page(page_id))
-            )
-        except PageNotFound:
-            pass
-    return column_prop
-
-def build_page_prop(page):
-    return {
-        "title_fragments": [{"text": page["title"]}],
-        "paragraphs": build_paragraphs(page["paragraphs"]),
-    }
-
-def build_paragraphs(paragraphs):
-    BUILDERS = {
-        "code": build_code_paragraph,
-    }
-    return [
-        BUILDERS.get(
-            paragraph["type"],
-            build_unknown_paragraph
-        )(paragraph)
-        for paragraph in paragraphs
-    ]
-
-@profile_sub("build_code_paragraph")
-def build_code_paragraph(paragraph):
-    return {
-        "widget": CodeParagraph,
-        "path_fragments": code_path_fragments(
-            paragraph["filepath"],
-            paragraph["chunkpath"]
-        ),
-        "body_fragments": code_body_fragments(
-            paragraph["fragments"],
-            code_pygments_lexer(paragraph)
-        )
-    }
-
 def code_pygments_lexer(paragraph):
     try:
         if paragraph.get("raw_language", ""):
@@ -285,12 +252,6 @@ def apply_colorscheme(fragments, theme_style):
 
 
 
-
-def build_unknown_paragraph(paragraph):
-    return {
-        "widget": UnknownParagraph,
-        "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
-    }
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -546,6 +507,8 @@ class WidgetMixin(object):
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
+        self.old_cache = {}
+        self.new_cache = {}
         self.dependencies = set()
         data = {}
         for name, value in props.items():
@@ -1708,7 +1671,8 @@ class WorkspaceProps(Props):
             "columns": PropUpdate(
                 document,
                 session, ["workspace", "columns"],
-                build_columns_prop
+                session, ["workspace", "page_body_width"],
+                self.build_columns
             ),
             "page_extra": PropUpdate(
                 theme, ["page"],
@@ -1722,6 +1686,65 @@ class WorkspaceProps(Props):
                 "set_page_body_width": session.set_page_body_width,
             },
         })
+
+    @memo_reset
+    def build_columns(self, document, columns, page_body_width):
+        columns_prop = []
+        for column in columns:
+            columns_prop.append(
+                self.build_column(document, column)
+            )
+        return columns_prop
+
+    def build_column(self, document, column):
+        column_prop = []
+        for page_id in column:
+            try:
+                column_prop.append(
+                    self.build_page(document.get_page(page_id))
+                )
+            except PageNotFound:
+                pass
+        return column_prop
+
+    def build_page(self, page):
+        return {
+            "title_fragments": [{"text": page["title"]}],
+            "paragraphs": self.build_paragraphs(page["paragraphs"]),
+        }
+
+    @memo
+    def build_paragraphs(self, paragraphs):
+        BUILDERS = {
+            "code": self.build_code_paragraph,
+        }
+        return [
+            BUILDERS.get(
+                paragraph["type"],
+                self.build_unknown_paragraph
+            )(paragraph)
+            for paragraph in paragraphs
+        ]
+
+    @profile_sub("build_code_paragraph")
+    def build_code_paragraph(self, paragraph):
+        return {
+            "widget": CodeParagraph,
+            "path_fragments": code_path_fragments(
+                paragraph["filepath"],
+                paragraph["chunkpath"]
+            ),
+            "body_fragments": code_body_fragments(
+                paragraph["fragments"],
+                code_pygments_lexer(paragraph)
+            )
+        }
+
+    def build_unknown_paragraph(self, paragraph):
+        return {
+            "widget": UnknownParagraph,
+            "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
+        }
 
 class Workspace(HScroll):
 

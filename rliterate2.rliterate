@@ -849,14 +849,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_column_prop(document, column):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                build_page_prop(document.get_page(page_id))\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def build_column(self, document, column):\n    column_prop = []\n    for page_id in column:\n        try:\n            column_prop.append(\n                self.build_page(document.get_page(page_id))\n            )\n        except PageNotFound:\n            pass\n    return column_prop\n",
 "type":"code"
 }
 ],
@@ -986,14 +987,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_page_prop(page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": build_paragraphs(page[\"paragraphs\"]),\n    }\n",
+"text":"def build_page(self, page):\n    return {\n        \"title_fragments\": [{\"text\": page[\"title\"]}],\n        \"paragraphs\": self.build_paragraphs(page[\"paragraphs\"]),\n    }\n",
 "type":"code"
 }
 ],
@@ -1034,14 +1036,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(paragraph):\n    return {\n        \"widget\": CodeParagraph,\n        \"path_fragments\": code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n        \"body_fragments\": code_body_fragments(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(paragraph)\n        )\n    }\n",
+"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph):\n    return {\n        \"widget\": CodeParagraph,\n        \"path_fragments\": code_path_fragments(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n        \"body_fragments\": code_body_fragments(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(paragraph)\n        )\n    }\n",
 "type":"code"
 }
 ],
@@ -1212,14 +1215,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(paragraph):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n    }\n",
+"text":"def build_unknown_paragraph(self, paragraph):\n    return {\n        \"widget\": UnknownParagraph,\n        \"fragments\": [{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}],\n    }\n",
 "type":"code"
 }
 ],
@@ -1257,14 +1261,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(paragraphs):\n    BUILDERS = {\n        \"code\": build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
+"text":"@memo\ndef build_paragraphs(self, paragraphs):\n    BUILDERS = {\n        \"code\": self.build_code_paragraph,\n    }\n    return [\n        BUILDERS.get(\n            paragraph[\"type\"],\n            self.build_unknown_paragraph\n        )(paragraph)\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
@@ -1288,8 +1293,16 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                build_columns_prop\n            ),\n            \"page_extra\": PropUpdate(\n                theme, [\"page\"],\n                session, [\"workspace\", \"page_body_width\"],\n                lambda page, width: dict(\n                    page,\n                    body_width=width\n                )\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n            },\n        })\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                self.build_columns\n            ),\n            \"page_extra\": PropUpdate(\n                theme, [\"page\"],\n                session, [\"workspace\", \"page_body_width\"],\n                lambda page, width: dict(\n                    page,\n                    body_width=width\n                )\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n            },\n        })\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"WorkspaceProps"
+],
+"prefix":"    ",
+"type":"chunk"
 }
 ],
 "id":"1bd7139b569d41039b4661e345deb68d",
@@ -1297,14 +1310,15 @@
 },
 {
 "chunkpath":[
-"functions"
+"classes",
+"WorkspaceProps"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_columns_prop(document, columns):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            build_column_prop(document, column)\n        )\n    return columns_prop\n",
+"text":"@memo_reset\ndef build_columns(self, document, columns, page_body_width):\n    columns_prop = []\n    for column in columns:\n        columns_prop.append(\n            self.build_column(document, column)\n        )\n    return columns_prop\n",
 "type":"code"
 }
 ],
@@ -1892,7 +1906,7 @@
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self.dependencies = set()\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n                self.dependencies.update(value.dependencies)\n            elif isinstance(value, PropUpdate):\n                self.dependencies.update(\n                    value.parse(self._create_prop_update_handler(name, value))\n                )\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        for dep in self.dependencies:\n            dep.listen(self._propagate_changes)\n        Immutable.__init__(self, data)\n\n    def _propagate_changes(self):\n        self._notify()\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self._modify(\n                self._modify_items(name, props.get()),\n                only_if_differs=False\n            )\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self._modify(\n                self._modify_items(name, prop_update.eval()),\n                only_if_differs=True\n            )\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _modify_items(self, name, value):\n        items = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                items.append(self._modify_item(sub_name, sub_value))\n        else:\n            items.append(self._modify_item(name, value))\n        return items\n\n    def _modify_item(self, name, value):\n        return ([name], lambda old_value: value)\n",
+"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self.old_cache = {}\n        self.new_cache = {}\n        self.dependencies = set()\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n                self.dependencies.update(value.dependencies)\n            elif isinstance(value, PropUpdate):\n                self.dependencies.update(\n                    value.parse(self._create_prop_update_handler(name, value))\n                )\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        for dep in self.dependencies:\n            dep.listen(self._propagate_changes)\n        Immutable.__init__(self, data)\n\n    def _propagate_changes(self):\n        self._notify()\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self._modify(\n                self._modify_items(name, props.get()),\n                only_if_differs=False\n            )\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self._modify(\n                self._modify_items(name, prop_update.eval()),\n                only_if_differs=True\n            )\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _modify_items(self, name, value):\n        items = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                items.append(self._modify_item(sub_name, sub_value))\n        else:\n            items.append(self._modify_item(name, value))\n        return items\n\n    def _modify_item(self, name, value):\n        return ([name], lambda old_value: value)\n",
 "type":"code"
 }
 ],
@@ -1913,6 +1927,22 @@
 }
 ],
 "id":"ea68520c1a57480dba1151de9685cac4",
+"type":"code"
+},
+{
+"chunkpath":[
+"decorators"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def memo_reset(fn):\n    def with_memo_reset(self, *args):\n        self.old_cache = self.new_cache\n        self.new_cache = {}\n        return fn(self, *args)\n    return with_memo_reset\n\ndef memo(fn):\n    def with_memo(self, *args):\n        key = tuple([fn.__name__]+[id(x) for x in args])\n        if key in self.old_cache:\n            print(\"cache hit\")\n            self.new_cache[key] = self.old_cache[key]\n        else:\n            self.new_cache[key] = (fn(self, *args), args)\n        return self.new_cache[key][0]\n    return with_memo\n",
+"type":"code"
+}
+],
+"id":"03532aa5408a4880b53368d9c1af4135",
 "type":"code"
 }
 ],
