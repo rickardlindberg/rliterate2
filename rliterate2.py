@@ -1636,6 +1636,7 @@ class WorkspaceProps(Props):
     @memo
     def build_paragraphs(self, paragraphs, page_theme):
         BUILDERS = {
+            "text": self.build_text_paragraph,
             "code": self.build_code_paragraph,
         }
         return [
@@ -1645,6 +1646,13 @@ class WorkspaceProps(Props):
             )(paragraph, page_theme)
             for paragraph in paragraphs
         ]
+
+    @profile_sub("build_text_paragraph")
+    def build_text_paragraph(self, paragraph, page_theme):
+        return {
+            "widget": TextParagraph,
+            "text_fragments": paragraph["fragments"],
+        }
 
     @profile_sub("build_code_paragraph")
     def build_code_paragraph(self, paragraph, page_theme):
@@ -1977,6 +1985,28 @@ class PageBody(Panel):
         with self._loop(**loop_options):
             for loopvar in self.prop(['paragraphs']):
                 loop_fn(loopvar)
+
+class TextParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['text_fragments'])
+        props['max_width'] = self.prop(['body_width'])
+        props['break_at_word'] = True
+        props['line_height'] = 1.2
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class CodeParagraph(Panel):
 
@@ -2503,10 +2533,12 @@ class Text(wx.Panel, WxWidgetMixin):
             did_measure = True
         if (did_measure or
             self.prop_changed("max_width") or
-            self.prop_changed("break_at_word")):
+            self.prop_changed("break_at_word") or
+            self.prop_changed("line_height")):
             self._reflow(
                 self.prop_with_default(["max_width"], None),
-                self.prop_with_default(["break_at_word"], True)
+                self.prop_with_default(["break_at_word"], True),
+                self.prop_with_default(["line_height"], 1)
             )
 
     @profile_sub("text measure")
@@ -2532,12 +2564,12 @@ class Text(wx.Panel, WxWidgetMixin):
                     self._measured_fragments.append((None, [], blank_line_height, None))
 
     @profile_sub("text reflow")
-    def _reflow(self, max_width, break_at_word):
+    def _reflow(self, max_width, break_at_word, line_height):
         self._draw_fragments = []
         if max_width is None:
             self._reflow_no_width_limit()
         else:
-            self._reflow_width_limit(max_width, break_at_word)
+            self._reflow_width_limit(max_width, break_at_word, line_height)
         self._partition()
 
     def _reflow_no_width_limit(self):
@@ -2557,7 +2589,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 row_max_h = max(row_max_h, height)
         self.SetMinSize((max_x, y+row_max_h))
 
-    def _reflow_width_limit(self, max_width, break_at_word):
+    def _reflow_width_limit(self, max_width, break_at_word, line_height):
         x = 0
         y = 0
         row_max_h = 0
@@ -2591,11 +2623,11 @@ class Text(wx.Panel, WxWidgetMixin):
                 widths = widths[num_to_include:]
                 if break_line:
                     x = 0
-                    y += row_max_h
+                    y += row_max_h * line_height
                     row_max_h = 0
             if text is None:
                 x = 0
-                y += row_max_h if row_max_h > 0 else height
+                y += row_max_h * line_height if row_max_h > 0 else height * line_height
                 row_max_h = 0
         self.SetMinSize((max_width, y+row_max_h))
 
