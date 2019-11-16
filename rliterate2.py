@@ -1689,7 +1689,7 @@ class WorkspaceProps(Props):
             "background": page_theme["code"]["body_background"],
             "margin": page_theme["code"]["margin"],
             "font": page_theme["code_font"],
-            "body_fragments": self.apply_colorscheme(
+            "body_fragments": self.apply_token_styles(
                 self.build_code_body_fragments(
                     paragraph["fragments"],
                     self.code_pygments_lexer(
@@ -1697,7 +1697,7 @@ class WorkspaceProps(Props):
                         paragraph["filepath"][-1] if paragraph["filepath"] else "",
                     )
                 ),
-                page_theme["token_style"]
+                page_theme["token_styles"]
             ),
         }
 
@@ -1740,10 +1740,10 @@ class WorkspaceProps(Props):
         except:
             return pygments.lexers.TextLexer(stripnl=False)
 
-    @profile_sub("apply_colorscheme")
+    @profile_sub("apply_token_styles")
     @memo
-    def apply_colorscheme(self, fragments, theme_style):
-        styles = self.style_dict(theme_style)
+    def apply_token_styles(self, fragments, token_styles):
+        styles = self.build_style_dict(token_styles)
         def style_fragment(fragment):
             if "token_type" in fragment:
                 token_type = fragment["token_type"]
@@ -1761,7 +1761,7 @@ class WorkspaceProps(Props):
         ]
 
     @memo
-    def style_dict(self, theme_style):
+    def build_style_dict(self, theme_style):
         styles = {}
         for name, value in theme_style.items():
             styles[string_to_tokentype(name)] = value
@@ -2280,7 +2280,7 @@ class Theme(Immutable):
                 "header_background": "#eeeeee",
                 "body_background": "#f8f8f8",
             },
-            "token_style": {
+            "token_styles": {
                 "":                    {"color": base00},
                 "Keyword":             {"color": green},
                 "Keyword.Constant":    {"color": cyan},
@@ -2348,7 +2348,7 @@ class Theme(Immutable):
                 "header_background": "#eae4d2",
                 "body_background": "#f3ecdb",
             },
-            "token_style": {
+            "token_styles": {
                 "":                    {"color": base00},
                 "Keyword":             {"color": green},
                 "Keyword.Constant":    {"color": cyan},
