@@ -3067,7 +3067,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"text reflow\")\ndef _reflow(self, max_width, break_at_word):\n    self._draw_fragments = []\n    if max_width is None:\n        self._reflow_no_width_limit()\n    else:\n        self._reflow_width_limit(max_width, break_at_word)\n",
+"text":"@profile_sub(\"text reflow\")\ndef _reflow(self, max_width, break_at_word):\n    self._draw_fragments = []\n    if max_width is None:\n        self._reflow_no_width_limit()\n    else:\n        self._reflow_width_limit(max_width, break_at_word)\n    self._partition()\n",
 "type":"code"
 }
 ],
@@ -3107,6 +3107,23 @@
 ],
 "id":"c8fae5b67b974fff8086b8b9ff82b17e",
 "type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Text"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _partition(self):\n    self._draw_fragments_by_style = {}\n    for text, x, y, color in self._draw_fragments:\n        if color not in self._draw_fragments_by_style:\n            self._draw_fragments_by_style[color] = ([], [])\n        texts, positions = self._draw_fragments_by_style[color]\n        texts.append(text)\n        positions.append((x, y))\n",
+"type":"code"
+}
+],
+"id":"0c7bf98521d84a069794b8caf80b3770",
+"type":"code"
 }
 ],
 "title":"Reflow"
@@ -3125,7 +3142,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_paint(self, wx_event):\n    dc = wx.PaintDC(self)\n    dc.SetFont(self._wx_font)\n    for text, x, y, color in self._draw_fragments:\n        dc.SetTextForeground(color or self.GetForegroundColour())\n        dc.DrawText(text, x, y)\n",
+"text":"def _on_paint(self, wx_event):\n    dc = wx.PaintDC(self)\n    dc.SetFont(self._wx_font)\n    for style, items in self._draw_fragments_by_style.items():\n        dc.SetTextForeground(style or self.GetForegroundColour())\n        dc.DrawTextList(*items)\n",
 "type":"code"
 }
 ],

@@ -2450,6 +2450,7 @@ class Text(wx.Panel, WxWidgetMixin):
             self._reflow_no_width_limit()
         else:
             self._reflow_width_limit(max_width, break_at_word)
+        self._partition()
 
     def _reflow_no_width_limit(self):
         x = 0
@@ -2530,12 +2531,21 @@ class Text(wx.Panel, WxWidgetMixin):
                 return index + 1
         return 0
 
+    def _partition(self):
+        self._draw_fragments_by_style = {}
+        for text, x, y, color in self._draw_fragments:
+            if color not in self._draw_fragments_by_style:
+                self._draw_fragments_by_style[color] = ([], [])
+            texts, positions = self._draw_fragments_by_style[color]
+            texts.append(text)
+            positions.append((x, y))
+
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
         dc.SetFont(self._wx_font)
-        for text, x, y, color in self._draw_fragments:
-            dc.SetTextForeground(color or self.GetForegroundColour())
-            dc.DrawText(text, x, y)
+        for style, items in self._draw_fragments_by_style.items():
+            dc.SetTextForeground(style or self.GetForegroundColour())
+            dc.DrawTextList(*items)
 
 if __name__ == "__main__":
     main()
