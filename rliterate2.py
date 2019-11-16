@@ -1693,7 +1693,7 @@ class WorkspaceProps(Props):
                 self.build_code_body_fragments(
                     paragraph["fragments"],
                     self.code_pygments_lexer(
-                        paragraph.get("raw_langauge", ""),
+                        paragraph.get("language", ""),
                         paragraph["filepath"][-1] if paragraph["filepath"] else "",
                     )
                 ),
@@ -1725,11 +1725,11 @@ class WorkspaceProps(Props):
         }
 
     @memo
-    def code_pygments_lexer(self, raw_language, filename):
+    def code_pygments_lexer(self, language, filename):
         try:
-            if raw_language:
+            if language:
                 return pygments.lexers.get_lexer_by_name(
-                    raw_language,
+                    language,
                     stripnl=False
                 )
             else:
