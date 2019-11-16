@@ -1995,7 +1995,7 @@
 ],
 "fragments":[
 {
-"text":"def memo_reset(fn):\n    def with_memo_reset(self, *args):\n        self.old_cache = self.new_cache\n        self.new_cache = {}\n        return fn(self, *args)\n    return with_memo_reset\n\ndef memo(fn):\n    def with_memo(self, *args):\n        key = tuple([fn.__name__]+[id(x) for x in args])\n        if key in self.old_cache:\n            print(\"cache hit\")\n            self.new_cache[key] = self.old_cache[key]\n        else:\n            self.new_cache[key] = (fn(self, *args), args)\n        return self.new_cache[key][0]\n    return with_memo\n",
+"text":"def memo_reset(fn):\n    def with_memo_reset(self, *args):\n        self.old_cache = self.new_cache\n        self.new_cache = {}\n        return fn(self, *args)\n    return with_memo_reset\n\ndef memo(fn):\n    def with_memo(self, *args):\n        key = tuple([fn.__name__]+[id(x) for x in args])\n        if key in self.old_cache:\n            self.new_cache[key] = self.old_cache[key]\n        else:\n            self.new_cache[key] = (fn(self, *args), args)\n        return self.new_cache[key][0]\n    return with_memo\n",
 "type":"code"
 }
 ],

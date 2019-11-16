@@ -33,7 +33,6 @@ def memo(fn):
     def with_memo(self, *args):
         key = tuple([fn.__name__]+[id(x) for x in args])
         if key in self.old_cache:
-            print("cache hit")
             self.new_cache[key] = self.old_cache[key]
         else:
             self.new_cache[key] = (fn(self, *args), args)
