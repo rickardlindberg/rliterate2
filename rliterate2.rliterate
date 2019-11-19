@@ -2836,7 +2836,7 @@
 ],
 "fragments":[
 {
-"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|hscroll|frame|panel|loop|if|else|True|False|None|cache_limit)\\b', Keyword),\n            (r'#(\\w+([.]\\w+)*)?', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
+"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|hscroll|scroll|frame|panel|loop|if|else|True|False|None|cache_limit)\\b', Keyword),\n            (r'#(\\w+([.]\\w+)*)?', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
 "type":"code"
 }
 ],
