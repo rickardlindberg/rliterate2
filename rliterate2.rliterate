@@ -3822,6 +3822,16 @@
 ],
 "id":"55d932b234e04a0bb53737495d812b5d",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Support for plugins/script buttons in documents. In the style of Leo. For example, I would like a button in the toolbar that says \"Publish\" for blog posts.",
+"type":"text"
+}
+],
+"id":"c14b3e09414942b181f8b0d93c7f2956",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
