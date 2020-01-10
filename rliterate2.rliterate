@@ -3832,6 +3832,25 @@
 ],
 "id":"c14b3e09414942b181f8b0d93c7f2956",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Support altering a code paragraph in a later page to allow incremental tutorial style writing. (As ",
+"type":"text"
+},
+{
+"text":"snaptoken's kilo",
+"type":"link",
+"url":"https://viewsourcecode.org/snaptoken/kilo/index.html"
+},
+{
+"text":").",
+"type":"text"
+}
+],
+"id":"b7fce5b5a06d4ebca9f2ea725a6aece2",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
