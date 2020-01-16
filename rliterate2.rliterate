@@ -3,6 +3,50 @@
 "children":[
 {
 "children":[],
+"id":"6324f147c07240a2b02789be46478e90",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"TODO:",
+"type":"strong"
+},
+{
+"text":" Show example how literate programming is done in RLiterate.",
+"type":"text"
+}
+],
+"id":"6339e6da277147c19c661ace75bfef33",
+"type":"text"
+}
+],
+"title":"Showcase"
+},
+{
+"children":[],
+"id":"38e9db8b872940be849298f11e50b8e7",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"TODO:",
+"type":"strong"
+},
+{
+"text":" Explain concepts in greater detail.",
+"type":"text"
+}
+],
+"id":"42d2018bf4d74858a25b0c2a0d736f1d",
+"type":"text"
+}
+],
+"title":"Concepts"
+},
+{
+"children":[
+{
+"children":[],
 "id":"165a1189e30f4ce5b22001ea8091aa9c",
 "paragraphs":[
 {
@@ -132,9 +176,19 @@
 ],
 "id":"f4e95a10e48249d1986d0a03569aa7d4",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"The remainder of this chapter will fill in the sections in those files to create the complete implementation.",
+"type":"text"
 }
 ],
-"title":"File"
+"id":"061291f4b0964752bbb373a4131056c7",
+"type":"text"
+}
+],
+"title":"Files"
 },
 {
 "children":[],
@@ -3583,9 +3637,31 @@
 }
 ],
 "title":"Utilities"
+}
+],
+"id":"b0b789cd397842fa83da264c639d9b7a",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"This chapter gives a complete description of the implementation of RLiterate presented in small pieces.",
+"type":"text"
+}
+],
+"id":"cee5548aa83546e38eff7ad46bc34091",
+"type":"text"
+}
+],
+"title":"Implementation"
 },
 {
 "children":[
+{
+"children":[],
+"id":"b9235c3cea5d4222ad93b17a19c310db",
+"paragraphs":[],
+"title":"TODO: Include history from first version"
+},
 {
 "children":[],
 "id":"e7933f62b6c244fbbed916e00d06d1c6",
@@ -3593,7 +3669,7 @@
 {
 "fragments":[
 {
-"text":"Proof of concept of new ",
+"text":"One of the goals with the rewrite is to improve performance. One thing that makes the first version of RLiterate slow is that the GUI is re-rendered even though nothing has changed. To solve this, I though using an architecture inspired by ",
 "type":"text"
 },
 {
@@ -3602,7 +3678,27 @@
 "url":"https://reactjs.org/"
 },
 {
-"text":"-like GUI architecture. Can resize table of contents by dragging.",
+"text":" might work.",
+"type":"text"
+}
+],
+"id":"78da072963884166ba2ae29d4c1e9891",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"React works by passing props, which is a JSON document, to a component that then renders the GUI. The props are immutable which makes it easy to see if it is exactly the same as the previous render. The first version of RLiterate had a similar architecture, but the props passed to the component was a Python class which had methods to get the different parts of the data. So even if nothing changed, the component had to call those methods and re-render because it could not know if something changed. With a pure Python dictionary as props instead, comparing to values is easy.",
+"type":"text"
+}
+],
+"id":"8cf43f1a06d649de899044a840bd8eaa",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"So I decided to try this architecture out. The first thing I implemented was the main layout of RLiterate where the table of contents could be resized by dragging.",
 "type":"text"
 }
 ],
@@ -3619,9 +3715,133 @@
 "id":"61cfd2e787ff458a93a92fed798169c7",
 "image_base64":"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",
 "type":"image"
+},
+{
+"fragments":[
+{
+"text":"It works as follows:",
+"type":"text"
 }
 ],
-"title":"V1 Oct 2019"
+"id":"8c3c806edda34de6ae8c36ecb2ce393f",
+"type":"text"
+},
+{
+"child_type":"unordered",
+"children":[
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"The component in this case is the main frame.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"The main frame is passed a dictionary as props which looks like this:",
+"type":"text"
+}
+]
+}
+],
+"id":"60871f7262e84d4f97ffa53dd4731c94",
+"type":"list"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"{\n  'title': 'example.rliterate (/home/rick) - RLiterate 2',\n  'toolbar': {\n    'margin': 4\n  },\n  'toolbar_divider': {\n    'color': '#aaaaaf',\n    'thickness': 2\n  }\n  'main_area': {\n    'toc': {\n      'background': '#ffeeff',\n      'set_width': <bound method ...>,\n      'width': 229\n    },\n    'toc_divider': {\n      'color': '#aaaaff',\n      'thickness': 3\n    },\n    'workspace': {}\n  },\n}\n",
+"type":"code"
+}
+],
+"id":"640658ed37184461b7d040be907ebb96",
+"type":"code"
+},
+{
+"child_type":"unordered",
+"children":[
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"The main frame has logic to create the GUI from the props.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"When the mouse drags the border, the ",
+"type":"text"
+},
+{
+"text":"set_width",
+"type":"code"
+},
+{
+"text":" method passed in the props is called.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"It will set a new with of the table of contents and create a completely new props dictionary where the new width is set.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"The props is re-constructed smartly, so that parts that did not change are re-used as is.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"The new props are passe to main frame which re-renders itself. Since the props are immutable dictionaries, it can compare them with the previous values to figure out what has actually changed and only re-render what is needed.",
+"type":"text"
+}
+]
+}
+],
+"id":"2e88e5065d8842f6aca31fb9bbc9af66",
+"type":"list"
+},
+{
+"fragments":[
+{
+"text":"From a performance perspective, this architecture seemed to work pretty well. So this gave me confidence to move forward with it and see if it would scale for what RLiterate needs.",
+"type":"text"
+}
+],
+"id":"e73dac57d0d94f699ff5f787746cb4a7",
+"type":"text"
+}
+],
+"title":"Proof of concept (V1 Oct 2019)"
 },
 {
 "children":[],
@@ -3704,7 +3924,7 @@
 "type":"image"
 }
 ],
-"title":"V2 Oct-Nov 2019"
+"title":"Fleshing out table of contens (V2 Oct-Nov 2019)"
 },
 {
 "children":[],
@@ -3776,11 +3996,22 @@
 "type":"image"
 }
 ],
-"title":"V3 Nov- 2019"
+"title":"Fleshing out workspace (V3 Nov- 2019)"
 }
 ],
 "id":"359aefc7fbb54cb4b8e43182efb241a0",
-"paragraphs":[],
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"This chapter documents the evolution and development of RLiterate.",
+"type":"text"
+}
+],
+"id":"847ace5608af44a3a7303d035eb52ca7",
+"type":"text"
+}
+],
 "title":"History"
 },
 {
@@ -3790,7 +4021,7 @@
 {
 "fragments":[
 {
-"text":"Review TODO from old version.",
+"text":"Review TODO from first version.",
 "type":"text"
 }
 ],
@@ -3861,7 +4092,17 @@
 {
 "fragments":[
 {
-"text":"This is a rewrite of RLiterate with the following goals:",
+"text":"RLiterate is a graphical tool for doing literate programming. Literate programming is a style of programming in which you don't write source code directly. Instead you write a document which have code snippets interspersed with regular text. It shifts the mindset of the programmer from writing code to writing a document in which the program is presented piece by piece.",
+"type":"text"
+}
+],
+"id":"edfdab192fab48b49f1cffab13bd4ed3",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"This second version is a complete rewrite of the first version with the following goals:",
 "type":"text"
 }
 ],
@@ -3904,6 +4145,16 @@
 ],
 "id":"20fd19faf32a4577bdc992cfe7be4256",
 "type":"list"
+},
+{
+"fragments":[
+{
+"text":"This book describes RLiterate and also includes the complete implementation presented in small pieces.",
+"type":"text"
+}
+],
+"id":"cc0ccff476464ee2acaec7560a9628a0",
+"type":"text"
 }
 ],
 "title":"RLiterate 2"
