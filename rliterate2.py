@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from collections import namedtuple, defaultdict
+from collections import namedtuple, defaultdict, OrderedDict
 from operator import add, sub, mul, floordiv
 import contextlib
 import cProfile
@@ -22,23 +22,6 @@ import wx
 
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
-
-def memo_reset(fn):
-    def with_memo_reset(self, *args):
-        self.old_cache = self.new_cache
-        self.new_cache = {}
-        return fn(self, *args)
-    return with_memo_reset
-
-def memo(fn):
-    def with_memo(self, *args):
-        key = tuple([fn.__name__]+[id(x) for x in args])
-        if key in self.old_cache:
-            self.new_cache[key] = self.old_cache[key]
-        else:
-            self.new_cache[key] = (fn(self, *args), args)
-        return self.new_cache[key][0]
-    return with_memo
 
 def profile_sub(text):
     def wrap(fn):
@@ -416,8 +399,6 @@ class WidgetMixin(object):
 class Props(Immutable):
 
     def __init__(self, props, child_props={}):
-        self.old_cache = {}
-        self.new_cache = {}
         self.dependencies = set()
         data = {}
         for name, value in props.items():
@@ -1564,6 +1545,7 @@ class TableOfContentsDropLine(Panel):
 class WorkspaceProps(Props):
 
     def __init__(self, document, session, theme):
+        self._paragraph_cache = Cache(limit=1000)
         Props.__init__(self, {
             "background": PropUpdate(
                 theme, ["workspace", "background"]
@@ -1595,7 +1577,6 @@ class WorkspaceProps(Props):
         })
 
     @profile_sub("build_columns")
-    @memo_reset
     def build_columns(self, document, columns, page_body_width, page_theme):
         columns_prop = []
         for column in columns:
@@ -1621,7 +1602,9 @@ class WorkspaceProps(Props):
 
     def build_page(self, page, page_body_width, page_theme):
         return {
-            "title_fragments": [{"text": page["title"]}],
+            "title_fragments": self.build_title_fragments(
+                page["title"]
+            ),
             "paragraphs": self.build_paragraphs(
                 page["paragraphs"],
                 page_theme
@@ -1633,19 +1616,30 @@ class WorkspaceProps(Props):
             "body_width": page_body_width,
         }
 
-    @memo
+    def build_title_fragments(self, title):
+        return [{"text": title}]
+
     def build_paragraphs(self, paragraphs, page_theme):
+        return [
+            self._paragraph_cache.get_or_update(
+                paragraph["id"],
+                "paragraph",
+                self.build_paragraph,
+                paragraph,
+                page_theme
+            )
+            for paragraph in paragraphs
+        ]
+
+    def build_paragraph(self, paragraph, page_theme):
         BUILDERS = {
             "text": self.build_text_paragraph,
             "code": self.build_code_paragraph,
         }
-        return [
-            BUILDERS.get(
-                paragraph["type"],
-                self.build_unknown_paragraph
-            )(paragraph, page_theme)
-            for paragraph in paragraphs
-        ]
+        return BUILDERS.get(
+            paragraph["type"],
+            self.build_unknown_paragraph
+        )(paragraph, page_theme)
 
     @profile_sub("build_text_paragraph")
     def build_text_paragraph(self, paragraph, page_theme):
@@ -1679,7 +1673,6 @@ class WorkspaceProps(Props):
             ),
         }
 
-    @memo
     def build_code_path_fragments(self, filepath, chunkpath):
         fragments = []
         for index, x in enumerate(filepath):
@@ -1711,7 +1704,6 @@ class WorkspaceProps(Props):
             ),
         }
 
-    @memo
     def build_code_body_fragments(self, fragments, pygments_lexer):
         code_chunk = CodeChunk()
         for fragment in fragments:
@@ -1734,7 +1726,6 @@ class WorkspaceProps(Props):
             "font": page_theme["code_font"],
         }
 
-    @memo
     def code_pygments_lexer(self, language, filename):
         try:
             if language:
@@ -1751,7 +1742,6 @@ class WorkspaceProps(Props):
             return pygments.lexers.TextLexer(stripnl=False)
 
     @profile_sub("apply_token_styles")
-    @memo
     def apply_token_styles(self, fragments, token_styles):
         styles = self.build_style_dict(token_styles)
         def style_fragment(fragment):
@@ -1770,7 +1760,6 @@ class WorkspaceProps(Props):
             for fragment in fragments
         ]
 
-    @memo
     def build_style_dict(self, theme_style):
         styles = {}
         for name, value in theme_style.items():
@@ -1903,6 +1892,45 @@ class PageTopRow(Panel):
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageRightBorder, props, sizer, handlers, name)
 
+class PageBody(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['title_fragments'])
+        props['max_width'] = self.prop(['body_width'])
+        props['font'] = self.prop(['title_font'])
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.ALL
+        self._create_widget(Text, props, sizer, handlers, name)
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props.update(loopvar)
+            props['body_width'] = self.prop(['body_width'])
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.LEFT
+            sizer["flag"] |= wx.BOTTOM
+            sizer["flag"] |= wx.RIGHT
+            self._create_widget(loopvar['widget'], props, sizer, handlers, name)
+        loop_options = {}
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['paragraphs']):
+                loop_fn(loopvar)
+
 class PageRightBorder(Panel):
 
     def _get_local_props(self):
@@ -1946,45 +1974,6 @@ class PageBottomBorder(Panel):
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Panel, props, sizer, handlers, name)
-
-class PageBody(Panel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.VERTICAL)
-
-    def _create_widgets(self):
-        pass
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props['fragments'] = self.prop(['title_fragments'])
-        props['max_width'] = self.prop(['body_width'])
-        props['font'] = self.prop(['title_font'])
-        sizer["border"] = self.prop(['margin'])
-        sizer["flag"] |= wx.ALL
-        self._create_widget(Text, props, sizer, handlers, name)
-        def loop_fn(loopvar):
-            pass
-            props = {}
-            sizer = {"flag": 0, "border": 0, "proportion": 0}
-            name = None
-            handlers = {}
-            props.update(loopvar)
-            props['body_width'] = self.prop(['body_width'])
-            sizer["border"] = self.prop(['margin'])
-            sizer["flag"] |= wx.LEFT
-            sizer["flag"] |= wx.BOTTOM
-            sizer["flag"] |= wx.RIGHT
-            self._create_widget(loopvar['widget'], props, sizer, handlers, name)
-        loop_options = {}
-        with self._loop(**loop_options):
-            for loopvar in self.prop(['paragraphs']):
-                loop_fn(loopvar)
 
 class TextParagraph(Panel):
 
@@ -2666,6 +2655,31 @@ class Text(wx.Panel, WxWidgetMixin):
         for style, items in self._draw_fragments_by_style.items():
             dc.SetTextForeground(style or self.GetForegroundColour())
             dc.DrawTextList(*items)
+
+class Cache(object):
+
+    def __init__(self, limit):
+        self._limit = limit
+        self._entries = OrderedDict()
+
+    def get_or_update(self, id_, name, update_fn, *args):
+        if id_ not in self._entries:
+            self._entries[id_] = {}
+        (dependencies, result) = self._entries[id_].get(name, ([], None))
+        if self._differ(dependencies, args):
+            result = update_fn(*args)
+            self._entries[id_][name] = (args, result)
+            if len(self._entries) > self._limit:
+                self._entries.popitem(last=False)
+        return result
+
+    def _differ(self, one, two):
+        if len(one) != len(two):
+            return True
+        for index in range(len(one)):
+            if one[index] is not two[index]:
+                return True
+        return False
 
 if __name__ == "__main__":
     main()
