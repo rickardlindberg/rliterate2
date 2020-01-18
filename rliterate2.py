@@ -72,12 +72,13 @@ def parse_args():
 
 def main():
     args = parse_args()
-    document = Document(args["path"])
-    session = Session()
-    theme = Theme()
     start_app(
         MainFrame,
-        MainFrameProps(document, session, theme)
+        MainFrameProps(
+            Document(args["path"]),
+            Session(),
+            Theme()
+        )
     )
 
 def format_title(path):

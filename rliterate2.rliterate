@@ -235,7 +235,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    args = parse_args()\n    document = Document(args[\"path\"])\n    session = Session()\n    theme = Theme()\n    start_app(\n        MainFrame,\n        MainFrameProps(document, session, theme)\n    )\n",
+"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        MainFrameProps(\n            Document(args[\"path\"]),\n            Session(),\n            Theme()\n        )\n    )\n",
 "type":"code"
 }
 ],
