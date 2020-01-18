@@ -12,7 +12,7 @@
 "type":"strong"
 },
 {
-"text":" Show example how literate programming is done in RLiterate.",
+"text":" Show an example how literate programming is done in RLiterate.",
 "type":"text"
 }
 ],
@@ -33,7 +33,7 @@
 "type":"strong"
 },
 {
-"text":" Explain concepts in greater detail.",
+"text":" Explain concepts and features in greater detail.",
 "type":"text"
 }
 ],
@@ -52,7 +52,7 @@
 {
 "fragments":[
 {
-"text":"RLiterate is written in a single Python file. It looks like this:",
+"text":"RLiterate is written in a single Python file that looks like this:",
 "type":"text"
 }
 ],
@@ -243,7 +243,7 @@
 "type":"code"
 }
 ],
-"title":"Main"
+"title":"Main function"
 },
 {
 "children":[
@@ -3470,7 +3470,7 @@
 ],
 "id":"f4c7873224fb4dfcbe73180d7afdfd72",
 "paragraphs":[],
-"title":"GUI language"
+"title":"GUI framework"
 },
 {
 "children":[
@@ -3682,7 +3682,16 @@
 {
 "fragments":[
 {
-"text":"This chapter gives a complete description of the implementation of RLiterate presented in small pieces.",
+"text":"This chapter contains the complete implementation of the ",
+"type":"text"
+},
+{
+"page_id":"38a84460a00e451eb88dbddb9c449827",
+"text":"second version",
+"type":"reference"
+},
+{
+"text":" of RLiterate.",
 "type":"text"
 }
 ],
@@ -3702,12 +3711,86 @@
 },
 {
 "children":[],
+"id":"38a84460a00e451eb88dbddb9c449827",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"I had been using RLiterate to write blog posts and really liked its features. However, it had some performance issues that made it annoying to use as well as some recurring bugs. I concluded that in order to fix these issues and also continue to improve RLiterate, a complete rewrite was necessary.",
+"type":"text"
+}
+],
+"id":"5c39af8d11774b0688824622176b984e",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"I decided to try doing a rewrite with the following initial goals:",
+"type":"text"
+}
+],
+"id":"313389d1d33342909fe864a0717a0cd0",
+"type":"text"
+},
+{
+"child_type":"unordered",
+"children":[
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Improve performance so that it is not annoying to use.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Fix bugs that make it annoying to use.",
+"type":"text"
+}
+]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"Clean up the code base and remove old cruft.",
+"type":"text"
+}
+]
+}
+],
+"id":"20fd19faf32a4577bdc992cfe7be4256",
+"type":"list"
+},
+{
+"fragments":[
+{
+"text":"I also thought that the features in the second version should be roughly the same as in the first version.",
+"type":"text"
+}
+],
+"id":"36cb7cf18d2d41f08da7a20151c7f823",
+"type":"text"
+}
+],
+"title":"2nd version rewrite (Oct 2019)"
+},
+{
+"children":[],
 "id":"e7933f62b6c244fbbed916e00d06d1c6",
 "paragraphs":[
 {
 "fragments":[
 {
-"text":"One of the goals with the rewrite was to improve performance. One thing that makes the first version of RLiterate slow is that the GUI is re-rendered even though nothing has changed. To solve this, I though using an architecture inspired by ",
+"text":"One of the goals with the rewrite was to improve performance. One thing that made the first version of RLiterate slow was that the GUI was re-rendered even though nothing had changed. To solve this, I though using an architecture inspired by ",
 "type":"text"
 },
 {
@@ -3726,7 +3809,7 @@
 {
 "fragments":[
 {
-"text":"React works by passing props, which is a JSON document, to a component that then renders the GUI. The props are immutable which makes it easy to see if it is exactly the same as the previous render. The first version of RLiterate had a similar architecture, but the props passed to the component was a Python class which had methods to get the different parts of the data. So even if nothing changed, the component had to call those methods and re-render because it could not know if something changed. With a pure Python dictionary as props instead, comparing to values is easy.",
+"text":"React works by passing props, which is a JSON document, to a component that then renders the GUI from that data. The props is immutable which makes it easy for the component to see if it is exactly the same as in the previous render or if something changed. The first version of RLiterate had a similar architecture, but the props passed to the component was a Python class which had methods to get the different parts of the data. So even if nothing had changed, the component had to call those methods and re-render because it could not know if something changed. With an immutable Python dictionary as props instead, comparing to values would be easy.",
 "type":"text"
 }
 ],
@@ -3757,7 +3840,7 @@
 {
 "fragments":[
 {
-"text":"It works as follows:",
+"text":"It worked as follows:",
 "type":"text"
 }
 ],
@@ -3772,7 +3855,7 @@
 "children":[],
 "fragments":[
 {
-"text":"The component in this case is the main frame.",
+"text":"The component in this case was the main frame.",
 "type":"text"
 }
 ]
@@ -3782,7 +3865,7 @@
 "children":[],
 "fragments":[
 {
-"text":"The main frame is passed a dictionary as props which looks like this:",
+"text":"The main frame was passed a dictionary as props which looked like this:",
 "type":"text"
 }
 ]
@@ -3801,6 +3884,7 @@
 }
 ],
 "id":"640658ed37184461b7d040be907ebb96",
+"language":"",
 "type":"code"
 },
 {
@@ -3811,7 +3895,7 @@
 "children":[],
 "fragments":[
 {
-"text":"The main frame has logic to create the GUI from the props.",
+"text":"The main frame had logic to render the GUI from the props.",
 "type":"text"
 }
 ]
@@ -3821,7 +3905,7 @@
 "children":[],
 "fragments":[
 {
-"text":"When the mouse drags the border, the ",
+"text":"When the mouse dragged the border, the ",
 "type":"text"
 },
 {
@@ -3829,7 +3913,7 @@
 "type":"code"
 },
 {
-"text":" method passed in the props is called.",
+"text":" method passed in the props was called.",
 "type":"text"
 }
 ]
@@ -3839,7 +3923,7 @@
 "children":[],
 "fragments":[
 {
-"text":"It will set a new with of the table of contents and create a completely new props dictionary where the new width is set.",
+"text":"It would set a new with of the table of contents and a completely new props dictionary would be created with the new width set.",
 "type":"text"
 }
 ]
@@ -3849,7 +3933,7 @@
 "children":[],
 "fragments":[
 {
-"text":"The props is re-constructed smartly, so that parts that did not change are re-used as is.",
+"text":"The props was re-constructed smartly, so that parts that did not change were re-used as is.",
 "type":"text"
 }
 ]
@@ -3859,7 +3943,7 @@
 "children":[],
 "fragments":[
 {
-"text":"The new props are passe to main frame which re-renders itself. Since the props are immutable dictionaries, it can compare them with the previous values to figure out what has actually changed and only re-render what is needed.",
+"text":"The new props were passed to main frame which re-renders itself. Since the props are immutable dictionaries, it can compare them with the previous values to figure out what has actually changed and only re-render what is needed.",
 "type":"text"
 }
 ]
@@ -3867,6 +3951,16 @@
 ],
 "id":"2e88e5065d8842f6aca31fb9bbc9af66",
 "type":"list"
+},
+{
+"fragments":[
+{
+"text":"Since performance was the main focus with this proof of concept, I added profiling early to see what parts of a render took time. I concluded that if a render is done in less that 10ms (100 frames per second) then that is good enough. 20ms (50 frames per second) starts to feel significantly slower.",
+"type":"text"
+}
+],
+"id":"156b10d08b6e4a6e85c8517ecd5d0604",
+"type":"text"
 },
 {
 "fragments":[
@@ -3881,7 +3975,7 @@
 {
 "fragments":[
 {
-"text":"This also improved RLiterate by allowing the table of contents to be resized, something which was not possible in the first version.",
+"text":"This proof of concept also improved RLiterate by allowing the table of contents to be resized, something which was not possible in the first version.",
 "type":"text"
 }
 ],
@@ -3891,7 +3985,7 @@
 {
 "fragments":[
 {
-"text":"Another goal with the rewrite was to clean up old cruft. One such thing which was on the TODO list for the first version was to completely separate wx GUI code from the RLiterate code. RLiterate has a GUI framework so that it does not depend directly on the underlying GUI framework. In the first version this was not 100% completed. RLiterate code still has a direct dependency on wxPython. In the second version this is now fixed. Since it was started from scratch, this was easier to just ensure.",
+"text":"Another goal with the rewrite was to clean up old cruft. One such thing which was on the TODO list for the first version was to completely separate wx GUI code from the RLiterate code. RLiterate had a GUI framework so that it did not depend directly on the underlying GUI framework. In the first version this was not 100% completed. RLiterate code still had a direct dependency on wxPython. In the second version this was fixed. Since it was started from scratch, this was easier to just ensure.",
 "type":"text"
 }
 ],
@@ -3899,7 +3993,7 @@
 "type":"text"
 }
 ],
-"title":"Rewrite proof of concept (V1 Oct 2019)"
+"title":"Proof of concept (V1 Oct 2019)"
 },
 {
 "children":[],
@@ -3996,7 +4090,7 @@
 {
 "fragments":[
 {
-"text":"Had to introduce cacheing in GUI layer to make things fast.",
+"text":"Had to introduce caching in GUI layer to make expand/collapse fast.",
 "type":"text"
 }
 ],
@@ -4078,7 +4172,7 @@
 {
 "fragments":[
 {
-"text":"Had to introduce cacheing in props generation because it became slow.",
+"text":"Had to introduce caching in props generation for paragraphs to make unrelated prop changes fast. At this point, generating props for a code paragraph includes syntax highlighting which is slow.",
 "type":"text"
 }
 ],
@@ -4182,7 +4276,7 @@
 {
 "fragments":[
 {
-"text":"RLiterate is a graphical tool for doing literate programming. Literate programming is a style of programming in which you don't write source code directly. Instead you write a document which have code snippets interspersed with regular text. It shifts the mindset of the programmer from writing code to writing a document in which the program is presented piece by piece.",
+"text":"RLiterate is a graphical tool for doing literate programming. Literate programming is a style of programming in which you don't write source code directly. Instead you write a document which has code snippets interspersed with regular text. It shifts the mindset of the programmer from writing code to writing a document in which the program is presented in small pieces.",
 "type":"text"
 }
 ],
@@ -4192,54 +4286,7 @@
 {
 "fragments":[
 {
-"text":"The second version of RLiterate is a complete rewrite of the first version with the following goals:",
-"type":"text"
-}
-],
-"id":"313389d1d33342909fe864a0717a0cd0",
-"type":"text"
-},
-{
-"child_type":"unordered",
-"children":[
-{
-"child_type":null,
-"children":[],
-"fragments":[
-{
-"text":"Improve performance so that it is not annoying to use.",
-"type":"text"
-}
-]
-},
-{
-"child_type":null,
-"children":[],
-"fragments":[
-{
-"text":"Fix bugs that make it annoying to use.",
-"type":"text"
-}
-]
-},
-{
-"child_type":null,
-"children":[],
-"fragments":[
-{
-"text":"Clean up the code base and remove old cruft.",
-"type":"text"
-}
-]
-}
-],
-"id":"20fd19faf32a4577bdc992cfe7be4256",
-"type":"list"
-},
-{
-"fragments":[
-{
-"text":"This book describes RLiterate and its history and also includes the complete implementation of the second version presented in small pieces.",
+"text":"This book describes RLiterate, its history, and also includes the complete implementation of the second version.",
 "type":"text"
 }
 ],
