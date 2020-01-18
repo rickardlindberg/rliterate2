@@ -4166,16 +4166,7 @@
 {
 "fragments":[
 {
-"text":"ProjecturED was an influence for introducing ",
-"type":"text"
-},
-{
-"page_id":"c06eb52127254249bf3b98a59bf7debb",
-"text":"variables",
-"type":"reference"
-},
-{
-"text":".",
+"text":"ProjecturED was an influence for introducing variables.",
 "type":"text"
 }
 ],
