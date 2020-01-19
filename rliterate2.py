@@ -2,6 +2,7 @@
 
 from collections import namedtuple, defaultdict, OrderedDict
 from operator import add, sub, mul, floordiv
+import base64
 import contextlib
 import cProfile
 import io
@@ -171,6 +172,30 @@ def genid():
 
 def makeTuple(*args):
     return tuple(args)
+
+def base64_to_image(data):
+    try:
+        return wx.Image(
+            io.BytesIO(base64.b64decode(data)),
+            wx.BITMAP_TYPE_ANY
+        )
+    except:
+        return wx.ArtProvider.GetBitmap(
+            wx.ART_MISSING_IMAGE,
+            wx.ART_BUTTON,
+            (64, 64)
+        ).ConvertToImage()
+
+
+def fit_image(image, width):
+    if image.Width <= width:
+        return image
+    factor = float(width) / image.Width
+    return image.Scale(
+        int(image.Width*factor),
+        int(image.Height*factor),
+        wx.IMAGE_QUALITY_HIGH
+    )
 
 def wx_font(font):
     font_info = wx.FontInfo(font.get("size", 10))
@@ -923,6 +948,25 @@ class Slider(wx.Slider, WxWidgetMixin):
     def _on_wx_slider(self, wx_event):
         self._call_event_handler("slider", SliderEvent(self.Value))
 
+class Image(wx.StaticBitmap, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.StaticBitmap.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _update_gui(self, parent_updated):
+        WxWidgetMixin._update_gui(self, parent_updated)
+        reset = False
+        if self.prop_changed("base64_image"):
+            self._image = base64_to_image(self.prop(["base64_image"]))
+            self._scaled_image = self._image
+            reset = True
+        if self.prop_changed("width"):
+            self._scaled_image = fit_image(self._image, self.prop(["width"]))
+            reset = True
+        if reset:
+            self.SetBitmap(self._scaled_image.ConvertToBitmap())
+
 class ExpandCollapse(wx.Panel, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
@@ -1635,7 +1679,10 @@ class WorkspaceProps(Props):
     def build_paragraph(self, paragraph, page_theme):
         BUILDERS = {
             "text": self.build_text_paragraph,
+            "quote": self.build_quote_paragraph,
+            "list": self.build_list_paragraph,
             "code": self.build_code_paragraph,
+            "image": self.build_image_paragraph,
         }
         return BUILDERS.get(
             paragraph["type"],
@@ -1648,6 +1695,45 @@ class WorkspaceProps(Props):
             "widget": TextParagraph,
             "text_fragments": paragraph["fragments"],
         }
+
+    @profile_sub("build_quote_paragraph")
+    def build_quote_paragraph(self, paragraph, page_theme):
+        return {
+            "widget": QuoteParagraph,
+            "text_fragments": paragraph["fragments"],
+        }
+
+    @profile_sub("build_list_paragraph")
+    def build_list_paragraph(self, paragraph, page_theme):
+        return {
+            "widget": ListParagraph,
+            "rows": self.build_list_item_rows(
+                paragraph["children"],
+                paragraph["child_type"]
+            ),
+        }
+
+    def build_list_item_rows(self, children, child_type, level=0):
+        rows = []
+        for index, child in enumerate(children):
+            rows.append({
+                "text_fragments": [
+                    {"text": self._get_bullet_text(child_type, index)}
+                ]+child["fragments"],
+                "level": level,
+            })
+            rows.extend(self.build_list_item_rows(
+                child["children"],
+                child["child_type"],
+                level+1
+            ))
+        return rows
+
+    def _get_bullet_text(self, list_type, index):
+        if list_type == "ordered":
+            return "{}. ".format(index + 1)
+        else:
+            return u"\u2022 "
 
     @profile_sub("build_code_paragraph")
     def build_code_paragraph(self, paragraph, page_theme):
@@ -1719,6 +1805,14 @@ class WorkspaceProps(Props):
                     {"token_type": TokenType.Comment.Preproc}
                 )
         return code_chunk.tokenize(pygments_lexer)
+
+    @profile_sub("build_image_paragraph")
+    def build_image_paragraph(self, paragraph, page_theme):
+        return {
+            "widget": ImageParagraph,
+            "base64_image": paragraph.get("image_base64", None),
+            "text_fragments": paragraph["fragments"],
+        }
 
     def build_unknown_paragraph(self, paragraph, page_theme):
         return {
@@ -1926,6 +2020,7 @@ class PageBody(Panel):
             sizer["flag"] |= wx.LEFT
             sizer["flag"] |= wx.BOTTOM
             sizer["flag"] |= wx.RIGHT
+            sizer["flag"] |= wx.EXPAND
             self._create_widget(loopvar['widget'], props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
@@ -1997,6 +2092,56 @@ class TextParagraph(Panel):
         props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
+
+class QuoteParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['left_margin'] = 20
+        props['right_margin'] = 0
+        props['fragments'] = self.prop(['text_fragments'])
+        props['max_width'] = sub(self.prop(['body_width']), 20)
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(TextWithMargin, props, sizer, handlers, name)
+
+class ListParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['left_margin'] = mul(loopvar['level'], 20)
+            props['right_margin'] = 0
+            props['max_width'] = sub(self.prop(['body_width']), mul(loopvar['level'], 20))
+            props['fragments'] = loopvar['text_fragments']
+            sizer["flag"] |= wx.EXPAND
+            self._create_widget(TextWithMargin, props, sizer, handlers, name)
+        loop_options = {}
+        with self._loop(**loop_options):
+            for loopvar in self.prop(['rows']):
+                loop_fn(loopvar)
 
 class CodeParagraph(Panel):
 
@@ -2074,6 +2219,36 @@ class CodeParagraphBody(Panel):
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
+class ImageParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['base64_image'] = self.prop(['base64_image'])
+        props['width'] = self.prop(['body_width'])
+        sizer["flag"] |= wx.ALIGN_CENTER
+        self._create_widget(Image, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['left_margin'] = 10
+        props['right_margin'] = 10
+        props['fragments'] = self.prop(['text_fragments'])
+        props['max_width'] = sub(self.prop(['body_width']), 20)
+        sizer["flag"] |= wx.ALIGN_CENTER
+        self._create_widget(TextWithMargin, props, sizer, handlers, name)
+
 class UnknownParagraph(Panel):
 
     def _get_local_props(self):
@@ -2095,6 +2270,30 @@ class UnknownParagraph(Panel):
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
+
+class TextWithMargin(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['left_margin']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['fragments'] = self.prop(['fragments'])
+        props['max_width'] = self.prop(['max_width'])
+        props['break_at_word'] = True
+        props['line_height'] = 1.2
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_space(self.prop(['right_margin']))
 
 class Document(Immutable):
 

@@ -182,7 +182,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict, OrderedDict\nfrom operator import add, sub, mul, floordiv\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nfrom pygments.token import string_to_tokentype\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict, OrderedDict\nfrom operator import add, sub, mul, floordiv\nimport base64\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nfrom pygments.token import string_to_tokentype\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -1153,7 +1153,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1258,6 +1258,119 @@
 }
 ],
 "title":"Text"
+},
+{
+"children":[],
+"id":"6595341bee2c4300be12a4a84a753eb5",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(self, paragraph, page_theme):\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_fragments\": paragraph[\"fragments\"],\n    }\n",
+"type":"code"
+}
+],
+"id":"be14561b34384c1b99cc3fbb15f836e1",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel QuoteParagraph %layout_columns {\n    TextWithMargin(\n        left_margin   = 20\n        right_margin  = 0\n        fragments     = #text_fragments\n        max_width     = sub(#body_width 20)\n        %align[EXPAND]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"4bef39114b5a432187e08f4315b7e3c0",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Quote"
+},
+{
+"children":[],
+"id":"bb2c52bc290242dbbecdfabc7c86b4fc",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(self, paragraph, page_theme):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": self.build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"]\n        ),\n    }\n",
+"type":"code"
+}
+],
+"id":"cec3727f0afa4ced813bf4d45faa2813",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_list_item_rows(self, children, child_type, level=0):\n    rows = []\n    for index, child in enumerate(children):\n        rows.append({\n            \"text_fragments\": [\n                {\"text\": self._get_bullet_text(child_type, index)}\n            ]+child[\"fragments\"],\n            \"level\": level,\n        })\n        rows.extend(self.build_list_item_rows(\n            child[\"children\"],\n            child[\"child_type\"],\n            level+1\n        ))\n    return rows\n\ndef _get_bullet_text(self, list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
+"type":"code"
+}
+],
+"id":"ee5f8aabb0124427a54644f6da6ad75d",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        TextWithMargin(\n            left_margin  = mul($level 20)\n            right_margin = 0\n            max_width    = sub(#body_width mul($level 20))\n            fragments    = $text_fragments\n            %align[EXPAND]\n        )\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"9639192624f34b7885cdbc61a71940e0",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"List"
 },
 {
 "children":[
@@ -1437,7 +1550,54 @@
 "type":"code"
 }
 ],
-"title":"Code paragraph"
+"title":"Code"
+},
+{
+"children":[],
+"id":"bb95bcdb4d7d4e819628d8b9028082d1",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"WorkspaceProps"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(self, paragraph, page_theme):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_fragments\": paragraph[\"fragments\"],\n    }\n",
+"type":"code"
+}
+],
+"id":"d08eb4fda29f4c889a18bc3fee8b3c6b",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel ImageParagraph %layout_rows {\n    Image(\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    )\n    TextWithMargin(\n        left_margin  = 10\n        right_margin = 10\n        fragments    = #text_fragments\n        max_width    = sub(#body_width 20)\n        %align[CENTER]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"70b326d0f95041f687dacee3b0218a25",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"Image"
 },
 {
 "children":[],
@@ -1582,7 +1742,7 @@
 ],
 "fragments":[
 {
-"text":"def build_paragraph(self, paragraph, page_theme):\n    BUILDERS = {\n        \"text\": self.build_text_paragraph,\n        \"code\": self.build_code_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        self.build_unknown_paragraph\n    )(paragraph, page_theme)\n",
+"text":"def build_paragraph(self, paragraph, page_theme):\n    BUILDERS = {\n        \"text\": self.build_text_paragraph,\n        \"quote\": self.build_quote_paragraph,\n        \"list\": self.build_list_paragraph,\n        \"code\": self.build_code_paragraph,\n        \"image\": self.build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        self.build_unknown_paragraph\n    )(paragraph, page_theme)\n",
 "type":"code"
 }
 ],
@@ -1690,6 +1850,41 @@
 }
 ],
 "title":"Workspace"
+},
+{
+"children":[
+{
+"children":[],
+"id":"db236eb13fbc472d9616022f38901ffb",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel TextWithMargin %layout_columns {\n    %space[#left_margin]\n    Text(\n        fragments     = #fragments\n        max_width     = #max_width\n        break_at_word = True\n        line_height   = 1.2\n        %align[EXPAND]\n    )\n    %space[#right_margin]\n}\n",
+"type":"code"
+}
+],
+"id":"47125a5fb2c0481fb409f8649a05b712",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"TextWithMargin"
+}
+],
+"id":"3d73ed4ad24f45138951f62472c2117a",
+"paragraphs":[],
+"title":"Reusable widgets"
 }
 ],
 "id":"d625649aae0a40bcb3e2e8cc9ede4373",
@@ -2484,7 +2679,15 @@
 "type":"tabstop"
 },
 {
-"text":"-> [\"layoutAttribute\" \"align\" \"expand\"]\n    | WS '%margin[' expr:x ',' margins:y WS ']' ",
+"text":"-> [\"layoutAttribute\" \"align\" \"expand\"]\n    | WS '%align[' WS 'CENTER' WS ']' ",
+"type":"code"
+},
+{
+"index":20,
+"type":"tabstop"
+},
+{
+"text":"-> [\"layoutAttribute\" \"align\" \"center\"]\n    | WS '%margin[' expr:x ',' margins:y WS ']' ",
 "type":"code"
 },
 {
@@ -3084,7 +3287,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | ast:class [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" class \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"panel\"   -> \"Panel\"\n    | \"scroll\"  -> \"Scroll\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | ast:class [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" class \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"align\" \"center\"        -> { \"sizer[\\\"flag\\\"] |= wx.ALIGN_CENTER\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"panel\"   -> \"Panel\"\n    | \"scroll\"  -> \"Scroll\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -3348,6 +3551,61 @@
 }
 ],
 "title":"Slider"
+},
+{
+"children":[],
+"id":"0ca243f7c3794f9f8913d74001c8c967",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Image(wx.StaticBitmap, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.StaticBitmap.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        reset = False\n        if self.prop_changed(\"base64_image\"):\n            self._image = base64_to_image(self.prop([\"base64_image\"]))\n            self._scaled_image = self._image\n            reset = True\n        if self.prop_changed(\"width\"):\n            self._scaled_image = fit_image(self._image, self.prop([\"width\"]))\n            reset = True\n        if reset:\n            self.SetBitmap(self._scaled_image.ConvertToBitmap())\n",
+"type":"code"
+}
+],
+"id":"940bfd01668645a8a503faad706e3fc1",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def base64_to_image(data):\n    try:\n        return wx.Image(\n            io.BytesIO(base64.b64decode(data)),\n            wx.BITMAP_TYPE_ANY\n        )\n    except:\n        return wx.ArtProvider.GetBitmap(\n            wx.ART_MISSING_IMAGE,\n            wx.ART_BUTTON,\n            (64, 64)\n        ).ConvertToImage()\n\n",
+"type":"code"
+}
+],
+"id":"e01f492280e94f76b5b35d8c6eb41e0b",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def fit_image(image, width):\n    if image.Width <= width:\n        return image\n    factor = float(width) / image.Width\n    return image.Scale(\n        int(image.Width*factor),\n        int(image.Height*factor),\n        wx.IMAGE_QUALITY_HIGH\n    )\n",
+"type":"code"
+}
+],
+"id":"b1350fb6b70d4c919f027f9a58e046bc",
+"type":"code"
+}
+],
+"title":"Image"
 }
 ],
 "id":"bf2fd902b8794da3851327a2a97f4939",
