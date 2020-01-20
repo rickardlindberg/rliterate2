@@ -3582,7 +3582,7 @@
 ],
 "fragments":[
 {
-"text":"class Image(wx.StaticBitmap, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.StaticBitmap.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        reset = False\n        if self.prop_changed(\"base64_image\"):\n            self._image = base64_to_image(self.prop([\"base64_image\"]))\n            self._scaled_image = self._image\n            reset = True\n        if self.prop_changed(\"width\"):\n            self._scaled_image = fit_image(self._image, self.prop([\"width\"]))\n            reset = True\n        if reset:\n            self.SetBitmap(self._scaled_image.ConvertToBitmap())\n",
+"text":"class Image(wx.StaticBitmap, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.StaticBitmap.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        reset = False\n        if self.prop_changed(\"base64_image\"):\n            self._image = base64_to_image(self.prop([\"base64_image\"]))\n            self._scaled_image = self._image\n            reset = True\n        if reset or self.prop_changed(\"width\"):\n            self._scaled_image = fit_image(self._image, self.prop([\"width\"]))\n            reset = True\n        if reset:\n            self.SetBitmap(self._scaled_image.ConvertToBitmap())\n",
 "type":"code"
 }
 ],

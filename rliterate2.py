@@ -961,7 +961,7 @@ class Image(wx.StaticBitmap, WxWidgetMixin):
             self._image = base64_to_image(self.prop(["base64_image"]))
             self._scaled_image = self._image
             reset = True
-        if self.prop_changed("width"):
+        if reset or self.prop_changed("width"):
             self._scaled_image = fit_image(self._image, self.prop(["width"]))
             reset = True
         if reset:
