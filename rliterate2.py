@@ -1618,6 +1618,7 @@ class WorkspaceProps(Props):
             ),
             "actions": {
                 "set_page_body_width": session.set_page_body_width,
+                "edit_title": document.edit_title,
             },
         })
 
@@ -1647,6 +1648,7 @@ class WorkspaceProps(Props):
 
     def build_page(self, page, page_body_width, page_theme):
         return {
+            "id": page["id"],
             "title_fragments": self.build_title_fragments(
                 page["title"]
             ),
@@ -1882,6 +1884,7 @@ class Workspace(HScroll):
             props['min_size'] = makeTuple(self.prop(['column_width']), -1)
             props['column'] = loopvar
             props['workspace_margin'] = self.prop(['margin'])
+            props['actions'] = self.prop(['actions'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Column, props, sizer, handlers, name)
             props = {}
@@ -1925,6 +1928,7 @@ class Column(VScroll):
             name = None
             handlers = {}
             props['page'] = loopvar
+            props['actions'] = self.prop(['actions'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
             self._create_space(self.prop(['workspace_margin']))
@@ -1949,6 +1953,7 @@ class Page(Panel):
         name = None
         handlers = {}
         props['page'] = self.prop(['page'])
+        props['actions'] = self.prop(['actions'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageTopRow, props, sizer, handlers, name)
@@ -1976,6 +1981,7 @@ class PageTopRow(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['page']))
+        props['actions'] = self.prop(['actions'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageBody, props, sizer, handlers, name)
@@ -2007,6 +2013,7 @@ class PageBody(Panel):
         props['font'] = self.prop(['title_font'])
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
+        handlers['click'] = lambda event: self.prop(['actions', 'edit_title'])(self.prop(['id']))
         self._create_widget(Text, props, sizer, handlers, name)
         def loop_fn(loopvar):
             pass
@@ -2384,6 +2391,15 @@ class Document(Immutable):
             target_index in [source_meta.index, source_meta.index+1]):
             return False
         return True
+    def edit_title(self, source_id):
+        try:
+            page_meta = self._get_page_meta(source_id)
+            self.modify(
+                page_meta.path + ["title"],
+                lambda title: title + "."
+            )
+        except PageNotFound:
+            pass
 
 class PageNotFound(Exception):
     pass

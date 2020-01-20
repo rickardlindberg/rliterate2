@@ -1045,7 +1045,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page = $\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page    = $\n            actions = #actions\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1074,7 +1074,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(self, page, page_body_width, page_theme):\n    return {\n        \"title_fragments\": self.build_title_fragments(\n            page[\"title\"]\n        ),\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"title_font\": page_theme[\"title_font\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_page(self, page, page_body_width, page_theme):\n    return {\n        \"id\": page[\"id\"],\n        \"title_fragments\": self.build_title_fragments(\n            page[\"title\"]\n        ),\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"title_font\": page_theme[\"title_font\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1111,7 +1111,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow(\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow(\n        page    = #page\n        actions = #actions\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1132,7 +1132,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        actions = #actions\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1153,7 +1153,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Text(\n        fragments = #title_fragments\n        max_width = #body_width\n        font      = #title_font\n        %margin[#margin,ALL]\n        @click    = #actions.edit_title(#id)\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1766,7 +1766,7 @@
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._paragraph_cache = Cache(limit=1000)\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\"],\n                self.build_columns\n            ),\n            \"page_body_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"]\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n            },\n        })\n\n",
+"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._paragraph_cache = Cache(limit=1000)\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\"],\n                self.build_columns\n            ),\n            \"page_body_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"]\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n                \"edit_title\": document.edit_title,\n            },\n        })\n\n",
 "type":"code"
 },
 {
@@ -1809,7 +1809,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            actions          = #actions\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -2086,6 +2086,23 @@
 }
 ],
 "id":"6ccc8611c05f46de94ec30938522c0a2",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def edit_title(self, source_id):\n    try:\n        page_meta = self._get_page_meta(source_id)\n        self.modify(\n            page_meta.path + [\"title\"],\n            lambda title: title + \".\"\n        )\n    except PageNotFound:\n        pass\n",
+"type":"code"
+}
+],
+"id":"110aa2f7449d42d8ba39d152cfaa7f08",
 "type":"code"
 }
 ],
