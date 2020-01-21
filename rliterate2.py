@@ -656,6 +656,115 @@ class RLiterateDropTarget(wx.DropTarget):
     def OnLeave(self):
         self.widget.on_drag_drop_leave()
 
+class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.BitmapButton.__init__(self, wx_parent, style=wx.NO_BORDER)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _setup_gui(self):
+        WxWidgetMixin._setup_gui(self)
+        self._register_builtin("icon", lambda value:
+            self.SetBitmap(wx.ArtProvider.GetBitmap(
+                {
+                    "add": wx.ART_ADD_BOOKMARK,
+                    "back": wx.ART_GO_BACK,
+                    "forward": wx.ART_GO_FORWARD,
+                    "undo": wx.ART_UNDO,
+                    "redo": wx.ART_REDO,
+                    "quit": wx.ART_QUIT,
+                    "save": wx.ART_FILE_SAVE,
+                    "settings": wx.ART_HELP_SETTINGS,
+                }.get(value, wx.ART_QUESTION),
+                wx.ART_BUTTON,
+                (24, 24)
+            ))
+        )
+        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
+
+    def _on_wx_button(self, wx_event):
+        self.call_event_handler("button", None)
+
+class Button(wx.Button, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Button.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _setup_gui(self):
+        WxWidgetMixin._setup_gui(self)
+        self._register_builtin("label", self.SetLabel)
+        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
+
+    def _on_wx_button(self, wx_event):
+        self.call_event_handler("button", None)
+
+class Slider(wx.Slider, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Slider.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _setup_gui(self):
+        WxWidgetMixin._setup_gui(self)
+        self._register_builtin("min", self.SetMin)
+        self._register_builtin("max", self.SetMax)
+
+    def register_event_handler(self, name, fn):
+        WxWidgetMixin.register_event_handler(self, name, fn)
+        if name == "slider":
+            self._bind_wx_event(wx.EVT_SLIDER, self._on_wx_slider)
+
+    def _on_wx_slider(self, wx_event):
+        self._call_event_handler("slider", SliderEvent(self.Value))
+
+class Image(wx.StaticBitmap, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.StaticBitmap.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _update_gui(self, parent_updated):
+        WxWidgetMixin._update_gui(self, parent_updated)
+        reset = False
+        if self.prop_changed("base64_image"):
+            self._image = base64_to_image(self.prop(["base64_image"]))
+            self._scaled_image = self._image
+            reset = True
+        if reset or self.prop_changed("width"):
+            self._scaled_image = fit_image(self._image, self.prop(["width"]))
+            reset = True
+        if reset:
+            self.SetBitmap(self._scaled_image.ConvertToBitmap())
+
+class ExpandCollapse(wx.Panel, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Panel.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def _get_local_props(self):
+        return {
+            "min_size": (self.prop(["size"]), -1),
+        }
+
+    def _on_paint(self, event):
+        dc = wx.GCDC(wx.PaintDC(self))
+        render = wx.RendererNative.Get()
+        (w, h) = self.Size
+        render.DrawTreeItemButton(
+            self,
+            dc,
+            (
+                0,
+                (h-self.prop(["size"]))/2,
+                self.prop(["size"])-1,
+                self.prop(["size"])-1
+            ),
+            flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
+        )
+
 class WxContainerWidgetMixin(WxWidgetMixin):
 
     def _setup_gui(self):
@@ -885,115 +994,6 @@ class Scroll(CompactScrolledWindow, WxContainerWidgetMixin):
     def __init__(self, wx_parent, *args):
         CompactScrolledWindow.__init__(self, wx_parent)
         WxContainerWidgetMixin.__init__(self, *args)
-
-class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.BitmapButton.__init__(self, wx_parent, style=wx.NO_BORDER)
-        WxWidgetMixin.__init__(self, *args)
-
-    def _setup_gui(self):
-        WxWidgetMixin._setup_gui(self)
-        self._register_builtin("icon", lambda value:
-            self.SetBitmap(wx.ArtProvider.GetBitmap(
-                {
-                    "add": wx.ART_ADD_BOOKMARK,
-                    "back": wx.ART_GO_BACK,
-                    "forward": wx.ART_GO_FORWARD,
-                    "undo": wx.ART_UNDO,
-                    "redo": wx.ART_REDO,
-                    "quit": wx.ART_QUIT,
-                    "save": wx.ART_FILE_SAVE,
-                    "settings": wx.ART_HELP_SETTINGS,
-                }.get(value, wx.ART_QUESTION),
-                wx.ART_BUTTON,
-                (24, 24)
-            ))
-        )
-        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
-
-    def _on_wx_button(self, wx_event):
-        self.call_event_handler("button", None)
-
-class Button(wx.Button, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.Button.__init__(self, wx_parent)
-        WxWidgetMixin.__init__(self, *args)
-
-    def _setup_gui(self):
-        WxWidgetMixin._setup_gui(self)
-        self._register_builtin("label", self.SetLabel)
-        self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
-
-    def _on_wx_button(self, wx_event):
-        self.call_event_handler("button", None)
-
-class Slider(wx.Slider, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.Slider.__init__(self, wx_parent)
-        WxWidgetMixin.__init__(self, *args)
-
-    def _setup_gui(self):
-        WxWidgetMixin._setup_gui(self)
-        self._register_builtin("min", self.SetMin)
-        self._register_builtin("max", self.SetMax)
-
-    def register_event_handler(self, name, fn):
-        WxWidgetMixin.register_event_handler(self, name, fn)
-        if name == "slider":
-            self._bind_wx_event(wx.EVT_SLIDER, self._on_wx_slider)
-
-    def _on_wx_slider(self, wx_event):
-        self._call_event_handler("slider", SliderEvent(self.Value))
-
-class Image(wx.StaticBitmap, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.StaticBitmap.__init__(self, wx_parent)
-        WxWidgetMixin.__init__(self, *args)
-
-    def _update_gui(self, parent_updated):
-        WxWidgetMixin._update_gui(self, parent_updated)
-        reset = False
-        if self.prop_changed("base64_image"):
-            self._image = base64_to_image(self.prop(["base64_image"]))
-            self._scaled_image = self._image
-            reset = True
-        if reset or self.prop_changed("width"):
-            self._scaled_image = fit_image(self._image, self.prop(["width"]))
-            reset = True
-        if reset:
-            self.SetBitmap(self._scaled_image.ConvertToBitmap())
-
-class ExpandCollapse(wx.Panel, WxWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.Panel.__init__(self, wx_parent)
-        WxWidgetMixin.__init__(self, *args)
-        self.Bind(wx.EVT_PAINT, self._on_paint)
-
-    def _get_local_props(self):
-        return {
-            "min_size": (self.prop(["size"]), -1),
-        }
-
-    def _on_paint(self, event):
-        dc = wx.GCDC(wx.PaintDC(self))
-        render = wx.RendererNative.Get()
-        (w, h) = self.Size
-        render.DrawTreeItemButton(
-            self,
-            dc,
-            (
-                0,
-                (h-self.prop(["size"]))/2,
-                self.prop(["size"])-1,
-                self.prop(["size"])-1
-            ),
-            flags=0 if self.prop(["collapsed"]) else wx.CONTROL_EXPANDED
-        )
 
 class MainFrameProps(Props):
 

@@ -3320,186 +3320,7 @@
 "title":"Code generator"
 },
 {
-"children":[],
-"id":"bb0987a3daff494cbaf93e74841f88a9",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"right_click\": [\n                (wx.EVT_RIGHT_UP, self._on_wx_right_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"right_click\")\n\n    def _call_click_event_handler(self, name):\n        self.call_event_handler(\n            name,\n            ClickEvent(self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n",
-"type":"code"
-}
-],
-"id":"b1beaccda0d04dd28ece317b5f5d8c55",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        if self.widget.on_drag_drop_over(x, y):\n            if defResult == wx.DragMove:\n                return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            self.widget.on_drag_drop_data(\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
-"type":"code"
-}
-],
-"id":"90ba1ddb6081476b83cb46991e35f180",
-"type":"code"
-}
-],
-"title":"Wx widget mixin"
-},
-{
-"children":[],
-"id":"70714ee9823a41518a42251ffb370b01",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class WxContainerWidgetMixin(WxWidgetMixin):\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        if not parent_updated:\n            self._layout()\n\n    @profile_sub(\"layout\")\n    def _layout(self):\n        self.Layout()\n        self.Refresh()\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props, parent_updated=True)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n",
-"type":"code"
-}
-],
-"id":"e09eeec305864f0e9a791b0e287def75",
-"type":"code"
-}
-],
-"title":"Wx container widget mixin"
-},
-{
 "children":[
-{
-"children":[],
-"id":"94401a3af3024aefa6e4bc11605b9ce1",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Frame(wx.Frame, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n",
-"type":"code"
-}
-],
-"id":"1f2d77d65d6345b884d7755a1e963332",
-"type":"code"
-}
-],
-"title":"Frame"
-},
-{
-"children":[],
-"id":"65b8f97d115941a586dde12c4d78f93c",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Panel(wx.Panel, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
-"type":"code"
-}
-],
-"id":"c16e05ddb3ef4549ad64ffc3f46a411a",
-"type":"code"
-}
-],
-"title":"Panel"
-},
-{
-"children":[],
-"id":"6934ccab15d043f687656bff6bffc019",
-"paragraphs":[
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class CompactScrolledWindow(wx.ScrolledWindow):\n\n    MIN_WIDTH = 200\n    MIN_HEIGHT = 200\n\n    def __init__(self, parent, style=0, size=wx.DefaultSize, step=100):\n        w, h = size\n        size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))\n        wx.ScrolledWindow.__init__(self, parent, style=style, size=size)\n        self.Size = size\n        self._style = style\n        if style == wx.HSCROLL:\n            self.SetScrollRate(1, 0)\n        elif style == wx.VSCROLL:\n            self.SetScrollRate(0, 1)\n        else:\n            self.SetScrollRate(1, 1)\n        self.step = step\n        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)\n\n    def _on_mousewheel(self, event):\n        if self._style == wx.HSCROLL and not wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        if self._style == wx.VSCROLL and wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        else:\n            x, y = self.GetViewStart()\n            delta = event.GetWheelRotation() / event.GetWheelDelta()\n            if wx.GetKeyState(wx.WXK_SHIFT):\n                pos = self._calc_scroll_pos_hscroll(x, y, delta)\n            else:\n                pos = self._calc_scroll_pos_vscroll(x, y, delta)\n            self.Scroll(*pos)\n\n    def _forward_scroll_event(self, event):\n        parent = self.Parent\n        while parent:\n            if isinstance(parent, CompactScrolledWindow):\n                parent._on_mousewheel(event)\n                return\n            parent = parent.Parent\n\n    def _calc_scroll_pos_hscroll(self, x, y, delta):\n        return (x-delta*self.step, y)\n\n    def _calc_scroll_pos_vscroll(self, x, y, delta):\n        return (x, y-delta*self.step)\n",
-"type":"code"
-}
-],
-"id":"225e4dd702e94d4cb56efeb4a13c8e03",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.VSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
-"type":"code"
-}
-],
-"id":"af9eaf30478d4bd7a74611b4ccbecb97",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.HSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
-"type":"code"
-}
-],
-"id":"b24566f882fb47bfaa43de8dbf9b7c24",
-"type":"code"
-},
-{
-"chunkpath":[
-"base classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Scroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
-"type":"code"
-}
-],
-"id":"15beaa24e7a6454ab4898688e6d6af80",
-"type":"code"
-}
-],
-"title":"Scroll"
-},
 {
 "children":[],
 "id":"7ea891b8ab854906b2b4cbeab03575e3",
@@ -3623,14 +3444,7 @@
 }
 ],
 "title":"Image"
-}
-],
-"id":"bf2fd902b8794da3851327a2a97f4939",
-"paragraphs":[],
-"title":"Wrappers for wx widgets"
 },
-{
-"children":[
 {
 "children":[],
 "id":"c32443e9bbd44958830fbd62706e2f60",
@@ -3826,9 +3640,183 @@
 "title":"Text"
 }
 ],
-"id":"3995c791972c46cbb46d9289a3225fa3",
-"paragraphs":[],
-"title":"Custom widgets"
+"id":"bb0987a3daff494cbaf93e74841f88a9",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"right_click\": [\n                (wx.EVT_RIGHT_UP, self._on_wx_right_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_click_event_handler(\"right_click\")\n\n    def _call_click_event_handler(self, name):\n        self.call_event_handler(\n            name,\n            ClickEvent(self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n",
+"type":"code"
+}
+],
+"id":"b1beaccda0d04dd28ece317b5f5d8c55",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class RLiterateDropTarget(wx.DropTarget):\n\n    def __init__(self, widget, kind):\n        wx.DropTarget.__init__(self)\n        self.widget = widget\n        self.data = wx.CustomDataObject(f\"rliterate/{kind}\")\n        self.DataObject = self.data\n\n    def OnDragOver(self, x, y, defResult):\n        if self.widget.on_drag_drop_over(x, y):\n            if defResult == wx.DragMove:\n                return wx.DragMove\n        return wx.DragNone\n\n    def OnData(self, x, y, defResult):\n        if (defResult == wx.DragMove and\n            self.GetData()):\n            self.widget.on_drag_drop_data(\n                x,\n                y,\n                json.loads(self.data.GetData().tobytes().decode(\"utf-8\"))\n            )\n        return defResult\n\n    def OnLeave(self):\n        self.widget.on_drag_drop_leave()\n",
+"type":"code"
+}
+],
+"id":"90ba1ddb6081476b83cb46991e35f180",
+"type":"code"
+}
+],
+"title":"Widgets"
+},
+{
+"children":[
+{
+"children":[],
+"id":"94401a3af3024aefa6e4bc11605b9ce1",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Frame(wx.Frame, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n",
+"type":"code"
+}
+],
+"id":"1f2d77d65d6345b884d7755a1e963332",
+"type":"code"
+}
+],
+"title":"Frame"
+},
+{
+"children":[],
+"id":"65b8f97d115941a586dde12c4d78f93c",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Panel(wx.Panel, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"type":"code"
+}
+],
+"id":"c16e05ddb3ef4549ad64ffc3f46a411a",
+"type":"code"
+}
+],
+"title":"Panel"
+},
+{
+"children":[],
+"id":"6934ccab15d043f687656bff6bffc019",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class CompactScrolledWindow(wx.ScrolledWindow):\n\n    MIN_WIDTH = 200\n    MIN_HEIGHT = 200\n\n    def __init__(self, parent, style=0, size=wx.DefaultSize, step=100):\n        w, h = size\n        size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))\n        wx.ScrolledWindow.__init__(self, parent, style=style, size=size)\n        self.Size = size\n        self._style = style\n        if style == wx.HSCROLL:\n            self.SetScrollRate(1, 0)\n        elif style == wx.VSCROLL:\n            self.SetScrollRate(0, 1)\n        else:\n            self.SetScrollRate(1, 1)\n        self.step = step\n        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)\n\n    def _on_mousewheel(self, event):\n        if self._style == wx.HSCROLL and not wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        if self._style == wx.VSCROLL and wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        else:\n            x, y = self.GetViewStart()\n            delta = event.GetWheelRotation() / event.GetWheelDelta()\n            if wx.GetKeyState(wx.WXK_SHIFT):\n                pos = self._calc_scroll_pos_hscroll(x, y, delta)\n            else:\n                pos = self._calc_scroll_pos_vscroll(x, y, delta)\n            self.Scroll(*pos)\n\n    def _forward_scroll_event(self, event):\n        parent = self.Parent\n        while parent:\n            if isinstance(parent, CompactScrolledWindow):\n                parent._on_mousewheel(event)\n                return\n            parent = parent.Parent\n\n    def _calc_scroll_pos_hscroll(self, x, y, delta):\n        return (x-delta*self.step, y)\n\n    def _calc_scroll_pos_vscroll(self, x, y, delta):\n        return (x, y-delta*self.step)\n",
+"type":"code"
+}
+],
+"id":"225e4dd702e94d4cb56efeb4a13c8e03",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.VSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"type":"code"
+}
+],
+"id":"af9eaf30478d4bd7a74611b4ccbecb97",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class HScroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent, wx.HSCROLL)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"type":"code"
+}
+],
+"id":"b24566f882fb47bfaa43de8dbf9b7c24",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Scroll(CompactScrolledWindow, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        CompactScrolledWindow.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"type":"code"
+}
+],
+"id":"15beaa24e7a6454ab4898688e6d6af80",
+"type":"code"
+}
+],
+"title":"Scroll"
+}
+],
+"id":"70714ee9823a41518a42251ffb370b01",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class WxContainerWidgetMixin(WxWidgetMixin):\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        if not parent_updated:\n            self._layout()\n\n    @profile_sub(\"layout\")\n    def _layout(self):\n        self.Layout()\n        self.Refresh()\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props, parent_updated=True)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n",
+"type":"code"
+}
+],
+"id":"e09eeec305864f0e9a791b0e287def75",
+"type":"code"
+}
+],
+"title":"Containers"
 },
 {
 "children":[],
