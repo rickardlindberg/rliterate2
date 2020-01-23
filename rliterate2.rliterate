@@ -3597,6 +3597,18 @@
 "id":"427ca7e37015483fa5ef63e1dd5979d3",
 "paragraphs":[
 {
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"Some notes:\n\nWhat should the interface be like?\n\nPerhaps two properties for text: base style + fragments.\n\nStyle is tuple with\n\n* color\n* size\n* family\n* bold\n* italic\n* underline\n\nFragments is a list of\n\n    {\n        text:\n        optional style attributes\n        extra data to associate?\n        selection markers: [\n            {\n                start: position\n                end: position\n            }\n        ]\n    }\n",
+"type":"code"
+}
+],
+"id":"f8710c8feb0741e29b9949f62868204a",
+"type":"code"
+},
+{
 "chunkpath":[
 "classes"
 ],
