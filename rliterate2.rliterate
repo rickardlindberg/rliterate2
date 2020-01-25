@@ -5189,6 +5189,16 @@
 ],
 "id":"b7fce5b5a06d4ebca9f2ea725a6aece2",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Support examples that can be scrubbed. Sort of interactive TDD test code.",
+"type":"text"
+}
+],
+"id":"b94764266bce43a3b5cc67aaed13d572",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
