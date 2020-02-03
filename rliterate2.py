@@ -559,15 +559,11 @@ class WxWidgetMixin(WidgetMixin):
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
-        self._call_click_event_handler(
-            wx_event.Position.x,
-            wx_event.Position.y,
-            "left_down"
-        )
+        self._call_mouse_event_handler(wx_event, "left_down")
         self.call_event_handler("drag", DragEvent(
             True,
-            wx_event.Position.x,
-            wx_event.Position.y,
+            self._wx_down_pos.x,
+            self._wx_down_pos.y,
             0,
             0,
             self.initiate_drag_drop
@@ -575,25 +571,18 @@ class WxWidgetMixin(WidgetMixin):
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self._call_click_event_handler(
-                wx_event.Position.x,
-                wx_event.Position.y,
-                "click"
-            )
+            self._call_mouse_event_handler(wx_event, "click")
         self._wx_down_pos = None
 
     def _on_wx_right_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self._call_click_event_handler(
-                wx_event.Position.x,
-                wx_event.Position.y,
-                "right_click"
-            )
+            self._call_mouse_event_handler(wx_event, "right_click")
 
-    def _call_click_event_handler(self, x, y, name):
+    def _call_mouse_event_handler(self, wx_event, name):
+        screen_pos = self.ClientToScreen(wx_event.Position)
         self.call_event_handler(
             name,
-            ClickEvent(x, y, self._show_context_menu),
+            MouseEvent(screen_pos.x, screen_pos.y, self._show_context_menu),
             propagate=True
         )
 
@@ -604,8 +593,8 @@ class WxWidgetMixin(WidgetMixin):
             dy = new_pos.y-self._wx_down_pos.y
             self.call_event_handler("drag", DragEvent(
                 False,
-                wx_event.Position.x,
-                wx_event.Position.y,
+                new_pos.x,
+                new_pos.y,
                 dx,
                 dy,
                 self.initiate_drag_drop
@@ -2936,7 +2925,7 @@ SliderEvent = namedtuple("SliderEvent", "value")
 
 HoverEvent = namedtuple("HoverEvent", "mouse_inside")
 
-ClickEvent = namedtuple("ClickEvent", "x,y,show_context_menu")
+MouseEvent = namedtuple("MouseEvent", "x,y,show_context_menu")
 
 KeyEvent = namedtuple("KeyEvent", "key")
 
@@ -3203,6 +3192,7 @@ class Text(wx.Panel, WxWidgetMixin):
     def get_closest_character_with_side(self, x, y):
         if not self._characters_bounding_rect:
             return (None, False)
+        x, y = self.ScreenToClient(x, y)
         return self._get_closest_character_with_side_in_line(
             self._get_closest_line(y),
             x
