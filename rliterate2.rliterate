@@ -585,7 +585,7 @@
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                generate_rows_and_drop_points\n            ),\n            \"rows_cache_limit\": PropUpdate(\n                document,\n                lambda document: document.count_pages() - 1\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
+"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                theme, [\"toc\", \"foreground\"],\n                theme, [\"dragdrop_invalid_color\"],\n                generate_rows_and_drop_points\n            ),\n            \"rows_cache_limit\": PropUpdate(\n                document,\n                lambda document: document.count_pages() - 1\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
 "type":"code"
 }
 ],
@@ -617,7 +617,7 @@
 ],
 "fragments":[
 {
-"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page\n):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title_props\": TextPropsBuilder().text(page[\"title\"]).get(),\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    try:\n        root_page = document.get_page(hoisted_page)\n    except PageNotFound:\n        root_page = document.get_page(None)\n    traverse(root_page)\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
+"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page,\n    foreground,\n    dragdrop_invalid_color\n):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        if dragged:\n            color = dragdrop_invalid_color\n        else:\n            color = foreground\n        rows.append({\n            \"id\": page[\"id\"],\n            \"title_props\": TextPropsBuilder(color=color).text(page[\"title\"]).get(),\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    try:\n        root_page = document.get_page(hoisted_page)\n    except PageNotFound:\n        root_page = document.get_page(None)\n    traverse(root_page)\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
 "type":"code"
 }
 ],
@@ -706,16 +706,8 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #actions.toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        #title_props\n        foreground = self._foreground()\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #actions.toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        #title_props\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n",
 "type":"code"
-},
-{
-"blank_lines_before":0,
-"path":[
-"TableOfContentsTitle"
-],
-"prefix":"",
-"type":"chunk"
 }
 ],
 "id":"e70e2005249e4fa29780c11f6dd1bb4c",
@@ -724,25 +716,6 @@
 "python",
 "rlgui/rlgui.py"
 ],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"TableOfContentsTitle"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def _foreground(self):\n    if self.prop([\"dragged\"]):\n        return self.prop([\"dragdrop_invalid_color\"])\n    else:\n        return self.prop([\"foreground\"])\n",
-"type":"code"
-}
-],
-"id":"27bd6ad27d6f4c918d0894743b6bc26b",
-"language":"",
-"post_process":[],
 "type":"code"
 }
 ],
@@ -1205,7 +1178,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title(self, page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": self.build_title_text_props(\n            page[\"title\"],\n            selection.get()\n        ),\n        \"font\": page_theme[\"title_font\"],\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n    }\n",
+"text":"def build_title(self, page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": self.build_title_text_props(\n            page[\"title\"],\n            page_theme[\"title_font\"],\n            selection.get()\n        ),\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n    }\n",
 "type":"code"
 }
 ],
@@ -1224,7 +1197,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title_text_props(self, title, selection):\n    builder = TextPropsBuilder()\n    if title:\n        if selection is not None:\n            builder.selection_start(selection[\"start\"])\n            builder.selection_end(selection[\"end\"])\n            if selection[\"cursor_at_start\"]:\n                builder.cursor(selection[\"start\"])\n            else:\n                builder.cursor(selection[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection is not None:\n            builder.cursor()\n        builder.text(\"Enter title...\", color=\"pink\", index_constant=0)\n    return builder.get()\n",
+"text":"def build_title_text_props(self, title, font, selection):\n    builder = TextPropsBuilder(**font)\n    if title:\n        if selection is not None:\n            builder.selection_start(selection[\"start\"])\n            builder.selection_end(selection[\"end\"])\n            if selection[\"cursor_at_start\"]:\n                builder.cursor(selection[\"start\"])\n            else:\n                builder.cursor(selection[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection is not None:\n            builder.cursor()\n        builder.text(\"Enter title...\", color=\"pink\", index_constant=0)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1242,7 +1215,7 @@
 ],
 "fragments":[
 {
-"text":"panel Title %layout_rows {\n    Text[text](\n        #text_props\n        max_width  = #body_width\n        font       = #font\n        focus      = #selection_present\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n    )\n}\n\n",
+"text":"panel Title %layout_rows {\n    Text[text](\n        #text_props\n        max_width  = #body_width\n        focus      = #selection_present\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -1481,7 +1454,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_header(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"path_props\": self.build_code_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"]\n        ),\n    }\n",
+"text":"def build_code_paragraph_header(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"path_props\": self.build_code_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"],\n            page_theme[\"code_font\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1500,7 +1473,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_path_props(self, filepath, chunkpath):\n    fragments = []\n    for index, x in enumerate(filepath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    if filepath and chunkpath:\n        fragments.append({\"text\": \" \"})\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            fragments.append({\"text\": \"/\"})\n        fragments.append({\"text\": x})\n    return text_fragments_to_props(fragments)\n",
+"text":"def build_code_path_props(self, filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1518,7 +1491,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        #path_props\n        max_width     = sub(#body_width mul(2 #margin))\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
+"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        #path_props\n        max_width     = sub(#body_width mul(2 #margin))\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1547,7 +1520,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_body(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"font\": page_theme[\"code_font\"],\n        \"body_props\": text_fragments_to_props(self.apply_token_styles(\n            self.build_code_body_fragments(\n                paragraph[\"fragments\"],\n                self.code_pygments_lexer(\n                    paragraph.get(\"language\", \"\"),\n                    paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                )\n            ),\n            page_theme[\"token_styles\"]\n        )),\n    }\n",
+"text":"def build_code_paragraph_body(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"body_props\": text_fragments_to_props(\n            self.apply_token_styles(\n                self.build_code_body_fragments(\n                    paragraph[\"fragments\"],\n                    self.code_pygments_lexer(\n                        paragraph.get(\"language\", \"\"),\n                        paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                    )\n                ),\n                page_theme[\"token_styles\"]\n            ),\n            **page_theme[\"code_font\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1584,7 +1557,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        #body_props\n        max_width     = sub(#body_width mul(2 #margin))\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
+"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        #body_props\n        max_width     = sub(#body_width mul(2 #margin))\n        break_at_word = False\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1706,7 +1679,7 @@
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": UnknownParagraph,\n        \"props\": text_fragments_to_props([{\"text\": \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])}]),\n        \"font\": page_theme[\"code_font\"],\n    }\n",
+"text":"def build_unknown_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": UnknownParagraph,\n        \"props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n    }\n",
 "type":"code"
 }
 ],
@@ -1724,7 +1697,7 @@
 ],
 "fragments":[
 {
-"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        #props\n        max_width     = #body_width\n        font          = #font\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        #props\n        max_width     = #body_width\n        break_at_word = False\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -2017,7 +1990,7 @@
 ],
 "fragments":[
 {
-"text":"class TextPropsBuilder(object):\n\n    def __init__(self):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        if \"color\" in kwargs:\n            fragment[\"color\"] = kwargs[\"color\"]\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if \"index_increment\" in kwargs:\n                x[\"index_left\"] = kwargs[\"index_increment\"] + index\n                x[\"index_right\"] = x[\"index_left\"] + 1\n            if \"index_constant\" in kwargs:\n                x[\"index\"] = kwargs[\"index_constant\"]\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0):\n        self._selections.append((self._index(offset), self._index(offset)))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (last_selection[0], self._index(offset))\n\n    def cursor(self, offset=0):\n        self._cursors.append(self._index(offset))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
+"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if \"index_increment\" in kwargs:\n                x[\"index_left\"] = kwargs[\"index_increment\"] + index\n                x[\"index_right\"] = x[\"index_left\"] + 1\n            if \"index_constant\" in kwargs:\n                x[\"index\"] = kwargs[\"index_constant\"]\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0):\n        self._selections.append((self._index(offset), self._index(offset)))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (last_selection[0], self._index(offset))\n\n    def cursor(self, offset=0):\n        self._cursors.append(self._index(offset))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
 "type":"code"
 }
 ],
@@ -2033,7 +2006,7 @@
 ],
 "fragments":[
 {
-"text":"def text_fragments_to_props(fragments):\n    builder = TextPropsBuilder()\n    for fragment in fragments:\n        if \"color\" in fragment:\n            builder.text(fragment[\"text\"], color=fragment[\"color\"])\n        else:\n            builder.text(fragment[\"text\"])\n    return builder.get()\n",
+"text":"def text_fragments_to_props(fragments, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    for fragment in fragments:\n        if \"color\" in fragment:\n            builder.text(fragment[\"text\"], color=fragment[\"color\"])\n        else:\n            builder.text(fragment[\"text\"])\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -3650,6 +3623,46 @@
 "children":[
 {
 "children":[],
+"id":"a514ec0df86e47308189936bb170785a",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"TextStyle = namedtuple(\"TextStyle\", \"size,family,color\")\n",
+"type":"code"
+}
+],
+"id":"dc4428bc535b412cb57c8e0a32b221a6",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Text"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _get_style(self, character):\n    style = {\n        \"size\": 10,\n        \"family\": None,\n        \"color\": \"#000000\",\n    }\n    style.update(self.prop_with_default([\"base_style\"], {}))\n    for field in TextStyle._fields:\n        if field in character:\n            style[field] = character[field]\n    return TextStyle(**style)\n\ndef _apply_style(self, style, dc):\n    dc.SetTextForeground(style.color)\n    font_info = wx.FontInfo(style.size)\n    if style.family == \"Monospace\":\n        font_info.Family(wx.FONTFAMILY_TELETYPE)\n    dc.SetFont(wx.Font(font_info))\n",
+"type":"code"
+}
+],
+"id":"da635d6170cb489fa26336ec92b81f00",
+"type":"code"
+}
+],
+"title":"Style"
+},
+{
+"children":[],
 "id":"d741db3e49c04ff683561542d3b5957a",
 "paragraphs":[
 {
@@ -3680,7 +3693,7 @@
 "type":"variable"
 },
 {
-"text":" = []\n    for character in characters:\n        dc.SetFont(self._wx_font)\n        if character[\"text\"] in [\"\\n\", \"\\r\"]:\n            _, line_height = dc.GetTextExtent(\"I\")\n            size = wx.Size(0, line_height)\n        else:\n            size = dc.GetTextExtent(character[\"text\"])\n        self.",
+"text":" = []\n    for character in characters:\n        self._apply_style(self._get_style(character), dc)\n        if character[\"text\"] in [\"\\n\", \"\\r\"]:\n            _, line_height = dc.GetTextExtent(\"I\")\n            size = wx.Size(0, line_height)\n        else:\n            size = dc.GetTextExtent(character[\"text\"])\n        self.",
 "type":"code"
 },
 {
@@ -3736,7 +3749,7 @@
 "type":"variable"
 },
 {
-"text":" = []\n\n    # Setup DC\n    dc = wx.MemoryDC()\n    dc.SetFont(self._wx_font)\n    dc.SelectObject(wx.Bitmap(1, 1))\n\n    # Split into lines\n    lines = []\n    index = 0\n    y = 0\n    max_w = 0\n    while index < len(self.",
+"text":" = []\n\n    # Setup DC\n    dc = wx.MemoryDC()\n    dc.SelectObject(wx.Bitmap(1, 1))\n\n    # Split into lines\n    lines = []\n    index = 0\n    y = 0\n    max_w = 0\n    while index < len(self.",
 "type":"code"
 },
 {
@@ -3760,7 +3773,7 @@
 "type":"variable"
 },
 {
-"text":"[index]\n        if max_width is not None and x + size.Width > max_width and line:\n            if break_at_word:\n                index = self._find_word_break_point(line, character[\"text\"])\n                if index is not None:\n                    return line[:index+1]\n            return line\n        line.append((character, size))\n        if character[\"text\"] == \"\\n\":\n            return line\n        x += size.Width\n        index += 1\n    return line\n\ndef _find_word_break_point(self, line, next_character):\n    index = len(line) - 1\n    while index >= 0:\n        current_character = line[index][0][\"text\"]\n        if current_character == \" \" and next_character != \" \":\n            return index\n        next_character = current_character\n        index -= 1\n\ndef _layout_line(self, dc, line, line_height, y):\n    # Calculate total height\n    max_h = 0\n    for character, size in line:\n        max_h = max(max_h, size.Height)\n    height = int(round(max_h * line_height))\n\n    # Bla bla\n    characters_by_style = []\n    characters = []\n    style = None\n    for character, size in line:\n        this_style = character.get(\"color\", None)\n        if not characters or this_style == style:\n            characters.append(character)\n        else:\n            characters_by_style.append((style, characters))\n            characters = [character]\n        style = this_style\n    if characters:\n        characters_by_style.append((style, characters))\n\n    characters_in_line = []\n    x = 0\n    for style, characters in characters_by_style:\n        text = \"\".join(\n            character[\"text\"]\n            for character\n            in characters\n        )\n        texts, positions = self.",
+"text":"[index]\n        if max_width is not None and x + size.Width > max_width and line:\n            if break_at_word:\n                index = self._find_word_break_point(line, character[\"text\"])\n                if index is not None:\n                    return line[:index+1]\n            return line\n        line.append((character, size))\n        if character[\"text\"] == \"\\n\":\n            return line\n        x += size.Width\n        index += 1\n    return line\n\ndef _find_word_break_point(self, line, next_character):\n    index = len(line) - 1\n    while index >= 0:\n        current_character = line[index][0][\"text\"]\n        if current_character == \" \" and next_character != \" \":\n            return index\n        next_character = current_character\n        index -= 1\n\ndef _layout_line(self, dc, line, line_height, y):\n    # Calculate total height\n    max_h = 0\n    for character, size in line:\n        max_h = max(max_h, size.Height)\n    height = int(round(max_h * line_height))\n\n    # Bla bla\n    characters_by_style = []\n    characters = []\n    style = None\n    for character, size in line:\n        this_style = self._get_style(character)\n        if not characters or this_style == style:\n            characters.append(character)\n        else:\n            characters_by_style.append((style, characters))\n            characters = [character]\n        style = this_style\n    if characters:\n        characters_by_style.append((style, characters))\n\n    characters_in_line = []\n    x = 0\n    for style, characters in characters_by_style:\n        text = \"\".join(\n            character[\"text\"]\n            for character\n            in characters\n        )\n        self._apply_style(style, dc)\n        texts, positions = self.",
 "type":"code"
 },
 {
@@ -3896,7 +3909,7 @@
 "type":"variable"
 },
 {
-"text":".items():\n        dc.SetFont(self._wx_font)\n        dc.SetTextForeground(style or self.GetForegroundColour())\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        dc.SetPen(wx.Pen(\"pink\", width=2))\n        for x, y, height in self._cursor_positions:\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    color = wx.Colour(255, 0, 0, 100)\n    dc.DrawRectangleList(\n        self._selection_rects,\n        wx.Pen(color, width=0),\n        wx.Brush(color)\n    )\n",
+"text":".items():\n        self._apply_style(style, dc)\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        dc.SetPen(wx.Pen(\"pink\", width=2))\n        for x, y, height in self._cursor_positions:\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    color = wx.Colour(255, 0, 0, 100)\n    dc.DrawRectangleList(\n        self._selection_rects,\n        wx.Pen(color, width=0),\n        wx.Brush(color)\n    )\n",
 "type":"code"
 }
 ],
@@ -3991,18 +4004,6 @@
 "id":"427ca7e37015483fa5ef63e1dd5979d3",
 "paragraphs":[
 {
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"Some notes:\n\nWhat should the interface be like?\n\nProperties:\n\n    * base style\n    * fragments\n    * selections ([(start, end), ...])\n    * cursors ([position, ...])\n\nStyle is tuple with\n\n    * color\n    * size\n    * family\n    * bold\n    * italic\n    * underline\n\nFragments is a list of\n\n    {\n        text:\n        optional style attributes\n        extra data to associate?\n    }\n",
-"type":"code"
-}
-],
-"id":"f8710c8feb0741e29b9949f62868204a",
-"type":"code"
-},
-{
 "chunkpath":[
 "classes"
 ],
@@ -4011,7 +4012,7 @@
 ],
 "fragments":[
 {
-"text":"class Text(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n        self.Bind(wx.EVT_TIMER, self._on_timer)\n        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"foreground\", self.SetForegroundColour)\n        self._timer = wx.Timer(self)\n        self._show_cursors = True\n        self._cursor_positions = []\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        did_measure = False\n        if (self.prop_changed(\"font\") or\n            self.prop_changed(\"characters\")):\n            self._wx_font = wx_font(self.prop_with_default([\"font\"], {}))\n            self._measure(\n                self.prop_with_default([\"characters\"], [])\n            )\n            did_measure = True\n        did_reflow = False\n        if (did_measure or\n            self.prop_changed(\"max_width\") or\n            self.prop_changed(\"break_at_word\") or\n            self.prop_changed(\"line_height\")):\n            self._reflow(\n                self.prop_with_default([\"max_width\"], None),\n                self.prop_with_default([\"break_at_word\"], True),\n                self.prop_with_default([\"line_height\"], 1)\n            )\n            did_reflow = True\n        if did_reflow or self.prop_changed(\"cursors\"):\n            self._show_cursors = True\n            self._calculate_cursor_positions(\n                self.prop_with_default([\"cursors\"], [])\n            )\n            if self.prop([\"cursors\"]):\n                self._timer.Start(400)\n            else:\n                self._timer.Stop()\n        if did_reflow or self.prop_changed(\"selections\"):\n            self._calculate_selection_rects(\n                self.prop_with_default([\"selections\"], [])\n            )\n\n",
+"text":"class Text(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n        self.Bind(wx.EVT_TIMER, self._on_timer)\n        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._timer = wx.Timer(self)\n        self._show_cursors = True\n        self._cursor_positions = []\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        did_measure = False\n        if (self.prop_changed(\"base_style\") or\n            self.prop_changed(\"characters\")):\n            self._measure(\n                self.prop_with_default([\"characters\"], [])\n            )\n            did_measure = True\n        did_reflow = False\n        if (did_measure or\n            self.prop_changed(\"max_width\") or\n            self.prop_changed(\"break_at_word\") or\n            self.prop_changed(\"line_height\")):\n            self._reflow(\n                self.prop_with_default([\"max_width\"], None),\n                self.prop_with_default([\"break_at_word\"], True),\n                self.prop_with_default([\"line_height\"], 1)\n            )\n            did_reflow = True\n        if did_reflow or self.prop_changed(\"cursors\"):\n            self._show_cursors = True\n            self._calculate_cursor_positions(\n                self.prop_with_default([\"cursors\"], [])\n            )\n            if self.prop([\"cursors\"]):\n                self._timer.Start(400)\n            else:\n                self._timer.Stop()\n        if did_reflow or self.prop_changed(\"selections\"):\n            self._calculate_selection_rects(\n                self.prop_with_default([\"selections\"], [])\n            )\n\n",
 "type":"code"
 },
 {
@@ -4024,22 +4025,6 @@
 }
 ],
 "id":"f3d592134f1846c787df29b547b4de51",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def wx_font(font):\n    font_info = wx.FontInfo(font.get(\"size\", 10))\n    if \"family\" in font:\n        families = {\n            \"Monospace\": wx.FONTFAMILY_TELETYPE,\n        }\n        font_info.Family(families[font[\"family\"]])\n    return wx.Font(font_info)\n",
-"type":"code"
-}
-],
-"id":"8100c9f733e64b9fb2855dcb0abf868e",
 "type":"code"
 }
 ],

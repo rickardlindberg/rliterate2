@@ -104,15 +104,21 @@ def generate_rows_and_drop_points(
     document,
     collapsed,
     hoisted_page,
-    dragged_page
+    dragged_page,
+    foreground,
+    dragdrop_invalid_color
 ):
     def traverse(page, level=0, dragged=False):
         is_collapsed = page["id"] in collapsed
         num_children = len(page["children"])
         dragged = dragged or page["id"] == dragged_page
+        if dragged:
+            color = dragdrop_invalid_color
+        else:
+            color = foreground
         rows.append({
             "id": page["id"],
-            "title_props": TextPropsBuilder().text(page["title"]).get(),
+            "title_props": TextPropsBuilder(color=color).text(page["title"]).get(),
             "level": level,
             "has_children": num_children > 0,
             "collapsed": is_collapsed,
@@ -149,8 +155,8 @@ def generate_rows_and_drop_points(
         "drop_points": drop_points,
     }
 
-def text_fragments_to_props(fragments):
-    builder = TextPropsBuilder()
+def text_fragments_to_props(fragments, **kwargs):
+    builder = TextPropsBuilder(**kwargs)
     for fragment in fragments:
         if "color" in fragment:
             builder.text(fragment["text"], color=fragment["color"])
@@ -207,15 +213,6 @@ def fit_image(image, width):
         int(image.Height*factor),
         wx.IMAGE_QUALITY_HIGH
     )
-
-def wx_font(font):
-    font_info = wx.FontInfo(font.get("size", 10))
-    if "family" in font:
-        families = {
-            "Monospace": wx.FONTFAMILY_TELETYPE,
-        }
-        font_info.Family(families[font["family"]])
-    return wx.Font(font_info)
 
 def start_app(frame_cls, props):
     @profile_sub("render")
@@ -1307,6 +1304,8 @@ class TableOfContentsScrollAreaProps(Props):
                 session, ["toc", "collapsed"],
                 session, ["toc", "hoisted_page"],
                 session, ["toc", "dragged_page"],
+                theme, ["toc", "foreground"],
+                theme, ["dragdrop_invalid_color"],
                 generate_rows_and_drop_points
             ),
             "rows_cache_limit": PropUpdate(
@@ -1585,17 +1584,10 @@ class TableOfContentsTitle(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['title_props']))
-        props['foreground'] = self._foreground()
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['row_margin'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
-
-    def _foreground(self):
-        if self.prop(["dragged"]):
-            return self.prop(["dragdrop_invalid_color"])
-        else:
-            return self.prop(["foreground"])
 
 class TableOfContentsDropLine(Panel):
 
@@ -1721,16 +1713,16 @@ class WorkspaceProps(Props):
             "id": page["id"],
             "text_props": self.build_title_text_props(
                 page["title"],
+                page_theme["title_font"],
                 selection.get()
             ),
-            "font": page_theme["title_font"],
             "body_width": page_body_width,
             "selection": selection,
             "selection_present": selection.present(),
         }
 
-    def build_title_text_props(self, title, selection):
-        builder = TextPropsBuilder()
+    def build_title_text_props(self, title, font, selection):
+        builder = TextPropsBuilder(**font)
         if title:
             if selection is not None:
                 builder.selection_start(selection["start"])
@@ -1840,42 +1832,44 @@ class WorkspaceProps(Props):
         return {
             "background": page_theme["code"]["header_background"],
             "margin": page_theme["code"]["margin"],
-            "font": page_theme["code_font"],
             "path_props": self.build_code_path_props(
                 paragraph["filepath"],
-                paragraph["chunkpath"]
+                paragraph["chunkpath"],
+                page_theme["code_font"]
             ),
         }
 
-    def build_code_path_props(self, filepath, chunkpath):
-        fragments = []
+    def build_code_path_props(self, filepath, chunkpath, font):
+        builder = TextPropsBuilder(**font)
         for index, x in enumerate(filepath):
             if index > 0:
-                fragments.append({"text": "/"})
-            fragments.append({"text": x})
+                builder.text("/")
+            builder.text(x)
         if filepath and chunkpath:
-            fragments.append({"text": " "})
+            builder.text(" ")
         for index, x in enumerate(chunkpath):
             if index > 0:
-                fragments.append({"text": "/"})
-            fragments.append({"text": x})
-        return text_fragments_to_props(fragments)
+                builder.text("/")
+            builder.text(x)
+        return builder.get()
 
     def build_code_paragraph_body(self, paragraph, page_theme):
         return {
             "background": page_theme["code"]["body_background"],
             "margin": page_theme["code"]["margin"],
-            "font": page_theme["code_font"],
-            "body_props": text_fragments_to_props(self.apply_token_styles(
-                self.build_code_body_fragments(
-                    paragraph["fragments"],
-                    self.code_pygments_lexer(
-                        paragraph.get("language", ""),
-                        paragraph["filepath"][-1] if paragraph["filepath"] else "",
-                    )
+            "body_props": text_fragments_to_props(
+                self.apply_token_styles(
+                    self.build_code_body_fragments(
+                        paragraph["fragments"],
+                        self.code_pygments_lexer(
+                            paragraph.get("language", ""),
+                            paragraph["filepath"][-1] if paragraph["filepath"] else "",
+                        )
+                    ),
+                    page_theme["token_styles"]
                 ),
-                page_theme["token_styles"]
-            )),
+                **page_theme["code_font"]
+            ),
         }
 
     def build_code_body_fragments(self, fragments, pygments_lexer):
@@ -1904,8 +1898,9 @@ class WorkspaceProps(Props):
     def build_unknown_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": UnknownParagraph,
-            "props": text_fragments_to_props([{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}]),
-            "font": page_theme["code_font"],
+            "props": TextPropsBuilder(**page_theme["code_font"]).text(
+                "Unknown paragraph type '{}'.".format(paragraph["type"])
+            ).get(),
         }
 
     def code_pygments_lexer(self, language, filename):
@@ -2179,7 +2174,6 @@ class Title(Panel):
         name = 'text'
         props.update(self.prop(['text_props']))
         props['max_width'] = self.prop(['body_width'])
-        props['font'] = self.prop(['font'])
         props['focus'] = self.prop(['selection_present'])
         handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
@@ -2370,7 +2364,6 @@ class CodeParagraphHeader(Panel):
         handlers = {}
         props.update(self.prop(['path_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
-        props['font'] = self.prop(['font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
@@ -2394,7 +2387,6 @@ class CodeParagraphBody(Panel):
         handlers = {}
         props.update(self.prop(['body_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
-        props['font'] = self.prop(['font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
@@ -2448,7 +2440,6 @@ class UnknownParagraph(Panel):
         handlers = {}
         props.update(self.prop(['props']))
         props['max_width'] = self.prop(['body_width'])
-        props['font'] = self.prop(['font'])
         props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
@@ -2506,22 +2497,25 @@ class Selection(namedtuple("Selection", ["trail", "value"])):
 
 class TextPropsBuilder(object):
 
-    def __init__(self):
+    def __init__(self, **styles):
         self._characters = []
         self._cursors = []
         self._selections = []
+        self._base_style = dict(styles)
 
     def get(self):
         return {
             "characters": self._characters,
             "cursors": self._cursors,
             "selections": self._selections,
+            "base_style": self._base_style,
         }
 
     def text(self, text, **kwargs):
         fragment = {}
-        if "color" in kwargs:
-            fragment["color"] = kwargs["color"]
+        for field in TextStyle._fields:
+            if field in kwargs:
+                fragment[field] = kwargs[field]
         for index, character in enumerate(text):
             x = dict(fragment, text=character)
             if "index_increment" in kwargs:
@@ -2978,7 +2972,6 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
-        self._register_builtin("foreground", self.SetForegroundColour)
         self._timer = wx.Timer(self)
         self._show_cursors = True
         self._cursor_positions = []
@@ -2986,9 +2979,8 @@ class Text(wx.Panel, WxWidgetMixin):
     def _update_gui(self, parent_updated):
         WxWidgetMixin._update_gui(self, parent_updated)
         did_measure = False
-        if (self.prop_changed("font") or
+        if (self.prop_changed("base_style") or
             self.prop_changed("characters")):
-            self._wx_font = wx_font(self.prop_with_default(["font"], {}))
             self._measure(
                 self.prop_with_default(["characters"], [])
             )
@@ -3018,13 +3010,32 @@ class Text(wx.Panel, WxWidgetMixin):
                 self.prop_with_default(["selections"], [])
             )
 
+    def _get_style(self, character):
+        style = {
+            "size": 10,
+            "family": None,
+            "color": "#000000",
+        }
+        style.update(self.prop_with_default(["base_style"], {}))
+        for field in TextStyle._fields:
+            if field in character:
+                style[field] = character[field]
+        return TextStyle(**style)
+
+    def _apply_style(self, style, dc):
+        dc.SetTextForeground(style.color)
+        font_info = wx.FontInfo(style.size)
+        if style.family == "Monospace":
+            font_info.Family(wx.FONTFAMILY_TELETYPE)
+        dc.SetFont(wx.Font(font_info))
+
     @profile_sub("text measure")
     def _measure(self, characters):
         dc = wx.MemoryDC()
         dc.SelectObject(wx.Bitmap(1, 1))
         self._measured_characters = []
         for character in characters:
-            dc.SetFont(self._wx_font)
+            self._apply_style(self._get_style(character), dc)
             if character["text"] in ["\n", "\r"]:
                 _, line_height = dc.GetTextExtent("I")
                 size = wx.Size(0, line_height)
@@ -3043,7 +3054,6 @@ class Text(wx.Panel, WxWidgetMixin):
 
         # Setup DC
         dc = wx.MemoryDC()
-        dc.SetFont(self._wx_font)
         dc.SelectObject(wx.Bitmap(1, 1))
 
         # Split into lines
@@ -3098,7 +3108,7 @@ class Text(wx.Panel, WxWidgetMixin):
         characters = []
         style = None
         for character, size in line:
-            this_style = character.get("color", None)
+            this_style = self._get_style(character)
             if not characters or this_style == style:
                 characters.append(character)
             else:
@@ -3116,6 +3126,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 for character
                 in characters
             )
+            self._apply_style(style, dc)
             texts, positions = self._draw_fragments_by_style[style]
             texts.append(text)
             positions.append((x, y))
@@ -3165,8 +3176,7 @@ class Text(wx.Panel, WxWidgetMixin):
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
         for style, items in self._draw_fragments_by_style.items():
-            dc.SetFont(self._wx_font)
-            dc.SetTextForeground(style or self.GetForegroundColour())
+            self._apply_style(style, dc)
             dc.DrawTextList(*items)
         if self._show_cursors:
             dc.SetPen(wx.Pen("pink", width=2))
@@ -3209,6 +3219,8 @@ class Text(wx.Panel, WxWidgetMixin):
             if x < rect.Left or (x >= rect.Left and x <= rect.Right):
                 return (character, x > (rect.Left+rect.Width/2))
         return (character, True)
+
+TextStyle = namedtuple("TextStyle", "size,family,color")
 
 class Cache(object):
 
