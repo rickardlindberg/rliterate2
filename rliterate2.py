@@ -21,6 +21,8 @@ import pygments.lexers
 import pygments.token
 import wx
 
+WX_DEBUG_FOCUS = os.environ.get("WX_DEBUG_FOCUS", "") != ""
+
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
 
@@ -110,7 +112,7 @@ def generate_rows_and_drop_points(
         dragged = dragged or page["id"] == dragged_page
         rows.append({
             "id": page["id"],
-            "title_fragments": [{"text": page["title"]}],
+            "title_props": TextPropsBuilder().text(page["title"]).get(),
             "level": level,
             "has_children": num_children > 0,
             "collapsed": is_collapsed,
@@ -146,6 +148,15 @@ def generate_rows_and_drop_points(
         "rows": rows,
         "drop_points": drop_points,
     }
+
+def text_fragments_to_props(fragments):
+    builder = TextPropsBuilder()
+    for fragment in fragments:
+        if "color" in fragment:
+            builder.text(fragment["text"], color=fragment["color"])
+        else:
+            builder.text(fragment["text"])
+    return builder.get()
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -221,6 +232,12 @@ def start_app(frame_cls, props):
         return frame
     app = wx.App()
     frame = show_frame()
+    if WX_DEBUG_FOCUS:
+        def onTimer(evt):
+            print("Focused window: {}".format(wx.Window.FindFocus()))
+        frame.Bind(wx.EVT_TIMER, onTimer)
+        focus_timer = wx.Timer(frame)
+        focus_timer.Start(1000)
     app.MainLoop()
 
 def load_json_from_file(path):
@@ -488,6 +505,7 @@ class WxWidgetMixin(WidgetMixin):
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
         self._register_builtin("drop_target", self._set_drop_target)
+        self._register_builtin("focus", self._set_focus)
         self._register_builtin("cursor", lambda value:
             self.SetCursor({
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
@@ -495,6 +513,9 @@ class WxWidgetMixin(WidgetMixin):
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
         self._event_map = {
+            "left_down": [
+                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),
+            ],
             "drag": [
                 (wx.EVT_LEFT_DOWN, self._on_wx_left_down),
                 (wx.EVT_LEFT_UP, self._on_wx_left_up),
@@ -509,6 +530,9 @@ class WxWidgetMixin(WidgetMixin):
             "hover": [
                 (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),
                 (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),
+            ],
+            "key": [
+                (wx.EVT_CHAR, self._on_wx_char),
             ],
         }
 
@@ -535,8 +559,15 @@ class WxWidgetMixin(WidgetMixin):
 
     def _on_wx_left_down(self, wx_event):
         self._wx_down_pos = self.ClientToScreen(wx_event.Position)
+        self._call_click_event_handler(
+            wx_event.Position.x,
+            wx_event.Position.y,
+            "left_down"
+        )
         self.call_event_handler("drag", DragEvent(
             True,
+            wx_event.Position.x,
+            wx_event.Position.y,
             0,
             0,
             self.initiate_drag_drop
@@ -544,17 +575,25 @@ class WxWidgetMixin(WidgetMixin):
 
     def _on_wx_left_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self._call_click_event_handler("click")
+            self._call_click_event_handler(
+                wx_event.Position.x,
+                wx_event.Position.y,
+                "click"
+            )
         self._wx_down_pos = None
 
     def _on_wx_right_up(self, wx_event):
         if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:
-            self._call_click_event_handler("right_click")
+            self._call_click_event_handler(
+                wx_event.Position.x,
+                wx_event.Position.y,
+                "right_click"
+            )
 
-    def _call_click_event_handler(self, name):
+    def _call_click_event_handler(self, x, y, name):
         self.call_event_handler(
             name,
-            ClickEvent(self._show_context_menu),
+            ClickEvent(x, y, self._show_context_menu),
             propagate=True
         )
 
@@ -565,6 +604,8 @@ class WxWidgetMixin(WidgetMixin):
             dy = new_pos.y-self._wx_down_pos.y
             self.call_event_handler("drag", DragEvent(
                 False,
+                wx_event.Position.x,
+                wx_event.Position.y,
                 dx,
                 dy,
                 self.initiate_drag_drop
@@ -590,6 +631,17 @@ class WxWidgetMixin(WidgetMixin):
 
     def _set_drop_target(self, kind):
         self.SetDropTarget(RLiterateDropTarget(self, kind))
+
+    def _set_focus(self, focus):
+        if focus:
+            self.SetFocus()
+
+    def _on_wx_char(self, wx_event):
+        self.call_event_handler(
+            "key",
+            KeyEvent(chr(wx_event.GetUnicodeKey())),
+            propagate=False
+        )
 
     def on_drag_drop_over(self, x, y):
         pass
@@ -1543,7 +1595,7 @@ class TableOfContentsTitle(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['title_fragments'])
+        props.update(self.prop(['title_props']))
         props['foreground'] = self._foreground()
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['row_margin'])
@@ -1611,6 +1663,7 @@ class WorkspaceProps(Props):
                 session, ["workspace", "columns"],
                 session, ["workspace", "page_body_width"],
                 theme, ["page"],
+                session, ["selection"],
                 self.build_columns
             ),
             "page_body_width": PropUpdate(
@@ -1619,66 +1672,105 @@ class WorkspaceProps(Props):
             "actions": {
                 "set_page_body_width": session.set_page_body_width,
                 "edit_title": document.edit_title,
+                "clear_selection": session.clear_selection,
+                "set_selection": session.set_selection,
             },
         })
 
     @profile_sub("build_columns")
-    def build_columns(self, document, columns, page_body_width, page_theme):
+    def build_columns(self, document, columns, page_body_width, page_theme, selection):
+        selection = selection.add("workspace")
         columns_prop = []
-        for column in columns:
-            columns_prop.append(
-                self.build_column(document, column, page_body_width, page_theme)
-            )
+        for index, column in enumerate(columns):
+            columns_prop.append(self.build_column(
+                document,
+                column,
+                page_body_width,
+                page_theme,
+                selection.add("column", index)
+            ))
         return columns_prop
 
-    def build_column(self, document, column, page_body_width, page_theme):
+    def build_column(self, document, column, page_body_width, page_theme, selection):
         column_prop = []
+        index = 0
         for page_id in column:
             try:
-                column_prop.append(
-                    self.build_page(
-                        document.get_page(page_id),
-                        page_body_width,
-                        page_theme
-                    )
-                )
+                column_prop.append(self.build_page(
+                    document.get_page(page_id),
+                    page_body_width,
+                    page_theme,
+                    selection.add("page", index, page_id)
+                ))
+                index += 1
             except PageNotFound:
                 pass
         return column_prop
 
-    def build_page(self, page, page_body_width, page_theme):
+    def build_page(self, page, page_body_width, page_theme, selection):
         return {
             "id": page["id"],
-            "title_fragments": self.build_title_fragments(
-                page["title"]
+            "title": self.build_title(
+                page,
+                page_body_width,
+                page_theme,
+                selection.add("title")
             ),
             "paragraphs": self.build_paragraphs(
                 page["paragraphs"],
-                page_theme
+                page_theme,
+                selection.add("paragraphs")
             ),
             "border": page_theme["border"],
             "background": page_theme["background"],
-            "title_font": page_theme["title_font"],
             "margin": page_theme["margin"],
             "body_width": page_body_width,
         }
 
-    def build_title_fragments(self, title):
-        return [{"text": title}]
+    def build_title(self, page, page_body_width, page_theme, selection):
+        return {
+            "id": page["id"],
+            "text_props": self.build_title_text_props(
+                page["title"],
+                selection.get()
+            ),
+            "font": page_theme["title_font"],
+            "body_width": page_body_width,
+            "selection": selection,
+            "selection_present": selection.present(),
+        }
 
-    def build_paragraphs(self, paragraphs, page_theme):
+    def build_title_text_props(self, title, selection):
+        builder = TextPropsBuilder()
+        if title:
+            if selection is not None:
+                builder.selection_start(selection["start"])
+                builder.selection_end(selection["end"])
+                if selection["cursor_at_start"]:
+                    builder.cursor(selection["start"])
+                else:
+                    builder.cursor(selection["end"])
+            builder.text(title, index_increment=0)
+        else:
+            if selection is not None:
+                builder.cursor()
+            builder.text("Enter title...", color="pink", index_constant=0)
+        return builder.get()
+
+    def build_paragraphs(self, paragraphs, page_theme, selection):
         return [
             self._paragraph_cache.get_or_update(
                 paragraph["id"],
                 "paragraph",
                 self.build_paragraph,
                 paragraph,
-                page_theme
+                page_theme,
+                selection
             )
             for paragraph in paragraphs
         ]
 
-    def build_paragraph(self, paragraph, page_theme):
+    def build_paragraph(self, paragraph, page_theme, selection):
         BUILDERS = {
             "text": self.build_text_paragraph,
             "quote": self.build_quote_paragraph,
@@ -1689,24 +1781,24 @@ class WorkspaceProps(Props):
         return BUILDERS.get(
             paragraph["type"],
             self.build_unknown_paragraph
-        )(paragraph, page_theme)
+        )(paragraph, page_theme, selection)
 
     @profile_sub("build_text_paragraph")
-    def build_text_paragraph(self, paragraph, page_theme):
+    def build_text_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": TextParagraph,
-            "text_fragments": paragraph["fragments"],
+            "text_props": text_fragments_to_props(paragraph["fragments"]),
         }
 
     @profile_sub("build_quote_paragraph")
-    def build_quote_paragraph(self, paragraph, page_theme):
+    def build_quote_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": QuoteParagraph,
-            "text_fragments": paragraph["fragments"],
+            "text_props": text_fragments_to_props(paragraph["fragments"]),
         }
 
     @profile_sub("build_list_paragraph")
-    def build_list_paragraph(self, paragraph, page_theme):
+    def build_list_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": ListParagraph,
             "rows": self.build_list_item_rows(
@@ -1719,9 +1811,13 @@ class WorkspaceProps(Props):
         rows = []
         for index, child in enumerate(children):
             rows.append({
-                "text_fragments": [
-                    {"text": self._get_bullet_text(child_type, index)}
-                ]+child["fragments"],
+                "text_props": text_fragments_to_props(
+                    [
+                        {"text": self._get_bullet_text(child_type, index)}
+                    ]
+                    +
+                    child["fragments"]
+                ),
                 "level": level,
             })
             rows.extend(self.build_list_item_rows(
@@ -1738,7 +1834,7 @@ class WorkspaceProps(Props):
             return u"\u2022 "
 
     @profile_sub("build_code_paragraph")
-    def build_code_paragraph(self, paragraph, page_theme):
+    def build_code_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": CodeParagraph,
             "header": self.build_code_paragraph_header(
@@ -1756,13 +1852,13 @@ class WorkspaceProps(Props):
             "background": page_theme["code"]["header_background"],
             "margin": page_theme["code"]["margin"],
             "font": page_theme["code_font"],
-            "path_fragments": self.build_code_path_fragments(
+            "path_props": self.build_code_path_props(
                 paragraph["filepath"],
                 paragraph["chunkpath"]
             ),
         }
 
-    def build_code_path_fragments(self, filepath, chunkpath):
+    def build_code_path_props(self, filepath, chunkpath):
         fragments = []
         for index, x in enumerate(filepath):
             if index > 0:
@@ -1774,14 +1870,14 @@ class WorkspaceProps(Props):
             if index > 0:
                 fragments.append({"text": "/"})
             fragments.append({"text": x})
-        return fragments
+        return text_fragments_to_props(fragments)
 
     def build_code_paragraph_body(self, paragraph, page_theme):
         return {
             "background": page_theme["code"]["body_background"],
             "margin": page_theme["code"]["margin"],
             "font": page_theme["code_font"],
-            "body_fragments": self.apply_token_styles(
+            "body_props": text_fragments_to_props(self.apply_token_styles(
                 self.build_code_body_fragments(
                     paragraph["fragments"],
                     self.code_pygments_lexer(
@@ -1790,7 +1886,7 @@ class WorkspaceProps(Props):
                     )
                 ),
                 page_theme["token_styles"]
-            ),
+            )),
         }
 
     def build_code_body_fragments(self, fragments, pygments_lexer):
@@ -1809,17 +1905,17 @@ class WorkspaceProps(Props):
         return code_chunk.tokenize(pygments_lexer)
 
     @profile_sub("build_image_paragraph")
-    def build_image_paragraph(self, paragraph, page_theme):
+    def build_image_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": ImageParagraph,
             "base64_image": paragraph.get("image_base64", None),
-            "text_fragments": paragraph["fragments"],
+            "text_props": text_fragments_to_props(paragraph["fragments"]),
         }
 
-    def build_unknown_paragraph(self, paragraph, page_theme):
+    def build_unknown_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": UnknownParagraph,
-            "fragments": [{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}],
+            "props": text_fragments_to_props([{"text": "Unknown paragraph type '{}'.".format(paragraph["type"])}]),
             "font": page_theme["code_font"],
         }
 
@@ -2008,13 +2104,11 @@ class PageBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['title_fragments'])
-        props['max_width'] = self.prop(['body_width'])
-        props['font'] = self.prop(['title_font'])
+        props.update(self.prop(['title']))
+        props['actions'] = self.prop(['actions'])
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
-        handlers['click'] = lambda event: self.prop(['actions', 'edit_title'])(self.prop(['id']))
-        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_widget(Title, props, sizer, handlers, name)
         def loop_fn(loopvar):
             pass
             props = {}
@@ -2078,6 +2172,98 @@ class PageBottomBorder(Panel):
         sizer["proportion"] = 1
         self._create_widget(Panel, props, sizer, handlers, name)
 
+class Title(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        name = 'text'
+        props.update(self.prop(['text_props']))
+        props['max_width'] = self.prop(['body_width'])
+        props['font'] = self.prop(['font'])
+        props['focus'] = self.prop(['selection_present'])
+        handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
+        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
+        handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
+        self._create_widget(Text, props, sizer, handlers, name)
+
+    def _on_left_down(self, event, selection):
+        index = self._get_index(event.x, event.y)
+        if index is not None:
+            self.prop(["actions", "set_selection"])(
+                selection.create({
+                    "start": index,
+                    "end": index,
+                    "cursor_at_start": True,
+                })
+            )
+
+    def _on_drag(self, event, selection):
+        if event.initial:
+            self._initial_index = self._get_index(event.x, event.y)
+        else:
+            new_index = self._get_index(event.x, event.y)
+            if self._initial_index is not None and new_index is not None:
+                self.prop(["actions", "set_selection"])(
+                    selection.create({
+                        "start": min(self._initial_index, new_index),
+                        "end": max(self._initial_index, new_index),
+                        "cursor_at_start": new_index <= self._initial_index,
+                    })
+                )
+
+    def _get_index(self, x, y):
+        character, right_side = self.get_widget("text").get_closest_character_with_side(
+            x,
+            y
+        )
+        if character is not None:
+            index = character.get("index", None)
+            if right_side:
+                return character.get("index_right", index)
+            else:
+                return character.get("index_left", index)
+    def _on_key(self, event, selection):
+        if selection.present():
+            if event.key == "l":
+                if selection.get()["cursor_at_start"]:
+                    pos = selection.get()["start"]
+                else:
+                    pos = selection.get()["end"]
+                pos += 1
+                self.prop(["actions", "set_selection"])(
+                    selection.create({
+                        "start": pos,
+                        "end": pos,
+                        "cursor_at_start": True,
+                    })
+                )
+            if event.key == "h":
+                if selection.get()["cursor_at_start"]:
+                    pos = selection.get()["end"]
+                else:
+                    pos = selection.get()["start"]
+                pos -= 1
+                self.prop(["actions", "set_selection"])(
+                    selection.create({
+                        "start": pos,
+                        "end": pos,
+                        "cursor_at_start": True,
+                    })
+                )
+            print(event)
+            print(selection)
+
 class TextParagraph(Panel):
 
     def _get_local_props(self):
@@ -2093,7 +2279,7 @@ class TextParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['text_fragments'])
+        props.update(self.prop(['text_props']))
         props['max_width'] = self.prop(['body_width'])
         props['break_at_word'] = True
         props['line_height'] = 1.2
@@ -2117,7 +2303,7 @@ class QuoteParagraph(Panel):
         handlers = {}
         props['left_margin'] = 20
         props['right_margin'] = 0
-        props['fragments'] = self.prop(['text_fragments'])
+        props['text_props'] = self.prop(['text_props'])
         props['max_width'] = sub(self.prop(['body_width']), 20)
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextWithMargin, props, sizer, handlers, name)
@@ -2142,7 +2328,7 @@ class ListParagraph(Panel):
             props['left_margin'] = mul(loopvar['level'], 20)
             props['right_margin'] = 0
             props['max_width'] = sub(self.prop(['body_width']), mul(loopvar['level'], 20))
-            props['fragments'] = loopvar['text_fragments']
+            props['text_props'] = loopvar['text_props']
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TextWithMargin, props, sizer, handlers, name)
         loop_options = {}
@@ -2193,7 +2379,7 @@ class CodeParagraphHeader(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['path_fragments'])
+        props.update(self.prop(['path_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
         props['font'] = self.prop(['font'])
         props['break_at_word'] = False
@@ -2217,7 +2403,7 @@ class CodeParagraphBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['body_fragments'])
+        props.update(self.prop(['body_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
         props['font'] = self.prop(['font'])
         props['break_at_word'] = False
@@ -2251,7 +2437,7 @@ class ImageParagraph(Panel):
         handlers = {}
         props['left_margin'] = 10
         props['right_margin'] = 10
-        props['fragments'] = self.prop(['text_fragments'])
+        props['text_props'] = self.prop(['text_props'])
         props['max_width'] = sub(self.prop(['body_width']), 20)
         sizer["flag"] |= wx.ALIGN_CENTER
         self._create_widget(TextWithMargin, props, sizer, handlers, name)
@@ -2271,7 +2457,7 @@ class UnknownParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['fragments'])
+        props.update(self.prop(['props']))
         props['max_width'] = self.prop(['body_width'])
         props['font'] = self.prop(['font'])
         props['break_at_word'] = False
@@ -2294,13 +2480,81 @@ class TextWithMargin(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['fragments'] = self.prop(['fragments'])
+        props.update(self.prop(['text_props']))
         props['max_width'] = self.prop(['max_width'])
         props['break_at_word'] = True
         props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
         self._create_space(self.prop(['right_margin']))
+
+class Selection(namedtuple("Selection", ["trail", "value"])):
+
+    @staticmethod
+    def empty():
+        return Selection(trail=[], value=None)
+
+    def add(self, *args):
+        new_value = self.value
+        new_trail = self.trail
+        for arg in args:
+            if new_value is not None and new_value[0] == arg:
+                new_value = new_value[1:]
+            else:
+                new_value = None
+            new_trail = new_trail + [arg]
+        return Selection(trail=new_trail, value=new_value)
+
+    def create(self, *args):
+        return Selection(trail=[], value=self.trail+list(args))
+
+    def present(self):
+        return self.value is not None
+
+    def get(self):
+        if self.present() and len(self.value) == 1:
+            return self.value[0]
+
+class TextPropsBuilder(object):
+
+    def __init__(self):
+        self._characters = []
+        self._cursors = []
+        self._selections = []
+
+    def get(self):
+        return {
+            "characters": self._characters,
+            "cursors": self._cursors,
+            "selections": self._selections,
+        }
+
+    def text(self, text, **kwargs):
+        fragment = {}
+        if "color" in kwargs:
+            fragment["color"] = kwargs["color"]
+        for index, character in enumerate(text):
+            x = dict(fragment, text=character)
+            if "index_increment" in kwargs:
+                x["index_left"] = kwargs["index_increment"] + index
+                x["index_right"] = x["index_left"] + 1
+            if "index_constant" in kwargs:
+                x["index"] = kwargs["index_constant"]
+            self._characters.append(x)
+        return self
+
+    def selection_start(self, offset=0):
+        self._selections.append((self._index(offset), self._index(offset)))
+
+    def selection_end(self, offset=0):
+        last_selection = self._selections[-1]
+        self._selections[-1] = (last_selection[0], self._index(offset))
+
+    def cursor(self, offset=0):
+        self._cursors.append(self._index(offset))
+
+    def _index(self, offset):
+        return len(self._characters) + offset
 
 class Document(Immutable):
 
@@ -2644,6 +2898,7 @@ class Session(Immutable):
                     ]
                 ],
             },
+            "selection": Selection.empty(),
         })
 
     def open_page(self, page_id):
@@ -2661,6 +2916,12 @@ class Session(Immutable):
     def set_page_body_width(self, width):
         self.replace(["workspace", "page_body_width"], width)
 
+    def set_selection(self, selection):
+        self.replace(["selection"], selection)
+
+    def clear_selection(self):
+        self.replace(["selection"], Selection.empty())
+
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
             if page_id in collapsed:
@@ -2669,13 +2930,15 @@ class Session(Immutable):
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
 
-DragEvent = namedtuple("DragEvent", "initial,dx,dy,initiate_drag_drop")
+DragEvent = namedtuple("DragEvent", "initial,x,y,dx,dy,initiate_drag_drop")
 
 SliderEvent = namedtuple("SliderEvent", "value")
 
 HoverEvent = namedtuple("HoverEvent", "mouse_inside")
 
-ClickEvent = namedtuple("ClickEvent", "show_context_menu")
+ClickEvent = namedtuple("ClickEvent", "x,y,show_context_menu")
+
+KeyEvent = namedtuple("KeyEvent", "key")
 
 class PropUpdate(object):
 
@@ -2721,21 +2984,27 @@ class Text(wx.Panel, WxWidgetMixin):
         wx.Panel.__init__(self, wx_parent)
         WxWidgetMixin.__init__(self, *args)
         self.Bind(wx.EVT_PAINT, self._on_paint)
+        self.Bind(wx.EVT_TIMER, self._on_timer)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
         self._register_builtin("foreground", self.SetForegroundColour)
+        self._timer = wx.Timer(self)
+        self._show_cursors = True
+        self._cursor_positions = []
 
     def _update_gui(self, parent_updated):
         WxWidgetMixin._update_gui(self, parent_updated)
         did_measure = False
         if (self.prop_changed("font") or
-            self.prop_changed("fragments")):
+            self.prop_changed("characters")):
+            self._wx_font = wx_font(self.prop_with_default(["font"], {}))
             self._measure(
-                self.prop_with_default(["font"], {}),
-                self.prop_with_default(["fragments"], [])
+                self.prop_with_default(["characters"], [])
             )
             did_measure = True
+        did_reflow = False
         if (did_measure or
             self.prop_changed("max_width") or
             self.prop_changed("break_at_word") or
@@ -2745,132 +3014,211 @@ class Text(wx.Panel, WxWidgetMixin):
                 self.prop_with_default(["break_at_word"], True),
                 self.prop_with_default(["line_height"], 1)
             )
+            did_reflow = True
+        if did_reflow or self.prop_changed("cursors"):
+            self._show_cursors = True
+            self._calculate_cursor_positions(
+                self.prop_with_default(["cursors"], [])
+            )
+            if self.prop(["cursors"]):
+                self._timer.Start(400)
+            else:
+                self._timer.Stop()
+        if did_reflow or self.prop_changed("selections"):
+            self._calculate_selection_rects(
+                self.prop_with_default(["selections"], [])
+            )
 
     @profile_sub("text measure")
-    def _measure(self, font, fragments):
+    def _measure(self, characters):
         dc = wx.MemoryDC()
-        self._wx_font = wx_font(font)
-        dc.SetFont(self._wx_font)
         dc.SelectObject(wx.Bitmap(1, 1))
-        _, blank_line_height = dc.GetTextExtent("I")
-        self._measured_fragments = []
-        for fragment in fragments:
-            for line in fragment["text"].splitlines(True):
-                text = line.rstrip("\r\n")
-                widths = dc.GetPartialTextExtents(text)
-                w, h = dc.GetTextExtent(text)
-                self._measured_fragments.append((
-                    text,
-                    widths,
-                    h,
-                    fragment.get("color", None)
-                ))
-                if text != line:
-                    self._measured_fragments.append((None, [], blank_line_height, None))
+        self._measured_characters = []
+        for character in characters:
+            dc.SetFont(self._wx_font)
+            if character["text"] in ["\n", "\r"]:
+                _, line_height = dc.GetTextExtent("I")
+                size = wx.Size(0, line_height)
+            else:
+                size = dc.GetTextExtent(character["text"])
+            self._measured_characters.append((
+                character,
+                size
+            ))
 
     @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word, line_height):
-        self._draw_fragments = []
-        if max_width is None:
-            self._reflow_no_width_limit()
-        else:
-            self._reflow_width_limit(max_width, break_at_word, line_height)
-        self._partition()
+        self._draw_fragments_by_style = defaultdict(lambda: ([], []))
+        self._characters_bounding_rect = []
+        self._characters_by_line = []
 
-    def _reflow_no_width_limit(self):
-        x = 0
+        # Setup DC
+        dc = wx.MemoryDC()
+        dc.SetFont(self._wx_font)
+        dc.SelectObject(wx.Bitmap(1, 1))
+
+        # Split into lines
+        lines = []
+        index = 0
         y = 0
-        max_x = 0
-        row_max_h = 0
-        for text, widths, height, color in self._measured_fragments:
-            if text is None:
-                x = 0
-                y += row_max_h if row_max_h > 0 else height
-                row_max_h = 0
-            elif text:
-                self._draw_fragments.append((text, x, y, color))
-                x += widths[-1]
-                max_x = max(max_x, x)
-                row_max_h = max(row_max_h, height)
-        self.SetMinSize((max_x, y+row_max_h))
+        max_w = 0
+        while index < len(self._measured_characters):
+            line = self._extract_line(index, max_width, break_at_word)
+            w, h = self._layout_line(dc, line, line_height, y)
+            max_w = max(max_w, w)
+            y += h
+            index += len(line)
+        self.SetMinSize((max_w, y))
 
-    def _reflow_width_limit(self, max_width, break_at_word, line_height):
+    def _extract_line(self, index, max_width, break_at_word):
         x = 0
-        y = 0
-        row_max_h = 0
-        for text, widths, height, color in self._measured_fragments:
-            widths_offset = 0
-            while text:
-                num_that_fit = self._find_num_characters_that_fit(
-                    widths,
-                    max_width-x+widths_offset
-                )
-                if num_that_fit < len(text):
-                    num_to_include = self._find_num_characters_to_include(
-                        text,
-                        num_that_fit,
-                        break_at_word
-                    )
-                    break_line = True
-                else:
-                    num_to_include = num_that_fit
-                    break_line = False
-                if num_to_include == 0:
-                    if x > 0:
-                        break_line = True
-                    else:
-                        num_to_include = 1
-                self._draw_fragments.append((text[:num_to_include], x, y, color))
-                x += widths[num_to_include-1]
-                widths_offset = widths[num_to_include-1]
-                row_max_h = max(row_max_h, height)
-                text = text[num_to_include:]
-                widths = widths[num_to_include:]
-                if break_line:
-                    x = 0
-                    y += row_max_h * line_height
-                    row_max_h = 0
-            if text is None:
-                x = 0
-                y += row_max_h * line_height if row_max_h > 0 else height * line_height
-                row_max_h = 0
-        self.SetMinSize((max_width, y+row_max_h))
+        line = []
+        while index < len(self._measured_characters):
+            character, size = self._measured_characters[index]
+            if max_width is not None and x + size.Width > max_width and line:
+                if break_at_word:
+                    index = self._find_word_break_point(line, character["text"])
+                    if index is not None:
+                        return line[:index+1]
+                return line
+            line.append((character, size))
+            if character["text"] == "\n":
+                return line
+            x += size.Width
+            index += 1
+        return line
 
-    def _find_num_characters_to_include(self, text, num_that_fit, break_at_word):
-        if break_at_word:
-            index = num_that_fit - 1
-            while index >= 0 and text[index] == " ":
-                index -= 1
-            while index >= 0:
-                if text[index] == " ":
-                    return index + 1
-                index -= 1
-        return num_that_fit
-
-    def _find_num_characters_that_fit(self, widths, with_limit):
-        index = len(widths) - 1
+    def _find_word_break_point(self, line, next_character):
+        index = len(line) - 1
         while index >= 0:
-            if widths[index] > with_limit:
-                index -= 1
-            else:
-                return index + 1
-        return 0
+            current_character = line[index][0]["text"]
+            if current_character == " " and next_character != " ":
+                return index
+            next_character = current_character
+            index -= 1
 
-    def _partition(self):
-        self._draw_fragments_by_style = {}
-        for text, x, y, color in self._draw_fragments:
-            if color not in self._draw_fragments_by_style:
-                self._draw_fragments_by_style[color] = ([], [])
-            texts, positions = self._draw_fragments_by_style[color]
+    def _layout_line(self, dc, line, line_height, y):
+        # Calculate total height
+        max_h = 0
+        for character, size in line:
+            max_h = max(max_h, size.Height)
+        height = int(round(max_h * line_height))
+
+        # Bla bla
+        characters_by_style = []
+        characters = []
+        style = None
+        for character, size in line:
+            this_style = character.get("color", None)
+            if not characters or this_style == style:
+                characters.append(character)
+            else:
+                characters_by_style.append((style, characters))
+                characters = [character]
+            style = this_style
+        if characters:
+            characters_by_style.append((style, characters))
+
+        characters_in_line = []
+        x = 0
+        for style, characters in characters_by_style:
+            text = "".join(
+                character["text"]
+                for character
+                in characters
+            )
+            texts, positions = self._draw_fragments_by_style[style]
             texts.append(text)
             positions.append((x, y))
+            widths = dc.GetPartialTextExtents(text)
+            widths.insert(0, 0)
+
+            for index, character in enumerate(characters):
+                characters_in_line.append((
+                    character,
+                    wx.Rect(
+                        x+widths[index],
+                        y,
+                        widths[index+1]-widths[index],
+                        height,
+                    ),
+                ))
+            x += widths[-1]
+
+        self._characters_bounding_rect.extend(characters_in_line)
+        self._characters_by_line.append((y, height, characters_in_line))
+
+        return (x, height)
+
+    def _calculate_cursor_positions(self, cursors):
+        self._cursor_positions = []
+        for cursor in cursors:
+            self._cursor_positions.append(self._calculate_cursor_position(cursor))
+
+    def _calculate_cursor_position(self, cursor):
+        if cursor >= len(self._characters_bounding_rect):
+            rect = self._characters_bounding_rect[-1][1]
+            return (rect.Right, rect.Top, rect.Height)
+        elif cursor < 0:
+            cursor = 0
+        rect = self._characters_bounding_rect[cursor][1]
+        return (rect.X, rect.Y, rect.Height)
+
+    def _calculate_selection_rects(self, selections):
+        self._selection_rects = []
+        for start, end in selections:
+            self._selection_rects.extend([
+                rect
+                for character, rect
+                in self._characters_bounding_rect[start:end]
+            ])
 
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
-        dc.SetFont(self._wx_font)
         for style, items in self._draw_fragments_by_style.items():
+            dc.SetFont(self._wx_font)
             dc.SetTextForeground(style or self.GetForegroundColour())
             dc.DrawTextList(*items)
+        if self._show_cursors:
+            dc.SetPen(wx.Pen("pink", width=2))
+            for x, y, height in self._cursor_positions:
+                dc.DrawLines([
+                    (x, y),
+                    (x, y+height),
+                ])
+        color = wx.Colour(255, 0, 0, 100)
+        dc.DrawRectangleList(
+            self._selection_rects,
+            wx.Pen(color, width=0),
+            wx.Brush(color)
+        )
+
+    def _on_timer(self, wx_event):
+        self._show_cursors = not self._show_cursors
+        self.Refresh()
+
+    def _on_window_destroy(self, event):
+        self._timer.Stop()
+
+    def get_closest_character_with_side(self, x, y):
+        if not self._characters_bounding_rect:
+            return (None, False)
+        return self._get_closest_character_with_side_in_line(
+            self._get_closest_line(y),
+            x
+        )
+
+    def _get_closest_line(self, y):
+        for (line_y, line_h, line_characters) in self._characters_by_line:
+            if y < line_y or (y >= line_y and y <= line_y + line_h):
+                return line_characters
+        return line_characters
+
+    def _get_closest_character_with_side_in_line(self, line, x):
+        for character, rect in line:
+            if x < rect.Left or (x >= rect.Left and x <= rect.Right):
+                return (character, x > (rect.Left+rect.Width/2))
+        return (character, True)
 
 class Cache(object):
 
@@ -2893,7 +3241,7 @@ class Cache(object):
         if len(one) != len(two):
             return True
         for index in range(len(one)):
-            if one[index] is not two[index]:
+            if one[index] is not two[index] and one[index] != two[index]:
                 return True
         return False
 
