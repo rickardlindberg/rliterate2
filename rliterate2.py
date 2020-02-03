@@ -112,13 +112,11 @@ def generate_rows_and_drop_points(
         is_collapsed = page["id"] in collapsed
         num_children = len(page["children"])
         dragged = dragged or page["id"] == dragged_page
-        if dragged:
-            color = dragdrop_invalid_color
-        else:
-            color = foreground
         rows.append({
             "id": page["id"],
-            "title_props": TextPropsBuilder(color=color).text(page["title"]).get(),
+            "text_props": TextPropsBuilder(
+                color=dragdrop_invalid_color if dragged else foreground
+            ).text(page["title"]).get(),
             "level": level,
             "has_children": num_children > 0,
             "collapsed": is_collapsed,
@@ -1583,7 +1581,7 @@ class TableOfContentsTitle(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['title_props']))
+        props.update(self.prop(['text_props']))
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['row_margin'])
         sizer["flag"] |= wx.ALL
@@ -1832,7 +1830,7 @@ class WorkspaceProps(Props):
         return {
             "background": page_theme["code"]["header_background"],
             "margin": page_theme["code"]["margin"],
-            "path_props": self.build_code_path_props(
+            "text_props": self.build_code_path_props(
                 paragraph["filepath"],
                 paragraph["chunkpath"],
                 page_theme["code_font"]
@@ -1857,7 +1855,7 @@ class WorkspaceProps(Props):
         return {
             "background": page_theme["code"]["body_background"],
             "margin": page_theme["code"]["margin"],
-            "body_props": text_fragments_to_props(
+            "text_props": text_fragments_to_props(
                 self.apply_token_styles(
                     self.build_code_body_fragments(
                         paragraph["fragments"],
@@ -1898,7 +1896,7 @@ class WorkspaceProps(Props):
     def build_unknown_paragraph(self, paragraph, page_theme, selection):
         return {
             "widget": UnknownParagraph,
-            "props": TextPropsBuilder(**page_theme["code_font"]).text(
+            "text_props": TextPropsBuilder(**page_theme["code_font"]).text(
                 "Unknown paragraph type '{}'.".format(paragraph["type"])
             ).get(),
         }
@@ -2262,12 +2260,12 @@ class TextParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['text_props']))
+        props['left_margin'] = 0
+        props['right_margin'] = 0
+        props['text_props'] = self.prop(['text_props'])
         props['max_width'] = self.prop(['body_width'])
-        props['break_at_word'] = True
-        props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_widget(TextWithMargin, props, sizer, handlers, name)
 
 class QuoteParagraph(Panel):
 
@@ -2362,9 +2360,8 @@ class CodeParagraphHeader(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['path_props']))
+        props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
-        props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
@@ -2385,9 +2382,8 @@ class CodeParagraphBody(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['body_props']))
+        props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
-        props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
@@ -2438,9 +2434,8 @@ class UnknownParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['props']))
+        props.update(self.prop(['text_props']))
         props['max_width'] = self.prop(['body_width'])
-        props['break_at_word'] = False
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
 
@@ -2992,7 +2987,7 @@ class Text(wx.Panel, WxWidgetMixin):
             self.prop_changed("line_height")):
             self._reflow(
                 self.prop_with_default(["max_width"], None),
-                self.prop_with_default(["break_at_word"], True),
+                self.prop_with_default(["break_at_word"], False),
                 self.prop_with_default(["line_height"], 1)
             )
             did_reflow = True
