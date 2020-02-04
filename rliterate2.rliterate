@@ -351,7 +351,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        MainFrameProps(\n            Document(args[\"path\"]),\n            Session(),\n            Theme()\n        )\n    )\n",
+"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        create_props(\n            main_frame_props,\n            Document(args[\"path\"]),\n            Session(),\n            Theme()\n        )\n    )\n",
 "type":"code"
 }
 ],
@@ -369,14 +369,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class MainFrameProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"title\": PropUpdate(\n                document, [\"path\"],\n                format_title\n            ),\n            \"toolbar\": ToolbarProps(\n                theme\n            ),\n            \"toolbar_divider\": ToolbarDividerProps(\n                theme\n            ),\n            \"main_area\": MainAreaProps(\n                document,\n                session,\n                theme\n            ),\n        })\n",
+"text":"def main_frame_props(document, session, theme):\n    return {\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n        \"toolbar\": toolbar_props(\n            theme\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -401,14 +401,14 @@
 },
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class ToolbarDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toolbar_divider\", \"thickness\"],\n                lambda thickness: (-1, thickness)\n            ),\n        })\n",
+"text":"def toolbar_divider_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toolbar_divider\", \"color\"]\n        ),\n        \"min_size\": (\n            -1,\n            theme.get([\"toolbar_divider\", \"thickness\"])\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -445,14 +445,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class ToolbarProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toolbar\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"toolbar\", \"margin\"]\n            ),\n            \"actions\": {\n                \"rotate_theme\": theme.rotate,\n            },\n        })\n",
+"text":"def toolbar_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toolbar\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"toolbar\", \"margin\"]\n        ),\n        \"actions\": {\n            \"rotate_theme\": theme.rotate,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -489,14 +489,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class MainAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"toc\": TableOfContentsProps(\n                document,\n                session,\n                theme\n            ),\n            \"toc_divider\": TocDividerProps(\n                theme\n            ),\n            \"workspace\": WorkspaceProps(\n                document,\n                session,\n                theme,\n            ),\n            \"actions\": {\n                \"set_toc_width\": session.set_toc_width,\n            },\n        })\n",
+"text":"def main_area_props(document, session, theme):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": {\n            \"set_toc_width\": session.set_toc_width,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -505,14 +505,14 @@
 },
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class TocDividerProps(Props):\n\n    def __init__(self, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc_divider\", \"color\"]\n            ),\n            \"min_size\": PropUpdate(\n                theme, [\"toc_divider\", \"thickness\"],\n                lambda thickness: (thickness, -1)\n            ),\n        })\n",
+"text":"def toc_divider_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toc_divider\", \"color\"]\n        ),\n        \"min_size\": (\n            theme.get([\"toc_divider\", \"thickness\"]),\n            -1\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -578,14 +578,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class TableOfContentsScrollAreaProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"*\": PropUpdate(\n                document,\n                session, [\"toc\", \"collapsed\"],\n                session, [\"toc\", \"hoisted_page\"],\n                session, [\"toc\", \"dragged_page\"],\n                theme, [\"toc\", \"foreground\"],\n                theme, [\"dragdrop_invalid_color\"],\n                generate_rows_and_drop_points\n            ),\n            \"rows_cache_limit\": PropUpdate(\n                document,\n                lambda document: document.count_pages() - 1\n            ),\n            \"row_extra\": TableOfContentsRowExtraProps(\n                document,\n                session,\n                theme\n            ),\n            \"dragged_page\": PropUpdate(\n                session, [\"toc\", \"dragged_page\"]\n            ),\n            \"actions\": {\n                \"can_move_page\": document.can_move_page,\n                \"move_page\": document.move_page,\n            },\n        })\n",
+"text":"def table_of_contents_scroll_area_props(document, session, theme):\n    props = {\n        \"rows_cache_limit\": document.count_pages() - 1,\n        \"row_extra\": table_of_contents_row_extra_props(\n            session,\n            theme\n        ),\n        \"dragged_page\": session.get(\n            [\"toc\", \"dragged_page\"]\n        ),\n        \"actions\": {\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        },\n    }\n    props.update(generate_rows_and_drop_points(\n        document,\n        session.get([\"toc\", \"collapsed\"]),\n        session.get([\"toc\", \"hoisted_page\"]),\n        session.get([\"toc\", \"dragged_page\"]),\n        theme.get([\"toc\", \"foreground\"]),\n        theme.get([\"dragdrop_invalid_color\"])\n    ))\n    return props\n",
 "type":"code"
 }
 ],
@@ -594,14 +594,14 @@
 },
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class TableOfContentsRowExtraProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"indent_size\": PropUpdate(\n                theme, [\"toc\", \"indent_size\"]\n            ),\n            \"foreground\": PropUpdate(\n                theme, [\"toc\", \"foreground\"]\n            ),\n            \"hover_background\": PropUpdate(\n                theme, [\"toc\", \"hover_background\"]\n            ),\n            \"divider_thickness\": PropUpdate(\n                theme, [\"toc\", \"divider_thickness\"]\n            ),\n            \"dragdrop_color\": PropUpdate(\n                theme, [\"dragdrop_color\"]\n            ),\n            \"dragdrop_invalid_color\": PropUpdate(\n                theme, [\"dragdrop_invalid_color\"]\n            ),\n            \"actions\": {\n                \"set_hoisted_page\": session.set_hoisted_page,\n                \"set_dragged_page\": session.set_dragged_page,\n                \"toggle_collapsed\": session.toggle_collapsed,\n                \"open_page\": session.open_page,\n            },\n        })\n",
+"text":"def table_of_contents_row_extra_props(session, theme):\n    return {\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": theme.get(\n            [\"toc\", \"indent_size\"]\n        ),\n        \"foreground\": theme.get(\n            [\"toc\", \"foreground\"]\n        ),\n        \"hover_background\": theme.get(\n            [\"toc\", \"hover_background\"]\n        ),\n        \"divider_thickness\": theme.get(\n            [\"toc\", \"divider_thickness\"]\n        ),\n        \"dragdrop_color\": theme.get(\n            [\"dragdrop_color\"]\n        ),\n        \"dragdrop_invalid_color\": theme.get(\n            [\"dragdrop_invalid_color\"]\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"set_dragged_page\": session.set_dragged_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"open_page\": session.open_page,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -617,7 +617,7 @@
 ],
 "fragments":[
 {
-"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page,\n    foreground,\n    dragdrop_invalid_color\n):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"text_props\": TextPropsBuilder(\n                color=dragdrop_invalid_color if dragged else foreground\n            ).text(page[\"title\"]).get(),\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    try:\n        root_page = document.get_page(hoisted_page)\n    except PageNotFound:\n        root_page = document.get_page(None)\n    traverse(root_page)\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
+"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page,\n    foreground,\n    dragdrop_invalid_color\n):\n    try:\n        root_page = document.get_page(hoisted_page)\n    except PageNotFound:\n        root_page = document.get_page(None)\n    return _generate_rows_and_drop_points_page(\n        root_page,\n        collapsed,\n        dragged_page,\n        foreground,\n        dragdrop_invalid_color\n    )\n\n@cache()\ndef _generate_rows_and_drop_points_page(\n    root_page,\n    collapsed,\n    dragged_page,\n    foreground,\n    dragdrop_invalid_color\n):\n    def traverse(page, level=0, dragged=False):\n        is_collapsed = page[\"id\"] in collapsed\n        num_children = len(page[\"children\"])\n        dragged = dragged or page[\"id\"] == dragged_page\n        rows.append({\n            \"id\": page[\"id\"],\n            \"text_props\": TextPropsBuilder(\n                color=dragdrop_invalid_color if dragged else foreground\n            ).text(page[\"title\"]).get(),\n            \"level\": level,\n            \"has_children\": num_children > 0,\n            \"collapsed\": is_collapsed,\n            \"dragged\": dragged,\n        })\n        if is_collapsed:\n            target_index = num_children\n        else:\n            target_index = 0\n        drop_points.append(TableOfContentsDropPoint(\n            row_index=len(rows)-1,\n            target_index=target_index,\n            target_page=page[\"id\"],\n            level=level+1\n        ))\n        if not is_collapsed:\n            for target_index, child in enumerate(page[\"children\"]):\n                traverse(child, level+1, dragged=dragged)\n                drop_points.append(TableOfContentsDropPoint(\n                    row_index=len(rows)-1,\n                    target_index=target_index+1,\n                    target_page=page[\"id\"],\n                    level=level+1\n                ))\n    rows = []\n    drop_points = []\n    traverse(root_page)\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
 "type":"code"
 }
 ],
@@ -930,14 +930,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class TableOfContentsProps(Props):\n\n    def __init__(self, document, session, theme):\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"toc\", \"background\"]\n            ),\n            \"min_size\": PropUpdate(\n                session, [\"toc\", \"width\"],\n                lambda width: (max(50, width), -1)\n            ),\n            \"has_valid_hoisted_page\": PropUpdate(\n                document,\n                session, [\"toc\", \"hoisted_page\"],\n                is_valid_hoisted_page\n            ),\n            \"row_margin\": PropUpdate(\n                theme, [\"toc\", \"row_margin\"]\n            ),\n            \"scroll_area\": TableOfContentsScrollAreaProps(\n                document,\n                session,\n                theme\n            ),\n            \"actions\": {\n                \"set_hoisted_page\": session.set_hoisted_page,\n            },\n        })\n",
+"text":"def table_of_contents_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, session.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            session.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": session.set_hoisted_page,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -992,15 +992,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_column(self, document, column, page_body_width, page_theme, selection):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(self.build_page(\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id)\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def build_column(document, column, page_body_width, page_theme, selection):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id)\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
 "type":"code"
 }
 ],
@@ -1039,15 +1038,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_page(self, page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": self.build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\")\n        ),\n        \"paragraphs\": self.build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme,\n            selection.add(\"paragraphs\")\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_page(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\")\n        ),\n        \"paragraphs\": build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme,\n            selection.add(\"paragraphs\")\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1170,15 +1168,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_title(self, page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": self.build_title_text_props(\n            page[\"title\"],\n            page_theme[\"title_font\"],\n            selection.get()\n        ),\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n    }\n",
+"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": build_title_text_props(\n            page[\"title\"],\n            page_theme[\"title_font\"],\n            selection.get()\n        ),\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n    }\n",
 "type":"code"
 }
 ],
@@ -1189,15 +1186,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_title_text_props(self, title, font, selection):\n    builder = TextPropsBuilder(**font)\n    if title:\n        if selection is not None:\n            builder.selection_start(selection[\"start\"])\n            builder.selection_end(selection[\"end\"])\n            if selection[\"cursor_at_start\"]:\n                builder.cursor(selection[\"start\"])\n            else:\n                builder.cursor(selection[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection is not None:\n            builder.cursor()\n        builder.text(\"Enter title...\", color=\"pink\", index_constant=0)\n    return builder.get()\n",
+"text":"def build_title_text_props(title, font, selection):\n    builder = TextPropsBuilder(**font)\n    if title:\n        if selection is not None:\n            builder.selection_start(selection[\"start\"])\n            builder.selection_end(selection[\"end\"])\n            if selection[\"cursor_at_start\"]:\n                builder.cursor(selection[\"start\"])\n            else:\n                builder.cursor(selection[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection is not None:\n            builder.cursor()\n        builder.text(\"Enter title...\", color=\"pink\", index_constant=0)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1284,15 +1280,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
+"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
 "type":"code"
 }
 ],
@@ -1331,15 +1326,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
+"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
 "type":"code"
 }
 ],
@@ -1378,15 +1372,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": self.build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"]\n        ),\n    }\n",
+"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1397,15 +1390,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_list_item_rows(self, children, child_type, level=0):\n    rows = []\n    for index, child in enumerate(children):\n        rows.append({\n            \"text_props\": text_fragments_to_props(\n                [\n                    {\"text\": self._get_bullet_text(child_type, index)}\n                ]\n                +\n                child[\"fragments\"]\n            ),\n            \"level\": level,\n        })\n        rows.extend(self.build_list_item_rows(\n            child[\"children\"],\n            child[\"child_type\"],\n            level+1\n        ))\n    return rows\n\ndef _get_bullet_text(self, list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
+"text":"def build_list_item_rows(children, child_type, level=0):\n    rows = []\n    for index, child in enumerate(children):\n        rows.append({\n            \"text_props\": text_fragments_to_props(\n                [\n                    {\"text\": _get_bullet_text(child_type, index)}\n                ]\n                +\n                child[\"fragments\"]\n            ),\n            \"level\": level,\n        })\n        rows.extend(build_list_item_rows(\n            child[\"children\"],\n            child[\"child_type\"],\n            level+1\n        ))\n    return rows\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
 "type":"code"
 }
 ],
@@ -1446,15 +1438,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_header(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": self.build_code_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"],\n            page_theme[\"code_font\"]\n        ),\n    }\n",
+"text":"def build_code_paragraph_header(paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": build_code_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"],\n            page_theme[\"code_font\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1465,15 +1456,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_code_path_props(self, filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
+"text":"def build_code_path_props(filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1512,15 +1502,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_body(self, paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": text_fragments_to_props(\n            self.apply_token_styles(\n                self.build_code_body_fragments(\n                    paragraph[\"fragments\"],\n                    self.code_pygments_lexer(\n                        paragraph.get(\"language\", \"\"),\n                        paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                    )\n                ),\n                page_theme[\"token_styles\"]\n            ),\n            **page_theme[\"code_font\"]\n        ),\n    }\n",
+"text":"def build_code_paragraph_body(paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": text_fragments_to_props(\n            apply_token_styles(\n                build_code_body_fragments(\n                    paragraph[\"fragments\"],\n                    code_pygments_lexer(\n                        paragraph.get(\"language\", \"\"),\n                        paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                    )\n                ),\n                page_theme[\"token_styles\"]\n            ),\n            **page_theme[\"code_font\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1531,15 +1520,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_code_body_fragments(self, fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    return code_chunk.tokenize(pygments_lexer)\n",
+"text":"def build_code_body_fragments(fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    return code_chunk.tokenize(pygments_lexer)\n",
 "type":"code"
 }
 ],
@@ -1577,15 +1565,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": self.build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": self.build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n    }\n",
+"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1624,15 +1611,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
+"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
 "type":"code"
 }
 ],
@@ -1671,15 +1657,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(self, paragraph, page_theme, selection):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n    }\n",
+"text":"def build_unknown_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n    }\n",
 "type":"code"
 }
 ],
@@ -1718,15 +1703,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def code_pygments_lexer(self, language, filename):\n    try:\n        if language:\n            return pygments.lexers.get_lexer_by_name(\n                language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
+"text":"def code_pygments_lexer(language, filename):\n    try:\n        if language:\n            return pygments.lexers.get_lexer_by_name(\n                language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
 "type":"code"
 }
 ],
@@ -1737,15 +1721,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"apply_token_styles\")\ndef apply_token_styles(self, fragments, token_styles):\n    styles = self.build_style_dict(token_styles)\n    def style_fragment(fragment):\n        if \"token_type\" in fragment:\n            token_type = fragment[\"token_type\"]\n            while token_type not in styles:\n                token_type = token_type.parent\n            style = styles[token_type]\n            new_fragment = dict(fragment)\n            new_fragment.update(style)\n            return new_fragment\n        else:\n            return fragment\n    return [\n        style_fragment(fragment)\n        for fragment in fragments\n    ]\n",
+"text":"@profile_sub(\"apply_token_styles\")\ndef apply_token_styles(fragments, token_styles):\n    styles = build_style_dict(token_styles)\n    def style_fragment(fragment):\n        if \"token_type\" in fragment:\n            token_type = fragment[\"token_type\"]\n            while token_type not in styles:\n                token_type = token_type.parent\n            style = styles[token_type]\n            new_fragment = dict(fragment)\n            new_fragment.update(style)\n            return new_fragment\n        else:\n            return fragment\n    return [\n        style_fragment(fragment)\n        for fragment in fragments\n    ]\n",
 "type":"code"
 }
 ],
@@ -1756,15 +1739,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_style_dict(self, theme_style):\n    styles = {}\n    for name, value in theme_style.items():\n        styles[string_to_tokentype(name)] = value\n    return styles\n",
+"text":"def build_style_dict(theme_style):\n    styles = {}\n    for name, value in theme_style.items():\n        styles[string_to_tokentype(name)] = value\n    return styles\n",
 "type":"code"
 }
 ],
@@ -1781,15 +1763,14 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(self, paragraphs, page_theme, selection):\n    return [\n        self._paragraph_cache.get_or_update(\n            paragraph[\"id\"],\n            \"paragraph\",\n            self.build_paragraph,\n            paragraph,\n            page_theme,\n            selection\n        )\n        for paragraph in paragraphs\n    ]\n",
+"text":"def build_paragraphs(paragraphs, page_theme, selection):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            selection\n        )\n        for paragraph in paragraphs\n    ]\n",
 "type":"code"
 }
 ],
@@ -1800,15 +1781,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def build_paragraph(self, paragraph, page_theme, selection):\n    BUILDERS = {\n        \"text\": self.build_text_paragraph,\n        \"quote\": self.build_quote_paragraph,\n        \"list\": self.build_list_paragraph,\n        \"code\": self.build_code_paragraph,\n        \"image\": self.build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        self.build_unknown_paragraph\n    )(paragraph, page_theme, selection)\n",
+"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef build_paragraph(paragraph, page_theme, selection):\n    BUILDERS = {\n        \"text\": build_text_paragraph,\n        \"quote\": build_quote_paragraph,\n        \"list\": build_list_paragraph,\n        \"code\": build_code_paragraph,\n        \"image\": build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        build_unknown_paragraph\n    )(paragraph, page_theme, selection)\n",
 "type":"code"
 }
 ],
@@ -1825,23 +1805,15 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class WorkspaceProps(Props):\n\n    def __init__(self, document, session, theme):\n        self._paragraph_cache = Cache(limit=1000)\n        Props.__init__(self, {\n            \"background\": PropUpdate(\n                theme, [\"workspace\", \"background\"]\n            ),\n            \"margin\": PropUpdate(\n                theme, [\"workspace\", \"margin\"]\n            ),\n            \"column_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\", \"margin\"],\n                theme, [\"page\", \"border\", \"size\"],\n                lambda body, margin, border: (\n                    body + 2*margin + border\n                )\n            ),\n            \"columns\": PropUpdate(\n                document,\n                session, [\"workspace\", \"columns\"],\n                session, [\"workspace\", \"page_body_width\"],\n                theme, [\"page\"],\n                session, [\"selection\"],\n                self.build_columns\n            ),\n            \"page_body_width\": PropUpdate(\n                session, [\"workspace\", \"page_body_width\"]\n            ),\n            \"actions\": {\n                \"set_page_body_width\": session.set_page_body_width,\n                \"edit_title\": document.edit_title,\n                \"clear_selection\": session.clear_selection,\n                \"set_selection\": session.set_selection,\n            },\n        })\n\n",
+"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            session.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_title\": document.edit_title,\n            \"clear_selection\": session.clear_selection,\n            \"set_selection\": session.set_selection,\n        },\n    }\n",
 "type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
-"WorkspaceProps"
-],
-"prefix":"    ",
-"type":"chunk"
 }
 ],
 "id":"1bd7139b569d41039b4661e345deb68d",
@@ -1849,15 +1821,14 @@
 },
 {
 "chunkpath":[
-"classes",
-"WorkspaceProps"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_columns\")\ndef build_columns(self, document, columns, page_body_width, page_theme, selection):\n    selection = selection.add(\"workspace\")\n    columns_prop = []\n    for index, column in enumerate(columns):\n        columns_prop.append(self.build_column(\n            document,\n            column,\n            page_body_width,\n            page_theme,\n            selection.add(\"column\", index)\n        ))\n    return columns_prop\n",
+"text":"@profile_sub(\"build_columns\")\ndef build_columns(document, columns, page_body_width, page_theme, selection):\n    selection = selection.add(\"workspace\")\n    columns_prop = []\n    for index, column in enumerate(columns):\n        columns_prop.append(build_column(\n            document,\n            column,\n            page_body_width,\n            page_theme,\n            selection.add(\"column\", index)\n        ))\n    return columns_prop\n",
 "type":"code"
 }
 ],
@@ -2600,34 +2571,18 @@
 "paragraphs":[
 {
 "chunkpath":[
-"base classes"
+"functions"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class Props(Immutable):\n\n    def __init__(self, props, child_props={}):\n        self.dependencies = set()\n        data = {}\n        for name, value in props.items():\n            if isinstance(value, Props):\n                value.listen(self._create_props_handler(name, value))\n                self._set_initial(data, name, value.get())\n                self.dependencies.update(value.dependencies)\n            elif isinstance(value, PropUpdate):\n                self.dependencies.update(\n                    value.parse(self._create_prop_update_handler(name, value))\n                )\n                self._set_initial(data, name, value.eval())\n            else:\n                data[name] = value\n        for dep in self.dependencies:\n            dep.listen(self._propagate_changes)\n        Immutable.__init__(self, data)\n\n    def _propagate_changes(self):\n        self._notify()\n\n    def _create_props_handler(self, name, props):\n        def handler():\n            self._modify(\n                self._modify_items(name, props.get()),\n                only_if_differs=False\n            )\n        return handler\n\n    def _create_prop_update_handler(self, name, prop_update):\n        def handler():\n            self._modify(\n                self._modify_items(name, prop_update.eval()),\n                only_if_differs=True\n            )\n        return handler\n\n    def _set_initial(self, data, name, value):\n        if \"*\" in name:\n            data.update(value)\n        else:\n            data[name] = value\n\n    def _modify_items(self, name, value):\n        items = []\n        if \"*\" in name:\n            for sub_name, sub_value in value.items():\n                items.append(self._modify_item(sub_name, sub_value))\n        else:\n            items.append(self._modify_item(name, value))\n        return items\n\n    def _modify_item(self, name, value):\n        return ([name], lambda old_value: value)\n",
+"text":"def create_props(fn, *args):\n    fn = profile_sub(\"create props\")(fn)\n    immutable = Immutable(fn(*args))\n    for arg in args:\n        if isinstance(arg, Immutable):\n            arg.listen(lambda: immutable.replace([], fn(*args)))\n    return immutable\n",
 "type":"code"
 }
 ],
-"id":"c46f943de6a340e286c6c6eefe9b61a2",
-"type":"code"
-},
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class PropUpdate(object):\n\n    def __init__(self, *args):\n        self._args = args\n\n    def parse(self, handler):\n        dependencies = set()\n        self._fn = lambda x: x\n        self._inputs = []\n        items = list(self._args)\n        while items:\n            item = items.pop(0)\n            if (isinstance(item, Immutable) and\n                items and\n                isinstance(items[0], list)):\n                path = items.pop(0)\n                self._inputs.append((item, path))\n                item.listen(handler, prefix=path)\n                dependencies.add(item)\n            elif isinstance(item, Immutable):\n                self._inputs.append((item, None))\n                item.listen(handler)\n                dependencies.add(item)\n            elif callable(item) and not items:\n                self._fn = item\n            else:\n                self._inputs.append((item, None))\n        return dependencies\n\n    def eval(self):\n        args = []\n        for obj, path in self._inputs:\n            if path is None:\n                args.append(obj)\n            else:\n                args.append(obj.get(path))\n        return self._fn(*args)\n",
-"type":"code"
-}
-],
-"id":"ea68520c1a57480dba1151de9685cac4",
+"id":"8722a2c6934d4dd49d732d5fdd694f19",
 "type":"code"
 }
 ],
@@ -4429,18 +4384,18 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
+"decorators"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class Cache(object):\n\n    def __init__(self, limit):\n        self._limit = limit\n        self._entries = OrderedDict()\n\n    def get_or_update(self, id_, name, update_fn, *args):\n        if id_ not in self._entries:\n            self._entries[id_] = {}\n        (dependencies, result) = self._entries[id_].get(name, ([], None))\n        if self._differ(dependencies, args):\n            result = update_fn(*args)\n            self._entries[id_][name] = (args, result)\n            if len(self._entries) > self._limit:\n                self._entries.popitem(last=False)\n        return result\n\n    def _differ(self, one, two):\n        if len(one) != len(two):\n            return True\n        for index in range(len(one)):\n            if one[index] is not two[index] and one[index] != two[index]:\n                return True\n        return False\n",
+"text":"def cache(limit=1, key_path=[]):\n    entries = OrderedDict()\n    def wrap(fn):\n        def fn_with_cache(*args):\n            entry_key = _cache_get_key(key_path, args)\n            if entry_key not in entries:\n                entries[entry_key] = ([], None)\n            entry_args, entry_value = entries[entry_key]\n            if _cache_differ(entry_args, args):\n                entry_value = fn(*args)\n                entries[entry_key] = (list(args), entry_value)\n                if len(entries) > limit:\n                    entries.popitem(last=False)\n            return entry_value\n        return fn_with_cache\n    return wrap\n\ndef _cache_get_key(path, args):\n    if path:\n        for part in path:\n            args = args[part]\n        return args\n    return None\n\ndef _cache_differ(one, two):\n    if len(one) != len(two):\n        return True\n    for index in range(len(one)):\n        if one[index] is not two[index] and one[index] != two[index]:\n            return True\n    return False\n",
 "type":"code"
 }
 ],
-"id":"dbafcee1002740a99a56d7b0585e6e2c",
+"id":"20017dce06e34c6e94042b783826b08f",
 "type":"code"
 }
 ],
