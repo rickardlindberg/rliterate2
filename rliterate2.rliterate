@@ -5577,6 +5577,16 @@
 ],
 "id":"b94764266bce43a3b5cc67aaed13d572",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Better support for moving/renaming code chunks. For example moving chunks \"foo/bar\" to \"foo/blah/bar\" requires manual editing of all chunks.",
+"type":"text"
+}
+],
+"id":"4a00d927ee114cb9b1d9655ede514694",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
