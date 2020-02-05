@@ -383,7 +383,8 @@ def workspace_props(document, session, theme):
         "actions": {
             "set_page_body_width": session.set_page_body_width,
             "edit_title": document.edit_title,
-            "clear_selection": session.clear_selection,
+            "activate_selection": session.activate_selection,
+            "deactivate_selection": session.deactivate_selection,
             "set_selection": session.set_selection,
         },
     }
@@ -444,26 +445,30 @@ def build_title(page, page_body_width, page_theme, selection):
         "text_props": build_title_text_props(
             page["title"],
             page_theme["title_font"],
-            selection.get()
+            selection
         ),
         "body_width": page_body_width,
         "selection": selection,
         "selection_present": selection.present(),
+        "background": "red",
+        "background2": page_theme["background"],
+        "selborder": 1 if selection.present() else 0,
     }
 
 def build_title_text_props(title, font, selection):
     builder = TextPropsBuilder(**font)
     if title:
-        if selection is not None:
-            builder.selection_start(selection["start"])
-            builder.selection_end(selection["end"])
-            if selection["cursor_at_start"]:
-                builder.cursor(selection["start"])
+        if selection.present():
+            value = selection.get()
+            builder.selection_start(value["start"])
+            builder.selection_end(value["end"])
+            if value["cursor_at_start"]:
+                builder.cursor(value["start"])
             else:
-                builder.cursor(selection["end"])
+                builder.cursor(value["end"])
         builder.text(title, index_increment=0)
     else:
-        if selection is not None:
+        if selection.present():
             builder.cursor()
         builder.text("Enter title...", color="pink", index_constant=0)
     return builder.get()
@@ -964,6 +969,7 @@ class WxWidgetMixin(WidgetMixin):
 
     def _setup_gui(self):
         WidgetMixin._setup_gui(self)
+        self._default_cursor = self.GetCursor()
         self._setup_wx_events()
         self._register_builtin("background", self.SetBackgroundColour)
         self._register_builtin("min_size", self.SetMinSize)
@@ -973,6 +979,8 @@ class WxWidgetMixin(WidgetMixin):
             self.SetCursor({
                 "size_horizontal": wx.Cursor(wx.CURSOR_SIZEWE),
                 "hand": wx.Cursor(wx.CURSOR_HAND),
+                "beam": wx.Cursor(wx.CURSOR_IBEAM),
+                None: self._default_cursor,
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
         self._event_map = {
@@ -996,6 +1004,12 @@ class WxWidgetMixin(WidgetMixin):
             ],
             "key": [
                 (wx.EVT_CHAR, self._on_wx_char),
+            ],
+            "focus": [
+                (wx.EVT_SET_FOCUS, self._on_wx_set_focus),
+            ],
+            "unfocus": [
+                (wx.EVT_KILL_FOCUS, self._on_wx_kill_focus),
             ],
         }
 
@@ -1094,6 +1108,22 @@ class WxWidgetMixin(WidgetMixin):
             KeyEvent(chr(wx_event.GetUnicodeKey())),
             propagate=False
         )
+
+    def _on_wx_set_focus(self, wx_event):
+        self.call_event_handler(
+            "focus",
+            None,
+            propagate=False
+        )
+        wx_event.Skip()
+
+    def _on_wx_kill_focus(self, wx_event):
+        self.call_event_handler(
+            "unfocus",
+            None,
+            propagate=False
+        )
+        wx_event.Skip()
 
     def on_drag_drop_over(self, x, y):
         pass
@@ -2058,6 +2088,7 @@ class PageBody(Panel):
         props['actions'] = self.prop(['actions'])
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
+        sizer["flag"] |= wx.EXPAND
         self._create_widget(Title, props, sizer, handlers, name)
         def loop_fn(loopvar):
             pass
@@ -2139,14 +2170,37 @@ class Title(Panel):
         handlers = {}
         name = 'text'
         props.update(self.prop(['text_props']))
-        props['max_width'] = self.prop(['body_width'])
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['selborder'])))
         props['focus'] = self.prop(['selection_present'])
+        props['background'] = self.prop(['background2'])
+        props['cursor'] = self._get_cursor(self.prop(['selection']))
+        handlers['click'] = lambda event: self._on_click(event, self.prop(['selection']))
         handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
         handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
+        handlers['focus'] = lambda event: self._on_focus(event, self.prop(['selection']))
+        handlers['unfocus'] = lambda event: self._on_unfocus(event, self.prop(['selection']))
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['selborder'])
+        sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
+    def _on_click(self, event, selection):
+        if selection.present():
+            return
+        index = self._get_index(event.x, event.y)
+        if index is not None:
+            self.prop(["actions", "set_selection"])(
+                selection.create({
+                    "start": index,
+                    "end": index,
+                    "cursor_at_start": True,
+                })
+            )
+
     def _on_left_down(self, event, selection):
+        if not selection.present():
+            return
         index = self._get_index(event.x, event.y)
         if index is not None:
             self.prop(["actions", "set_selection"])(
@@ -2158,6 +2212,8 @@ class Title(Panel):
             )
 
     def _on_drag(self, event, selection):
+        if not selection.present():
+            return
         if event.initial:
             self._initial_index = self._get_index(event.x, event.y)
         else:
@@ -2182,6 +2238,7 @@ class Title(Panel):
                 return character.get("index_right", index)
             else:
                 return character.get("index_left", index)
+
     def _on_key(self, event, selection):
         if selection.present():
             if event.key == "l":
@@ -2212,6 +2269,22 @@ class Title(Panel):
                 )
             print(event)
             print(selection)
+
+    def _get_cursor(self, selection):
+        if selection.present():
+            return "beam"
+        else:
+            return None
+
+    def _on_focus(self, event, selection):
+        self.prop(["actions", "activate_selection"])(
+            selection
+        )
+
+    def _on_unfocus(self, event, selection):
+        self.prop(["actions", "deactivate_selection"])(
+            selection
+        )
 
 class TextParagraph(Panel):
 
@@ -2431,11 +2504,11 @@ class TextWithMargin(Panel):
         self._create_widget(Text, props, sizer, handlers, name)
         self._create_space(self.prop(['right_margin']))
 
-class Selection(namedtuple("Selection", ["trail", "value"])):
+class Selection(namedtuple("Selection", ["trail", "value", "active"])):
 
     @staticmethod
     def empty():
-        return Selection(trail=[], value=None)
+        return Selection(trail=[], value=None, active=False)
 
     def add(self, *args):
         new_value = self.value
@@ -2443,16 +2516,18 @@ class Selection(namedtuple("Selection", ["trail", "value"])):
         for arg in args:
             if new_value is not None and new_value[0] == arg:
                 new_value = new_value[1:]
+                active = self.active
             else:
                 new_value = None
+                active = False
             new_trail = new_trail + [arg]
-        return Selection(trail=new_trail, value=new_value)
+        return Selection(trail=new_trail, value=new_value, active=active)
 
     def create(self, *args):
-        return Selection(trail=[], value=self.trail+list(args))
+        return Selection(trail=[], value=self.trail+list(args), active=True)
 
     def present(self):
-        return self.value is not None
+        return self.value is not None and self.active
 
     def get(self):
         if self.present() and len(self.value) == 1:
@@ -2865,8 +2940,22 @@ class Session(Immutable):
     def set_selection(self, selection):
         self.replace(["selection"], selection)
 
-    def clear_selection(self):
-        self.replace(["selection"], Selection.empty())
+    def activate_selection(self, selection):
+        self._set_selection_active(selection, True)
+
+    def deactivate_selection(self, selection):
+        self._set_selection_active(selection, False)
+
+    def _set_selection_active(self, selection, active):
+        current_selection = self.get(["selection"])
+        path = selection.trail
+        if (current_selection.value is not None and
+            path == current_selection.value[:len(path)] and
+            current_selection.active != active):
+            self.modify(
+                ["selection"],
+                lambda x: x._replace(active=active)
+            )
 
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
