@@ -1175,7 +1175,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": build_title_text_props(\n            page[\"title\"],\n            page_theme[\"title_font\"],\n            selection\n        ),\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n        \"background\": \"red\",\n        \"background2\": page_theme[\"background\"],\n        \"selborder\": 1 if selection.present() else 0,\n    }\n",
+"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"text_props\": build_title_text_props(\n            page[\"title\"],\n            page_theme[\"title_font\"],\n            selection\n        ),\n        \"body_width\": page_body_width,\n        \"selection\": selection,\n        \"selection_present\": selection.present(),\n        \"selection_box\": {\n            \"width\": 1 if selection.present() else 0,\n            \"color\": \"red\",\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1211,7 +1211,7 @@
 ],
 "fragments":[
 {
-"text":"panel Title %layout_rows {\n    Text[text](\n        #text_props\n        max_width  = sub(#body_width mul(2 #selborder))\n        focus      = #selection_present\n        background = #background2\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[#selborder,ALL]\n    )\n}\n\n",
+"text":"panel Title %layout_rows {\n    Text[text](\n        #text_props\n        max_width  = sub(#body_width mul(2 #selection_box.width))\n        focus      = #selection_present\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[#selection_box.width,ALL]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -4080,7 +4080,7 @@
 ],
 "fragments":[
 {
-"text":"class Panel(wx.Panel, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n",
+"text":"class Panel(wx.Panel, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n\n    def _on_paint(self, wx_event):\n        box = self.prop_with_default([\"selection_box\"], {})\n        if box and box[\"width\"] > 0:\n            dc = wx.PaintDC(self)\n            dc.SetPen(wx.Pen(\n                box[\"color\"],\n                width=box[\"width\"],\n                style=wx.PENSTYLE_SOLID\n            ))\n            dc.SetBrush(wx.Brush(\n                wx.Colour(),\n                wx.BRUSHSTYLE_TRANSPARENT\n            ))\n            dc.DrawRectangle((0, 0), self.GetSize())\n",
 "type":"code"
 }
 ],

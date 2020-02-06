@@ -450,9 +450,10 @@ def build_title(page, page_body_width, page_theme, selection):
         "body_width": page_body_width,
         "selection": selection,
         "selection_present": selection.present(),
-        "background": "red",
-        "background2": page_theme["background"],
-        "selborder": 1 if selection.present() else 0,
+        "selection_box": {
+            "width": 1 if selection.present() else 0,
+            "color": "red",
+        },
     }
 
 def build_title_text_props(title, font, selection):
@@ -1462,6 +1463,22 @@ class Panel(wx.Panel, WxContainerWidgetMixin):
     def __init__(self, wx_parent, *args):
         wx.Panel.__init__(self, wx_parent)
         WxContainerWidgetMixin.__init__(self, *args)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def _on_paint(self, wx_event):
+        box = self.prop_with_default(["selection_box"], {})
+        if box and box["width"] > 0:
+            dc = wx.PaintDC(self)
+            dc.SetPen(wx.Pen(
+                box["color"],
+                width=box["width"],
+                style=wx.PENSTYLE_SOLID
+            ))
+            dc.SetBrush(wx.Brush(
+                wx.Colour(),
+                wx.BRUSHSTYLE_TRANSPARENT
+            ))
+            dc.DrawRectangle((0, 0), self.GetSize())
 
 class CompactScrolledWindow(wx.ScrolledWindow):
 
@@ -2170,9 +2187,8 @@ class Title(Panel):
         handlers = {}
         name = 'text'
         props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['selborder'])))
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['selection_box', 'width'])))
         props['focus'] = self.prop(['selection_present'])
-        props['background'] = self.prop(['background2'])
         props['cursor'] = self._get_cursor(self.prop(['selection']))
         handlers['click'] = lambda event: self._on_click(event, self.prop(['selection']))
         handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
@@ -2181,7 +2197,7 @@ class Title(Panel):
         handlers['focus'] = lambda event: self.prop(['actions', 'show_selection'])(self.prop(['selection']))
         handlers['unfocus'] = lambda event: self.prop(['actions', 'hide_selection'])(self.prop(['selection']))
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['selborder'])
+        sizer["border"] = self.prop(['selection_box', 'width'])
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
 
