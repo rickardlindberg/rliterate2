@@ -383,8 +383,8 @@ def workspace_props(document, session, theme):
         "actions": {
             "set_page_body_width": session.set_page_body_width,
             "edit_title": document.edit_title,
-            "activate_selection": session.activate_selection,
-            "deactivate_selection": session.deactivate_selection,
+            "show_selection": session.show_selection,
+            "hide_selection": session.hide_selection,
             "set_selection": session.set_selection,
         },
     }
@@ -2178,8 +2178,8 @@ class Title(Panel):
         handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
         handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
-        handlers['focus'] = lambda event: self._on_focus(event, self.prop(['selection']))
-        handlers['unfocus'] = lambda event: self._on_unfocus(event, self.prop(['selection']))
+        handlers['focus'] = lambda event: self.prop(['actions', 'show_selection'])(self.prop(['selection']))
+        handlers['unfocus'] = lambda event: self.prop(['actions', 'hide_selection'])(self.prop(['selection']))
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['selborder'])
         sizer["flag"] |= wx.ALL
@@ -2275,16 +2275,6 @@ class Title(Panel):
             return "beam"
         else:
             return None
-
-    def _on_focus(self, event, selection):
-        self.prop(["actions", "activate_selection"])(
-            selection
-        )
-
-    def _on_unfocus(self, event, selection):
-        self.prop(["actions", "deactivate_selection"])(
-            selection
-        )
 
 class TextParagraph(Panel):
 
@@ -2504,34 +2494,37 @@ class TextWithMargin(Panel):
         self._create_widget(Text, props, sizer, handlers, name)
         self._create_space(self.prop(['right_margin']))
 
-class Selection(namedtuple("Selection", ["trail", "value", "active"])):
+class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
 
     @staticmethod
     def empty():
-        return Selection(trail=[], value=None, active=False)
+        return Selection(trail=[], value=[], visible=False)
 
     def add(self, *args):
         new_value = self.value
         new_trail = self.trail
         for arg in args:
-            if new_value is not None and new_value[0] == arg:
+            if new_value and new_value[0] == arg:
                 new_value = new_value[1:]
-                active = self.active
+                visible = self.visible
             else:
-                new_value = None
-                active = False
+                new_value = []
+                visible = False
             new_trail = new_trail + [arg]
-        return Selection(trail=new_trail, value=new_value, active=active)
+        return Selection(trail=new_trail, value=new_value, visible=visible)
 
     def create(self, *args):
-        return Selection(trail=[], value=self.trail+list(args), active=True)
+        return Selection(trail=[], value=self.trail+list(args), visible=True)
 
     def present(self):
-        return self.value is not None and self.active
+        return len(self.value) > 0 and self.visible
 
     def get(self):
-        if self.present() and len(self.value) == 1:
+        if len(self.value) == 1:
             return self.value[0]
+
+    def path(self):
+        return self.trail + self.value
 
 class TextPropsBuilder(object):
 
@@ -2940,21 +2933,19 @@ class Session(Immutable):
     def set_selection(self, selection):
         self.replace(["selection"], selection)
 
-    def activate_selection(self, selection):
-        self._set_selection_active(selection, True)
+    def show_selection(self, selection):
+        self._set_selection_visible(selection, True)
 
-    def deactivate_selection(self, selection):
-        self._set_selection_active(selection, False)
+    def hide_selection(self, selection):
+        self._set_selection_visible(selection, False)
 
-    def _set_selection_active(self, selection, active):
+    def _set_selection_visible(self, selection, visible):
         current_selection = self.get(["selection"])
-        path = selection.trail
-        if (current_selection.value is not None and
-            path == current_selection.value[:len(path)] and
-            current_selection.active != active):
+        if (current_selection.path() == selection.path() and
+            current_selection.visible != visible):
             self.modify(
                 ["selection"],
-                lambda x: x._replace(active=active)
+                lambda x: x._replace(visible=visible)
             )
 
     def toggle_collapsed(self, page_id):
