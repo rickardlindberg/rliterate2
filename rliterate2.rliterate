@@ -1241,7 +1241,7 @@
 ],
 "fragments":[
 {
-"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    title = self.prop([\"title\"])\n    self.prop([\"actions\", \"hide_selection\"])(selection)\n    self.prop([\"actions\", \"edit_title\"])(\n        self.prop([\"id\"]),\n        title[:value[\"start\"]] + key_event.key + title[value[\"end\"]:]\n    )\n    self.prop([\"actions\", \"set_selection\"])(\n        selection.create({\n            \"start\": value[\"start\"] + 1,\n            \"end\": value[\"start\"] + 1,\n            \"cursor_at_start\": True,\n        })\n    )\n",
+"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    title = self.prop([\"title\"])\n    self.prop([\"actions\", \"edit_title\"])(\n        self.prop([\"id\"]),\n        title[:value[\"start\"]] + key_event.key + title[value[\"end\"]:],\n        selection.create({\n            \"start\": value[\"start\"] + 1,\n            \"end\": value[\"start\"] + 1,\n            \"cursor_at_start\": True,\n        })\n    )\n",
 "type":"code"
 }
 ],
@@ -1793,7 +1793,7 @@
 ],
 "fragments":[
 {
-"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            session.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_title\": document.edit_title,\n            \"show_selection\": session.show_selection,\n            \"hide_selection\": session.hide_selection,\n            \"set_selection\": session.set_selection,\n        },\n    }\n",
+"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_title\": document.edit_title,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -2392,7 +2392,7 @@
 ],
 "fragments":[
 {
-"text":"def edit_title(self, source_id, new_title):\n    try:\n        self.replace(\n            self._get_page_meta(source_id).path + [\"title\"],\n            new_title\n        )\n    except PageNotFound:\n        pass\n",
+"text":"def edit_title(self, source_id, new_title, new_selection):\n    try:\n        with self.transaction():\n            self.replace(\n                self._get_page_meta(source_id).path + [\"title\"],\n                new_title\n            )\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except PageNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -2462,7 +2462,7 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    ROOT_PAGE_PATH = [\"doc\", \"root_page\"]\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n        })\n        self._build_page_index()\n\n",
+"text":"class Document(Immutable):\n\n    ROOT_PAGE_PATH = [\"doc\", \"root_page\"]\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n            \"selection\": Selection.empty(),\n        })\n        self._build_page_index()\n\n",
 "type":"code"
 },
 {
@@ -2508,6 +2508,23 @@
 ],
 "id":"1c35c112ce9f41659a6a6c8a4062f564",
 "type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, selection):\n    self._set_selection_visible(selection, True)\n\ndef hide_selection(self, selection):\n    self._set_selection_visible(selection, False)\n\ndef _set_selection_visible(self, selection, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.path() == selection.path() and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
+"type":"code"
+}
+],
+"id":"ffc6a8285b8a476499496a546c81172e",
+"type":"code"
 }
 ],
 "title":"Document"
@@ -2548,7 +2565,7 @@
 ],
 "fragments":[
 {
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"page_body_width\": 300,\n                \"columns\": [\n                    [\n                        \"cf689824aa3641828343eba2b5fbde9f\",\n                        \"ef8200090225487eab4ae35d8910ba8e\",\n                        \"97827e5f0096482a9a4eadf0ce07764f\"\n                    ],\n                    [\n                        \"e6a157bbac8842a2b8c625bfa9255159\",\n                        \"813ec304685345a19b1688074000d296\",\n                        \"004bc5a29bc94eeb95f4f6a56bd48729\",\n                        \"b987445070e84067ba90e71695763f72\"\n                    ]\n                ],\n            },\n            \"selection\": Selection.empty(),\n        })\n\n    def open_page(self, page_id):\n        self.replace([\"workspace\", \"columns\"], [[page_id]])\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def set_page_body_width(self, width):\n        self.replace([\"workspace\", \"page_body_width\"], width)\n\n    def set_selection(self, selection):\n        self.replace([\"selection\"], selection)\n\n    def show_selection(self, selection):\n        self._set_selection_visible(selection, True)\n\n    def hide_selection(self, selection):\n        self._set_selection_visible(selection, False)\n\n    def _set_selection_visible(self, selection, visible):\n        current_selection = self.get([\"selection\"])\n        if (current_selection.path() == selection.path() and\n            current_selection.visible != visible):\n            self.modify(\n                [\"selection\"],\n                lambda x: x._replace(visible=visible)\n            )\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"page_body_width\": 300,\n                \"columns\": [\n                    [\n                        \"cf689824aa3641828343eba2b5fbde9f\",\n                        \"ef8200090225487eab4ae35d8910ba8e\",\n                        \"97827e5f0096482a9a4eadf0ce07764f\"\n                    ],\n                    [\n                        \"e6a157bbac8842a2b8c625bfa9255159\",\n                        \"813ec304685345a19b1688074000d296\",\n                        \"004bc5a29bc94eeb95f4f6a56bd48729\",\n                        \"b987445070e84067ba90e71695763f72\"\n                    ]\n                ],\n            },\n        })\n\n    def open_page(self, page_id):\n        self.replace([\"workspace\", \"columns\"], [[page_id]])\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def set_page_body_width(self, width):\n        self.replace([\"workspace\", \"page_body_width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
 "type":"code"
 }
 ],

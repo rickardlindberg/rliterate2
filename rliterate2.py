@@ -375,7 +375,7 @@ def workspace_props(document, session, theme):
             session.get(["workspace", "columns"]),
             session.get(["workspace", "page_body_width"]),
             theme.get(["page"]),
-            session.get(["selection"])
+            document.get(["selection"])
         ),
         "page_body_width": session.get(
             ["workspace", "page_body_width"]
@@ -383,9 +383,9 @@ def workspace_props(document, session, theme):
         "actions": {
             "set_page_body_width": session.set_page_body_width,
             "edit_title": document.edit_title,
-            "show_selection": session.show_selection,
-            "hide_selection": session.hide_selection,
-            "set_selection": session.set_selection,
+            "show_selection": document.show_selection,
+            "hide_selection": document.hide_selection,
+            "set_selection": document.set_selection,
         },
     }
 
@@ -2194,12 +2194,9 @@ class Title(Panel):
         print(key_event)
         value = selection.get()
         title = self.prop(["title"])
-        self.prop(["actions", "hide_selection"])(selection)
         self.prop(["actions", "edit_title"])(
             self.prop(["id"]),
-            title[:value["start"]] + key_event.key + title[value["end"]:]
-        )
-        self.prop(["actions", "set_selection"])(
+            title[:value["start"]] + key_event.key + title[value["end"]:],
             selection.create({
                 "start": value["start"] + 1,
                 "end": value["start"] + 1,
@@ -2620,8 +2617,27 @@ class Document(Immutable):
         Immutable.__init__(self, {
             "path": path,
             "doc": load_document_from_file(path),
+            "selection": Selection.empty(),
         })
         self._build_page_index()
+
+    def set_selection(self, selection):
+        self.replace(["selection"], selection)
+
+    def show_selection(self, selection):
+        self._set_selection_visible(selection, True)
+
+    def hide_selection(self, selection):
+        self._set_selection_visible(selection, False)
+
+    def _set_selection_visible(self, selection, visible):
+        current_selection = self.get(["selection"])
+        if (current_selection.path() == selection.path() and
+            current_selection.visible != visible):
+            self.modify(
+                ["selection"],
+                lambda x: x._replace(visible=visible)
+            )
 
     def _build_page_index(self):
         def build(page, path, parent, index):
@@ -2701,12 +2717,15 @@ class Document(Immutable):
             target_index in [source_meta.index, source_meta.index+1]):
             return False
         return True
-    def edit_title(self, source_id, new_title):
+    def edit_title(self, source_id, new_title, new_selection):
         try:
-            self.replace(
-                self._get_page_meta(source_id).path + ["title"],
-                new_title
-            )
+            with self.transaction():
+                self.replace(
+                    self._get_page_meta(source_id).path + ["title"],
+                    new_title
+                )
+                if new_selection is not None:
+                    self.set_selection(new_selection)
         except PageNotFound:
             pass
 
@@ -2953,7 +2972,6 @@ class Session(Immutable):
                     ]
                 ],
             },
-            "selection": Selection.empty(),
         })
 
     def open_page(self, page_id):
@@ -2970,24 +2988,6 @@ class Session(Immutable):
 
     def set_page_body_width(self, width):
         self.replace(["workspace", "page_body_width"], width)
-
-    def set_selection(self, selection):
-        self.replace(["selection"], selection)
-
-    def show_selection(self, selection):
-        self._set_selection_visible(selection, True)
-
-    def hide_selection(self, selection):
-        self._set_selection_visible(selection, False)
-
-    def _set_selection_visible(self, selection, visible):
-        current_selection = self.get(["selection"])
-        if (current_selection.path() == selection.path() and
-            current_selection.visible != visible):
-            self.modify(
-                ["selection"],
-                lambda x: x._replace(visible=visible)
-            )
 
     def toggle_collapsed(self, page_id):
         def toggle(collapsed):
