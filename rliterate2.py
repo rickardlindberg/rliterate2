@@ -442,17 +442,16 @@ def build_page(page, page_body_width, page_theme, selection):
 def build_title(page, page_body_width, page_theme, selection):
     return {
         "id": page["id"],
-        "text_props": build_title_text_props(
-            page["title"],
-            page_theme["title_font"],
-            selection
-        ),
-        "body_width": page_body_width,
-        "selection": selection,
-        "selection_present": selection.present(),
-        "selection_box": {
-            "width": 1 if selection.present() else 0,
-            "color": "red",
+        "title": page["title"],
+        "text_edit_props": {
+            "text_props": build_title_text_props(
+                page["title"],
+                page_theme["title_font"],
+                selection
+            ),
+            "max_width": page_body_width,
+            "selection": selection,
+            "selection_color": "red",
         },
     }
 
@@ -1478,7 +1477,7 @@ class Panel(wx.Panel, WxContainerWidgetMixin):
                 wx.Colour(),
                 wx.BRUSHSTYLE_TRANSPARENT
             ))
-            dc.DrawRectangle((0, 0), self.GetSize())
+            dc.DrawRoundedRectangle((0, 0), self.GetSize(), int(box["width"]*2))
 
 class CompactScrolledWindow(wx.ScrolledWindow):
 
@@ -2185,112 +2184,28 @@ class Title(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        name = 'text'
-        props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['selection_box', 'width'])))
-        props['focus'] = self.prop(['selection_present'])
-        props['cursor'] = self._get_cursor(self.prop(['selection']))
-        handlers['click'] = lambda event: self._on_click(event, self.prop(['selection']))
-        handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
-        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
-        handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
-        handlers['focus'] = lambda event: self.prop(['actions', 'show_selection'])(self.prop(['selection']))
-        handlers['unfocus'] = lambda event: self.prop(['actions', 'hide_selection'])(self.prop(['selection']))
+        props.update(self.prop(['text_edit_props']))
+        props['actions'] = self.prop(['actions'])
+        props['handle_key'] = self._handle_key
         sizer["flag"] |= wx.EXPAND
-        sizer["border"] = self.prop(['selection_box', 'width'])
-        sizer["flag"] |= wx.ALL
-        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_widget(TextEdit, props, sizer, handlers, name)
 
-    def _on_click(self, event, selection):
-        if selection.present():
-            return
-        index = self._get_index(event.x, event.y)
-        if index is not None:
-            self.prop(["actions", "set_selection"])(
-                selection.create({
-                    "start": index,
-                    "end": index,
-                    "cursor_at_start": True,
-                })
-            )
-
-    def _on_left_down(self, event, selection):
-        if not selection.present():
-            return
-        index = self._get_index(event.x, event.y)
-        if index is not None:
-            self.prop(["actions", "set_selection"])(
-                selection.create({
-                    "start": index,
-                    "end": index,
-                    "cursor_at_start": True,
-                })
-            )
-
-    def _on_drag(self, event, selection):
-        if not selection.present():
-            return
-        if event.initial:
-            self._initial_index = self._get_index(event.x, event.y)
-        else:
-            new_index = self._get_index(event.x, event.y)
-            if self._initial_index is not None and new_index is not None:
-                self.prop(["actions", "set_selection"])(
-                    selection.create({
-                        "start": min(self._initial_index, new_index),
-                        "end": max(self._initial_index, new_index),
-                        "cursor_at_start": new_index <= self._initial_index,
-                    })
-                )
-
-    def _get_index(self, x, y):
-        character, right_side = self.get_widget("text").get_closest_character_with_side(
-            x,
-            y
+    def _handle_key(self, key_event, selection):
+        print(key_event)
+        value = selection.get()
+        title = self.prop(["title"])
+        self.prop(["actions", "hide_selection"])(selection)
+        self.prop(["actions", "edit_title"])(
+            self.prop(["id"]),
+            title[:value["start"]] + key_event.key + title[value["end"]:]
         )
-        if character is not None:
-            index = character.get("index", None)
-            if right_side:
-                return character.get("index_right", index)
-            else:
-                return character.get("index_left", index)
-
-    def _on_key(self, event, selection):
-        if selection.present():
-            if event.key == "l":
-                if selection.get()["cursor_at_start"]:
-                    pos = selection.get()["start"]
-                else:
-                    pos = selection.get()["end"]
-                pos += 1
-                self.prop(["actions", "set_selection"])(
-                    selection.create({
-                        "start": pos,
-                        "end": pos,
-                        "cursor_at_start": True,
-                    })
-                )
-            if event.key == "h":
-                if selection.get()["cursor_at_start"]:
-                    pos = selection.get()["end"]
-                else:
-                    pos = selection.get()["start"]
-                pos -= 1
-                self.prop(["actions", "set_selection"])(
-                    selection.create({
-                        "start": pos,
-                        "end": pos,
-                        "cursor_at_start": True,
-                    })
-                )
-            print(event)
-            print(selection)
-
-    def _get_cursor(self, selection):
-        if selection.present():
-            return "beam"
-        else:
-            return None
+        self.prop(["actions", "set_selection"])(
+            selection.create({
+                "start": value["start"] + 1,
+                "end": value["start"] + 1,
+                "cursor_at_start": True,
+            })
+        )
 
 class TextParagraph(Panel):
 
@@ -2510,6 +2425,117 @@ class TextWithMargin(Panel):
         self._create_widget(Text, props, sizer, handlers, name)
         self._create_space(self.prop(['right_margin']))
 
+class TextEdit(Panel):
+
+    def _get_local_props(self):
+        return {
+            'selection_box': self._box(self.prop(['selection']), self.prop(['selection_color'])),
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        name = 'text'
+        props.update(self.prop(['text_props']))
+        props['max_width'] = sub(self.prop(['max_width']), mul(2, self._margin()))
+        props['focus'] = self._focus(self.prop(['selection']))
+        props['cursor'] = self._get_cursor(self.prop(['selection']))
+        handlers['click'] = lambda event: self._on_click(event, self.prop(['selection']))
+        handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
+        handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
+        handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
+        handlers['focus'] = lambda event: self.prop(['actions', 'show_selection'])(self.prop(['selection']))
+        handlers['unfocus'] = lambda event: self.prop(['actions', 'hide_selection'])(self.prop(['selection']))
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self._margin()
+        sizer["flag"] |= wx.ALL
+        self._create_widget(Text, props, sizer, handlers, name)
+
+    def _box(self, selection, selection_color):
+        return {
+            "width": 1 if selection.present() else 0,
+            "color": selection_color,
+        }
+
+    def _focus(self, selection):
+        return selection.present()
+
+    def _margin(self):
+        return self.prop(["selection_box", "width"]) + 1
+
+    def _on_click(self, event, selection):
+        if selection.present():
+            return
+        index = self._get_index(event.x, event.y)
+        if index is not None:
+            self.prop(["actions", "set_selection"])(
+                selection.create({
+                    "start": index,
+                    "end": index,
+                    "cursor_at_start": True,
+                })
+            )
+
+    def _on_left_down(self, event, selection):
+        if not selection.present():
+            return
+        index = self._get_index(event.x, event.y)
+        if index is not None:
+            self.prop(["actions", "set_selection"])(
+                selection.create({
+                    "start": index,
+                    "end": index,
+                    "cursor_at_start": True,
+                })
+            )
+
+    def _on_drag(self, event, selection):
+        if not selection.present():
+            return
+        if event.initial:
+            self._initial_index = self._get_index(event.x, event.y)
+        else:
+            new_index = self._get_index(event.x, event.y)
+            if self._initial_index is not None and new_index is not None:
+                self.prop(["actions", "set_selection"])(
+                    selection.create({
+                        "start": min(self._initial_index, new_index),
+                        "end": max(self._initial_index, new_index),
+                        "cursor_at_start": new_index <= self._initial_index,
+                    })
+                )
+
+    def _get_index(self, x, y):
+        character, right_side = self.get_widget("text").get_closest_character_with_side(
+            x,
+            y
+        )
+        if character is not None:
+            index = character.get("index", None)
+            if right_side:
+                return character.get("index_right", index)
+            else:
+                return character.get("index_left", index)
+
+    def _on_key(self, event, selection):
+        if selection.present():
+            self.prop(["handle_key"])(
+                event,
+                selection
+            )
+
+    def _get_cursor(self, selection):
+        if selection.present():
+            return "beam"
+        else:
+            return None
+
 class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
 
     @staticmethod
@@ -2675,12 +2701,11 @@ class Document(Immutable):
             target_index in [source_meta.index, source_meta.index+1]):
             return False
         return True
-    def edit_title(self, source_id):
+    def edit_title(self, source_id, new_title):
         try:
-            page_meta = self._get_page_meta(source_id)
-            self.modify(
-                page_meta.path + ["title"],
-                lambda title: title + "."
+            self.replace(
+                self._get_page_meta(source_id).path + ["title"],
+                new_title
             )
         except PageNotFound:
             pass
