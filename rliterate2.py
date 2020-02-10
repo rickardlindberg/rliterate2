@@ -478,9 +478,9 @@ def build_paragraphs(paragraphs, page_theme, selection):
         build_paragraph(
             paragraph,
             page_theme,
-            selection
+            selection.add(index, paragraph["id"])
         )
-        for paragraph in paragraphs
+        for index, paragraph in enumerate(paragraphs)
     ]
 
 @cache(limit=1000, key_path=[0, "id"])
@@ -501,7 +501,14 @@ def build_paragraph(paragraph, page_theme, selection):
 def build_text_paragraph(paragraph, page_theme, selection):
     return {
         "widget": TextParagraph,
-        "text_props": text_fragments_to_props(paragraph["fragments"]),
+        "text_edit_props": {
+            "text_props": dict(text_fragments_to_props(
+                paragraph["fragments"],
+                selection=selection
+            ), break_at_word=True, line_height=1.2),
+            "selection": selection,
+            "selection_color": "blue",
+        },
     }
 
 @profile_sub("build_quote_paragraph")
@@ -676,13 +683,28 @@ def build_style_dict(theme_style):
         styles[string_to_tokentype(name)] = value
     return styles
 
-def text_fragments_to_props(fragments, **kwargs):
+def text_fragments_to_props(fragments, selection=None, **kwargs):
     builder = TextPropsBuilder(**kwargs)
-    for fragment in fragments:
+    if selection is not None and selection.present():
+        value = selection.get()
+    else:
+        value = None
+    for index, fragment in enumerate(fragments):
+        params = {}
         if "color" in fragment:
-            builder.text(fragment["text"], color=fragment["color"])
-        else:
-            builder.text(fragment["text"])
+            params["color"] = fragment["color"]
+        if value is not None:
+            if value["start"][0] == index:
+                builder.selection_start(value["start"][1])
+                if value["cursor_at_start"]:
+                    builder.cursor(value["start"][1])
+            if value["end"][0] == index:
+                builder.selection_end(value["end"][1])
+                if not value["cursor_at_start"]:
+                    builder.cursor(value["end"][1])
+        params["index_prefix"] = [index]
+        params["index_increment"] = 0
+        builder.text(fragment["text"], **params)
     return builder.get()
 
 def load_document_from_file(path):
@@ -2114,6 +2136,7 @@ class PageBody(Panel):
             handlers = {}
             props.update(loopvar)
             props['body_width'] = self.prop(['body_width'])
+            props['actions'] = self.prop(['actions'])
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.LEFT
             sizer["flag"] |= wx.BOTTOM
@@ -2219,12 +2242,15 @@ class TextParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['left_margin'] = 0
-        props['right_margin'] = 0
-        props['text_props'] = self.prop(['text_props'])
+        props.update(self.prop(['text_edit_props']))
+        props['actions'] = self.prop(['actions'])
         props['max_width'] = self.prop(['body_width'])
+        props['handle_key'] = self._handle_key
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(TextWithMargin, props, sizer, handlers, name)
+        self._create_widget(TextEdit, props, sizer, handlers, name)
+
+    def _handle_key(self, key_event, selection):
+        print(key_event)
 
 class QuoteParagraph(Panel):
 
@@ -2589,12 +2615,27 @@ class TextPropsBuilder(object):
         for index, character in enumerate(text):
             x = dict(fragment, text=character)
             if "index_increment" in kwargs:
-                x["index_left"] = kwargs["index_increment"] + index
-                x["index_right"] = x["index_left"] + 1
+                x["index_left"] = self._create_index(
+                    kwargs.get("index_prefix", None),
+                    kwargs["index_increment"] + index
+                )
+                x["index_right"] = self._create_index(
+                    kwargs.get("index_prefix", None),
+                    kwargs["index_increment"] + index + 1
+                )
             if "index_constant" in kwargs:
-                x["index"] = kwargs["index_constant"]
+                x["index"] = self._create_index(
+                    kwargs.get("index_prefix", None),
+                    kwargs["index_constant"]
+                )
             self._characters.append(x)
         return self
+
+    def _create_index(self, index_prefix, index):
+        if index_prefix is None:
+            return index
+        else:
+            return index_prefix + [index]
 
     def selection_start(self, offset=0):
         self._selections.append((self._index(offset), self._index(offset)))

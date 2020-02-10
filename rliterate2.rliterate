@@ -1105,7 +1105,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Title(\n        #title\n        actions = #actions\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Title(\n        #title\n        actions = #actions\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            actions    = #actions\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1268,7 +1268,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
+"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection\n            ), break_at_word=True, line_height=1.2),\n            \"selection\": selection,\n            \"selection_color\": \"blue\",\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1286,8 +1286,16 @@
 ],
 "fragments":[
 {
-"text":"panel TextParagraph %layout_rows {\n    TextWithMargin(\n        left_margin  = 0\n        right_margin = 0\n        text_props   = #text_props\n        max_width    = #body_width\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel TextParagraph %layout_rows {\n    TextEdit(\n        #text_edit_props\n        actions    = #actions\n        max_width  = #body_width\n        handle_key = self._handle_key\n        %align[EXPAND]\n    )\n}\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"TextParagraph"
+],
+"prefix":"",
+"type":"chunk"
 }
 ],
 "id":"db554ae56d124089bceb0e11db2cb37a",
@@ -1296,6 +1304,25 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TextParagraph"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n",
+"type":"code"
+}
+],
+"id":"30ac05175a6c4c369776c8494afdb67c",
+"language":"",
+"post_process":[],
 "type":"code"
 }
 ],
@@ -1751,7 +1778,7 @@
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(paragraphs, page_theme, selection):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            selection\n        )\n        for paragraph in paragraphs\n    ]\n",
+"text":"def build_paragraphs(paragraphs, page_theme, selection):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            selection.add(index, paragraph[\"id\"])\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
 "type":"code"
 }
 ],
@@ -2149,7 +2176,7 @@
 ],
 "fragments":[
 {
-"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if \"index_increment\" in kwargs:\n                x[\"index_left\"] = kwargs[\"index_increment\"] + index\n                x[\"index_right\"] = x[\"index_left\"] + 1\n            if \"index_constant\" in kwargs:\n                x[\"index\"] = kwargs[\"index_constant\"]\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0):\n        self._selections.append((self._index(offset), self._index(offset)))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (last_selection[0], self._index(offset))\n\n    def cursor(self, offset=0):\n        self._cursors.append(self._index(offset))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
+"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if \"index_increment\" in kwargs:\n                x[\"index_left\"] = self._create_index(\n                    kwargs.get(\"index_prefix\", None),\n                    kwargs[\"index_increment\"] + index\n                )\n                x[\"index_right\"] = self._create_index(\n                    kwargs.get(\"index_prefix\", None),\n                    kwargs[\"index_increment\"] + index + 1\n                )\n            if \"index_constant\" in kwargs:\n                x[\"index\"] = self._create_index(\n                    kwargs.get(\"index_prefix\", None),\n                    kwargs[\"index_constant\"]\n                )\n            self._characters.append(x)\n        return self\n\n    def _create_index(self, index_prefix, index):\n        if index_prefix is None:\n            return index\n        else:\n            return index_prefix + [index]\n\n    def selection_start(self, offset=0):\n        self._selections.append((self._index(offset), self._index(offset)))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (last_selection[0], self._index(offset))\n\n    def cursor(self, offset=0):\n        self._cursors.append(self._index(offset))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
 "type":"code"
 }
 ],
@@ -2165,7 +2192,7 @@
 ],
 "fragments":[
 {
-"text":"def text_fragments_to_props(fragments, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    for fragment in fragments:\n        if \"color\" in fragment:\n            builder.text(fragment[\"text\"], color=fragment[\"color\"])\n        else:\n            builder.text(fragment[\"text\"])\n    return builder.get()\n",
+"text":"def text_fragments_to_props(fragments, selection=None, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    if selection is not None and selection.present():\n        value = selection.get()\n    else:\n        value = None\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        if value is not None:\n            if value[\"start\"][0] == index:\n                builder.selection_start(value[\"start\"][1])\n                if value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"start\"][1])\n            if value[\"end\"][0] == index:\n                builder.selection_end(value[\"end\"][1])\n                if not value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"end\"][1])\n        params[\"index_prefix\"] = [index]\n        params[\"index_increment\"] = 0\n        builder.text(fragment[\"text\"], **params)\n    return builder.get()\n",
 "type":"code"
 }
 ],
