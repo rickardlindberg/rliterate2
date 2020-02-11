@@ -3929,7 +3929,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"text measure\")\ndef _measure(self, characters):\n    dc = wx.MemoryDC()\n    dc.SelectObject(wx.Bitmap(1, 1))\n    self.",
+"text":"size_map_cache = {}\n\n@profile_sub(\"text measure\")\ndef _measure(self, characters):\n    dc = wx.MemoryDC()\n    dc.SelectObject(wx.Bitmap(1, 1))\n    self.",
 "type":"code"
 },
 {
@@ -3937,7 +3937,7 @@
 "type":"variable"
 },
 {
-"text":" = []\n    for character in characters:\n        self._apply_style(self._get_style(character), dc)\n        if character[\"text\"] in [\"\\n\", \"\\r\"]:\n            _, line_height = dc.GetTextExtent(\"I\")\n            size = wx.Size(0, line_height)\n        else:\n            size = dc.GetTextExtent(character[\"text\"])\n        self.",
+"text":" = []\n    for character in characters:\n        style = self._get_style(character)\n        entry = (style, character[\"text\"])\n        if entry not in self.size_map_cache:\n            self._apply_style(style, dc)\n            if character[\"text\"] in [\"\\n\", \"\\r\"]:\n                _, line_height = dc.GetTextExtent(\"I\")\n                self.size_map_cache[entry] = wx.Size(0, line_height)\n            else:\n                self.size_map_cache[entry] = dc.GetTextExtent(character[\"text\"])\n        self.",
 "type":"code"
 },
 {
@@ -3945,7 +3945,7 @@
 "type":"variable"
 },
 {
-"text":".append((\n            character,\n            size\n        ))\n",
+"text":".append((\n            character,\n            self.size_map_cache[entry]\n        ))\n",
 "type":"code"
 }
 ],

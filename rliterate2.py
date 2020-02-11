@@ -3222,21 +3222,26 @@ class Text(wx.Panel, WxWidgetMixin):
             font_info = font_info.Bold()
         dc.SetFont(wx.Font(font_info))
 
+    size_map_cache = {}
+
     @profile_sub("text measure")
     def _measure(self, characters):
         dc = wx.MemoryDC()
         dc.SelectObject(wx.Bitmap(1, 1))
         self._measured_characters = []
         for character in characters:
-            self._apply_style(self._get_style(character), dc)
-            if character["text"] in ["\n", "\r"]:
-                _, line_height = dc.GetTextExtent("I")
-                size = wx.Size(0, line_height)
-            else:
-                size = dc.GetTextExtent(character["text"])
+            style = self._get_style(character)
+            entry = (style, character["text"])
+            if entry not in self.size_map_cache:
+                self._apply_style(style, dc)
+                if character["text"] in ["\n", "\r"]:
+                    _, line_height = dc.GetTextExtent("I")
+                    self.size_map_cache[entry] = wx.Size(0, line_height)
+                else:
+                    self.size_map_cache[entry] = dc.GetTextExtent(character["text"])
             self._measured_characters.append((
                 character,
-                size
+                self.size_map_cache[entry]
             ))
 
     @profile_sub("text reflow")
