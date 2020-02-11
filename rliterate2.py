@@ -382,7 +382,7 @@ def workspace_props(document, session, theme):
         ),
         "actions": {
             "set_page_body_width": session.set_page_body_width,
-            "edit_title": document.edit_title,
+            "edit_page": document.edit_page,
             "edit_paragraph": document.edit_paragraph,
             "show_selection": document.show_selection,
             "hide_selection": document.hide_selection,
@@ -502,7 +502,8 @@ def build_paragraph(paragraph, page_theme, selection):
 def build_text_paragraph(paragraph, page_theme, selection):
     return {
         "widget": TextParagraph,
-        "paragraph": paragraph,
+        "id": paragraph["id"],
+        "fragments": paragraph["fragments"],
         "text_edit_props": {
             "text_props": dict(text_fragments_to_props(
                 paragraph["fragments"],
@@ -2219,9 +2220,11 @@ class Title(Panel):
         print(key_event)
         value = selection.get()
         title = self.prop(["title"])
-        self.prop(["actions", "edit_title"])(
+        self.prop(["actions", "edit_page"])(
             self.prop(["id"]),
-            title[:value["start"]] + key_event.key + title[value["end"]:],
+            {
+                "title": title[:value["start"]] + key_event.key + title[value["end"]:],
+            },
             selection.create({
                 "start": value["start"] + 1,
                 "end": value["start"] + 1,
@@ -2254,11 +2257,11 @@ class TextParagraph(Panel):
     def _handle_key(self, key_event, selection):
         print(key_event)
         value = selection.get()
-        paragraph = self.prop(["paragraph"])
         self.prop(["actions", "edit_paragraph"])(
-            paragraph["id"],
-            #fragments[:value["start"]] + key_event.key + fragments[value["end"]:],
-            dict(paragraph, fragments=[{"text": "haha"}]),
+            self.prop(["id"]),
+            {
+                "fragments": [{"text": "haha"}],
+            },
             selection.create({
                 "start": [0, 0],
                 "end": [0, 0],
@@ -2772,24 +2775,22 @@ class Document(Immutable):
             target_index in [source_meta.index, source_meta.index+1]):
             return False
         return True
-    def edit_title(self, source_id, new_title, new_selection):
+    def edit_page(self, source_id, attributes, new_selection):
         try:
             with self.transaction():
-                self.replace(
-                    self._get_page_meta(source_id).path + ["title"],
-                    new_title
-                )
+                path = self._get_page_meta(source_id).path
+                for key, value in attributes.items():
+                    self.replace(path + [key], value)
                 if new_selection is not None:
                     self.set_selection(new_selection)
         except PageNotFound:
             pass
-    def edit_paragraph(self, source_id, new_paragraph, new_selection):
+    def edit_paragraph(self, source_id, attributes, new_selection):
         try:
             with self.transaction():
-                self.replace(
-                    self._find_paragraph(source_id),
-                    new_paragraph
-                )
+                path = self._find_paragraph(source_id)
+                for key, value in attributes.items():
+                    self.replace(path + [key], value)
                 if new_selection is not None:
                     self.set_selection(new_selection)
         except ParagraphNotFound:
