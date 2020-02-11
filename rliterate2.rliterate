@@ -2192,7 +2192,7 @@
 ],
 "fragments":[
 {
-"text":"def text_fragments_to_props(fragments, selection=None, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    if selection is not None and selection.present():\n        value = selection.get()\n    else:\n        value = None\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        if value is not None:\n            if value[\"start\"][0] == index:\n                builder.selection_start(value[\"start\"][1])\n                if value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"start\"][1])\n            if value[\"end\"][0] == index:\n                builder.selection_end(value[\"end\"][1])\n                if not value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"end\"][1])\n        params[\"index_prefix\"] = [index]\n        params[\"index_increment\"] = 0\n        builder.text(fragment[\"text\"], **params)\n    return builder.get()\n",
+"text":"def text_fragments_to_props(fragments, selection=None, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    if selection is not None and selection.present():\n        value = selection.get()\n    else:\n        value = None\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        if fragment.get(\"type\", None) == \"strong\":\n            params[\"bold\"] = True\n        if value is not None:\n            if value[\"start\"][0] == index:\n                builder.selection_start(value[\"start\"][1])\n                if value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"start\"][1])\n            if value[\"end\"][0] == index:\n                builder.selection_end(value[\"end\"][1])\n                if not value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"end\"][1])\n        params[\"index_prefix\"] = [index]\n        params[\"index_increment\"] = 0\n        builder.text(fragment[\"text\"], **params)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -3878,7 +3878,7 @@
 ],
 "fragments":[
 {
-"text":"TextStyle = namedtuple(\"TextStyle\", \"size,family,color\")\n",
+"text":"TextStyle = namedtuple(\"TextStyle\", \"size,family,color,bold\")\n",
 "type":"code"
 }
 ],
@@ -3895,7 +3895,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_style(self, character):\n    style = {\n        \"size\": 10,\n        \"family\": None,\n        \"color\": \"#000000\",\n    }\n    style.update(self.prop_with_default([\"base_style\"], {}))\n    for field in TextStyle._fields:\n        if field in character:\n            style[field] = character[field]\n    return TextStyle(**style)\n\ndef _apply_style(self, style, dc):\n    dc.SetTextForeground(style.color)\n    font_info = wx.FontInfo(style.size)\n    if style.family == \"Monospace\":\n        font_info.Family(wx.FONTFAMILY_TELETYPE)\n    dc.SetFont(wx.Font(font_info))\n",
+"text":"def _get_style(self, character):\n    style = {\n        \"size\": 10,\n        \"family\": None,\n        \"color\": \"#000000\",\n        \"bold\": False,\n    }\n    style.update(self.prop_with_default([\"base_style\"], {}))\n    for field in TextStyle._fields:\n        if field in character:\n            style[field] = character[field]\n    return TextStyle(**style)\n\ndef _apply_style(self, style, dc):\n    dc.SetTextForeground(style.color)\n    font_info = wx.FontInfo(style.size)\n    if style.family == \"Monospace\":\n        font_info.Family(wx.FONTFAMILY_TELETYPE)\n    if style.bold:\n        font_info = font_info.Bold()\n    dc.SetFont(wx.Font(font_info))\n",
 "type":"code"
 }
 ],

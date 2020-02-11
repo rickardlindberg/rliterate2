@@ -696,6 +696,8 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
         params = {}
         if "color" in fragment:
             params["color"] = fragment["color"]
+        if fragment.get("type", None) == "strong":
+            params["bold"] = True
         if value is not None:
             if value["start"][0] == index:
                 builder.selection_start(value["start"][1])
@@ -3191,6 +3193,7 @@ class Text(wx.Panel, WxWidgetMixin):
             "size": 10,
             "family": None,
             "color": "#000000",
+            "bold": False,
         }
         style.update(self.prop_with_default(["base_style"], {}))
         for field in TextStyle._fields:
@@ -3203,6 +3206,8 @@ class Text(wx.Panel, WxWidgetMixin):
         font_info = wx.FontInfo(style.size)
         if style.family == "Monospace":
             font_info.Family(wx.FONTFAMILY_TELETYPE)
+        if style.bold:
+            font_info = font_info.Bold()
         dc.SetFont(wx.Font(font_info))
 
     @profile_sub("text measure")
@@ -3396,7 +3401,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 return (character, x > (rect.Left+rect.Width/2))
         return (character, True)
 
-TextStyle = namedtuple("TextStyle", "size,family,color")
+TextStyle = namedtuple("TextStyle", "size,family,color,bold")
 
 if __name__ == "__main__":
     main()
