@@ -383,6 +383,7 @@ def workspace_props(document, session, theme):
         "actions": {
             "set_page_body_width": session.set_page_body_width,
             "edit_title": document.edit_title,
+            "edit_paragraph": document.edit_paragraph,
             "show_selection": document.show_selection,
             "hide_selection": document.hide_selection,
             "set_selection": document.set_selection,
@@ -501,6 +502,7 @@ def build_paragraph(paragraph, page_theme, selection):
 def build_text_paragraph(paragraph, page_theme, selection):
     return {
         "widget": TextParagraph,
+        "paragraph": paragraph,
         "text_edit_props": {
             "text_props": dict(text_fragments_to_props(
                 paragraph["fragments"],
@@ -2251,6 +2253,18 @@ class TextParagraph(Panel):
 
     def _handle_key(self, key_event, selection):
         print(key_event)
+        value = selection.get()
+        paragraph = self.prop(["paragraph"])
+        self.prop(["actions", "edit_paragraph"])(
+            paragraph["id"],
+            #fragments[:value["start"]] + key_event.key + fragments[value["end"]:],
+            dict(paragraph, fragments=[{"text": "haha"}]),
+            selection.create({
+                "start": [0, 0],
+                "end": [0, 0],
+                "cursor_at_start": True,
+            })
+        )
 
 class QuoteParagraph(Panel):
 
@@ -2769,6 +2783,28 @@ class Document(Immutable):
                     self.set_selection(new_selection)
         except PageNotFound:
             pass
+    def edit_paragraph(self, source_id, new_paragraph, new_selection):
+        try:
+            with self.transaction():
+                self.replace(
+                    self._find_paragraph(source_id),
+                    new_paragraph
+                )
+                if new_selection is not None:
+                    self.set_selection(new_selection)
+        except ParagraphNotFound:
+            pass
+    def _find_paragraph(self, paragraph_id):
+        def find_in_page(page, path):
+            for index, paragraph in enumerate(page["paragraphs"]):
+                if paragraph["id"] == paragraph_id:
+                    return path + ["paragraphs", index]
+            for index, child in enumerate(page["children"]):
+                found_path = find_in_page(child, path + ["children", index])
+                if found_path:
+                    return found_path
+            raise ParagraphNotFound()
+        return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)
 
 class PageNotFound(Exception):
     pass
@@ -2780,6 +2816,9 @@ class PageMeta(object):
         self.path = path
         self.parent = parent
         self.index = index
+
+class ParagraphNotFound(Exception):
+    pass
 
 class CodeChunk(object):
 

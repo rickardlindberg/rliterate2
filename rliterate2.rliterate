@@ -1268,7 +1268,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection\n            ), break_at_word=True, line_height=1.2),\n            \"selection\": selection,\n            \"selection_color\": \"blue\",\n        },\n    }\n",
+"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"paragraph\": paragraph,\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection\n            ), break_at_word=True, line_height=1.2),\n            \"selection\": selection,\n            \"selection_color\": \"blue\",\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1316,7 +1316,7 @@
 ],
 "fragments":[
 {
-"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n",
+"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    paragraph = self.prop([\"paragraph\"])\n    self.prop([\"actions\", \"edit_paragraph\"])(\n        paragraph[\"id\"],\n        #fragments[:value[\"start\"]] + key_event.key + fragments[value[\"end\"]:],\n        dict(paragraph, fragments=[{\"text\": \"haha\"}]),\n        selection.create({\n            \"start\": [0, 0],\n            \"end\": [0, 0],\n            \"cursor_at_start\": True,\n        })\n    )\n",
 "type":"code"
 }
 ],
@@ -1820,7 +1820,7 @@
 ],
 "fragments":[
 {
-"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_title\": document.edit_title,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
+"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_title\": document.edit_title,\n            \"edit_paragraph\": document.edit_paragraph,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -2428,6 +2428,63 @@
 }
 ],
 "title":"Pages"
+},
+{
+"children":[],
+"id":"1bcece97437d4f4ba299e2acea6398e5",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def edit_paragraph(self, source_id, new_paragraph, new_selection):\n    try:\n        with self.transaction():\n            self.replace(\n                self._find_paragraph(source_id),\n                new_paragraph\n            )\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
+"type":"code"
+}
+],
+"id":"52619963c27b457d81ef05c7b4a9315e",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ParagraphNotFound(Exception):\n    pass\n",
+"type":"code"
+}
+],
+"id":"c549831288b740de8e3ba248684c7f0b",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _find_paragraph(self, paragraph_id):\n    def find_in_page(page, path):\n        for index, paragraph in enumerate(page[\"paragraphs\"]):\n            if paragraph[\"id\"] == paragraph_id:\n                return path + [\"paragraphs\", index]\n        for index, child in enumerate(page[\"children\"]):\n            found_path = find_in_page(child, path + [\"children\", index])\n            if found_path:\n                return found_path\n        raise ParagraphNotFound()\n    return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)\n",
+"type":"code"
+}
+],
+"id":"c8e8ea5584ae4dada3ef6a53094e146e",
+"type":"code"
+}
+],
+"title":"Paragraphs"
 },
 {
 "children":[],
