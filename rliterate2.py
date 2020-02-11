@@ -2684,30 +2684,28 @@ class TextPropsBuilder(object):
         for field in TextStyle._fields:
             if field in kwargs:
                 fragment[field] = kwargs[field]
+        index_prefix = kwargs.get("index_prefix", None)
+        if index_prefix is None:
+            create_index = lambda x: x
+        else:
+            create_index = lambda x: index_prefix + [x]
+        index_increment = kwargs.get("index_increment", None)
+        index_constant = kwargs.get("index_constant", None)
         for index, character in enumerate(text):
             x = dict(fragment, text=character)
-            if "index_increment" in kwargs:
-                x["index_left"] = self._create_index(
-                    kwargs.get("index_prefix", None),
-                    kwargs["index_increment"] + index
+            if index_increment is not None:
+                x["index_left"] = create_index(
+                    index_increment + index
                 )
-                x["index_right"] = self._create_index(
-                    kwargs.get("index_prefix", None),
-                    kwargs["index_increment"] + index + 1
+                x["index_right"] = create_index(
+                    index_increment + index + 1
                 )
-            if "index_constant" in kwargs:
-                x["index"] = self._create_index(
-                    kwargs.get("index_prefix", None),
-                    kwargs["index_constant"]
+            if index_constant is not None:
+                x["index"] = create_index(
+                    index_constant
                 )
             self._characters.append(x)
         return self
-
-    def _create_index(self, index_prefix, index):
-        if index_prefix is None:
-            return index
-        else:
-            return index_prefix + [index]
 
     def selection_start(self, offset=0):
         self._selections.append((self._index(offset), self._index(offset)))
