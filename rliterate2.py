@@ -2801,9 +2801,10 @@ class Document(Immutable):
                 if paragraph["id"] == paragraph_id:
                     return path + ["paragraphs", index]
             for index, child in enumerate(page["children"]):
-                found_path = find_in_page(child, path + ["children", index])
-                if found_path:
-                    return found_path
+                try:
+                    return find_in_page(child, path + ["children", index])
+                except ParagraphNotFound:
+                    pass
             raise ParagraphNotFound()
         return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)
 

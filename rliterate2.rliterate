@@ -2476,7 +2476,7 @@
 ],
 "fragments":[
 {
-"text":"def _find_paragraph(self, paragraph_id):\n    def find_in_page(page, path):\n        for index, paragraph in enumerate(page[\"paragraphs\"]):\n            if paragraph[\"id\"] == paragraph_id:\n                return path + [\"paragraphs\", index]\n        for index, child in enumerate(page[\"children\"]):\n            found_path = find_in_page(child, path + [\"children\", index])\n            if found_path:\n                return found_path\n        raise ParagraphNotFound()\n    return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)\n",
+"text":"def _find_paragraph(self, paragraph_id):\n    def find_in_page(page, path):\n        for index, paragraph in enumerate(page[\"paragraphs\"]):\n            if paragraph[\"id\"] == paragraph_id:\n                return path + [\"paragraphs\", index]\n        for index, child in enumerate(page[\"children\"]):\n            try:\n                return find_in_page(child, path + [\"children\", index])\n            except ParagraphNotFound:\n                pass\n        raise ParagraphNotFound()\n    return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)\n",
 "type":"code"
 }
 ],
