@@ -2257,14 +2257,62 @@ class TextParagraph(Panel):
     def _handle_key(self, key_event, selection):
         print(key_event)
         value = selection.get()
+        fragments = self.prop(["fragments"])
+        before = fragments[:value["start"][0]]
+        after = fragments[value["end"][0]+1:]
+        if value["start"][0] == value["end"][0]:
+            middle = fragments[value["start"][0]]
+            new_middle = [
+                dict(
+                    middle,
+                    text=(
+                        middle["text"][:value["start"][1]] +
+                        key_event.key +
+                        middle["text"][value["end"][1]:]
+                    )
+                ),
+            ]
+        else:
+            start = fragments[value["start"][0]]
+            end = fragments[value["end"][0]]
+            if value["cursor_at_start"]:
+                new_middle = [
+                    dict(
+                        start,
+                        text=(
+                            start["text"][:value["start"][1]] + key_event.key
+                        )
+                    ),
+                    dict(
+                        end,
+                        text=(
+                            end["text"][value["end"][1]:]
+                        )
+                    ),
+                ]
+            else:
+                new_middle = [
+                    dict(
+                        start,
+                        text=(
+                            start["text"][:value["start"][1]]
+                        )
+                    ),
+                    dict(
+                        end,
+                        text=(
+                            key_event.key + end["text"][value["end"][1]:]
+                        )
+                    ),
+                ]
         self.prop(["actions", "edit_paragraph"])(
             self.prop(["id"]),
             {
-                "fragments": [{"text": "haha"}],
+                "fragments": before + new_middle + after,
             },
             selection.create({
-                "start": [0, 0],
-                "end": [0, 0],
+                "start": [value["start"][0], value["start"][1]+1],
+                "end": [value["start"][0], value["start"][1]+1],
                 "cursor_at_start": True,
             })
         )
