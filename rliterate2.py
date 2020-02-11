@@ -252,6 +252,7 @@ def table_of_contents_scroll_area_props(document, session, theme):
         session.get(["toc", "collapsed"]),
         session.get(["toc", "hoisted_page"]),
         session.get(["toc", "dragged_page"]),
+        session.get_open_pages(),
         theme.get(["toc", "foreground"]),
         theme.get(["dragdrop_invalid_color"])
     ))
@@ -293,6 +294,7 @@ def generate_rows_and_drop_points(
     collapsed,
     hoisted_page,
     dragged_page,
+    open_pages,
     foreground,
     dragdrop_invalid_color
 ):
@@ -304,6 +306,7 @@ def generate_rows_and_drop_points(
         root_page,
         collapsed,
         dragged_page,
+        open_pages,
         foreground,
         dragdrop_invalid_color
     )
@@ -313,6 +316,7 @@ def _generate_rows_and_drop_points_page(
     root_page,
     collapsed,
     dragged_page,
+    open_pages,
     foreground,
     dragdrop_invalid_color
 ):
@@ -323,6 +327,7 @@ def _generate_rows_and_drop_points_page(
         rows.append({
             "id": page["id"],
             "text_props": TextPropsBuilder(
+                bold=page["id"] in open_pages,
                 color=dragdrop_invalid_color if dragged else foreground
             ).text(page["title"]).get(),
             "level": level,
@@ -3108,6 +3113,13 @@ class Session(Immutable):
 
     def open_page(self, page_id):
         self.replace(["workspace", "columns"], [[page_id]])
+
+    def get_open_pages(self):
+        pages = set()
+        for column in self.get(["workspace", "columns"]):
+            for page in column:
+                pages.add(page)
+        return pages
 
     def set_hoisted_page(self, page_id):
         self.replace(["toc", "hoisted_page"], page_id)
