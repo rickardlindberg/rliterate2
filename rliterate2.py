@@ -141,6 +141,7 @@ def actions(session, theme):
     return {
         "rotate_theme": theme.rotate,
         "set_toc_width": session.set_toc_width,
+        "set_hoisted_page": session.set_hoisted_page,
     }
 
 def format_title(path):
@@ -170,7 +171,8 @@ def main_area_props(document, session, theme, actions):
         "toc": table_of_contents_props(
             document,
             session,
-            theme
+            theme,
+            actions
         ),
         "toc_divider": toc_divider_props(
             theme.get(["toc_divider"])
@@ -183,7 +185,7 @@ def main_area_props(document, session, theme, actions):
         "actions": actions,
     }
 
-def table_of_contents_props(document, session, theme):
+def table_of_contents_props(document, session, theme, actions):
     return {
         "background": theme.get(
             ["toc", "background"]
@@ -204,9 +206,7 @@ def table_of_contents_props(document, session, theme):
             session,
             theme
         ),
-        "actions": {
-            "set_hoisted_page": session.set_hoisted_page,
-        },
+        "actions": actions,
     }
 
 def is_valid_hoisted_page(document, page_id):

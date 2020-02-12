@@ -512,7 +512,7 @@
 ],
 "fragments":[
 {
-"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme.get([\"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme,\n            actions\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme.get([\"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -889,7 +889,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, session.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            session.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": session.set_hoisted_page,\n        },\n    }\n",
+"text":"def table_of_contents_props(document, session, theme, actions):\n    return {\n        \"background\": theme.get(\n            [\"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, session.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            session.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -1941,7 +1941,7 @@
 ],
 "fragments":[
 {
-"text":"def actions(session, theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n        \"set_toc_width\": session.set_toc_width,\n    }\n",
+"text":"def actions(session, theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n        \"set_toc_width\": session.set_toc_width,\n        \"set_hoisted_page\": session.set_hoisted_page,\n    }\n",
 "type":"code"
 }
 ],
