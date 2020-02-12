@@ -397,7 +397,7 @@
 ],
 "fragments":[
 {
-"text":"def main_frame_props(document, session, theme):\n    return {\n        \"toolbar\": toolbar_props(\n            theme.get([\"toolbar\"]),\n            actions(theme)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme.get([\"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
+"text":"def main_frame_props(document, session, theme):\n    return {\n        \"toolbar\": toolbar_props(\n            theme.get([\"toolbar\"]),\n            actions(session, theme)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme.get([\"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme,\n            actions(session, theme)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -413,7 +413,7 @@
 ],
 "fragments":[
 {
-"text":"def actions(theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n    }\n",
+"text":"def actions(session, theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n        \"set_toc_width\": session.set_toc_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -533,38 +533,6 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def main_area_props(document, session, theme):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": {\n            \"set_toc_width\": session.set_toc_width,\n        },\n    }\n",
-"type":"code"
-}
-],
-"id":"5d9b7a83066349ac9d47a1e72e4b561d",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def toc_divider_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toc_divider\", \"color\"]\n        ),\n        \"min_size\": (\n            theme.get([\"toc_divider\", \"thickness\"]),\n            -1\n        ),\n    }\n",
-"type":"code"
-}
-],
-"id":"e7fb2594facb4dfeb049b605862ca0d8",
-"type":"code"
-},
-{
-"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -572,7 +540,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n    TableOfContents[toc](\n        #toc\n        %align[EXPAND]\n    )\n    Panel(\n        #toc_divider\n        cursor = \"size_horizontal\"\n        @drag  = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n    TableOfContents[toc](\n        #toc\n        %align[EXPAND]\n    )\n    TableOfContentsDivider(\n        #toc_divider\n        @drag = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -609,6 +577,22 @@
 "id":"72cfc592c2ea47e499de1164ed087bdb",
 "language":"",
 "post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
+"type":"code"
+}
+],
+"id":"5d9b7a83066349ac9d47a1e72e4b561d",
 "type":"code"
 }
 ],
@@ -1027,6 +1011,50 @@
 }
 ],
 "title":"Table of contents"
+},
+{
+"children":[],
+"id":"502f65fae21a41158c28d96688b3948c",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel TableOfContentsDivider %layout_columns {\n}\n",
+"type":"code"
+}
+],
+"id":"2f8105617ad34252a0c25406dc1ae000",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toc_divider_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toc_divider\", \"color\"]\n        ),\n        \"min_size\": (\n            theme.get([\"toc_divider\", \"thickness\"]),\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
+"type":"code"
+}
+],
+"id":"e7fb2594facb4dfeb049b605862ca0d8",
+"type":"code"
+}
+],
+"title":"Table of contents divider"
 },
 {
 "children":[

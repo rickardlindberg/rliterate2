@@ -121,7 +121,7 @@ def main_frame_props(document, session, theme):
     return {
         "toolbar": toolbar_props(
             theme.get(["toolbar"]),
-            actions(theme)
+            actions(session, theme)
         ),
         "toolbar_divider": toolbar_divider_props(
             theme.get(["toolbar_divider"])
@@ -129,16 +129,18 @@ def main_frame_props(document, session, theme):
         "main_area": main_area_props(
             document,
             session,
-            theme
+            theme,
+            actions(session, theme)
         ),
         "title": format_title(
             document.get(["path"])
         ),
     }
 
-def actions(theme):
+def actions(session, theme):
     return {
         "rotate_theme": theme.rotate,
+        "set_toc_width": session.set_toc_width,
     }
 
 def format_title(path):
@@ -163,7 +165,7 @@ def toolbar_divider_props(toolbar_divider_theme):
         ),
     }
 
-def main_area_props(document, session, theme):
+def main_area_props(document, session, theme, actions):
     return {
         "toc": table_of_contents_props(
             document,
@@ -178,20 +180,7 @@ def main_area_props(document, session, theme):
             session,
             theme
         ),
-        "actions": {
-            "set_toc_width": session.set_toc_width,
-        },
-    }
-
-def toc_divider_props(theme):
-    return {
-        "background": theme.get(
-            ["toc_divider", "color"]
-        ),
-        "min_size": (
-            theme.get(["toc_divider", "thickness"]),
-            -1
-        ),
+        "actions": actions,
     }
 
 def table_of_contents_props(document, session, theme):
@@ -358,6 +347,18 @@ def _generate_rows_and_drop_points_page(
     return {
         "rows": rows,
         "drop_points": drop_points,
+    }
+
+def toc_divider_props(theme):
+    return {
+        "background": theme.get(
+            ["toc_divider", "color"]
+        ),
+        "min_size": (
+            theme.get(["toc_divider", "thickness"]),
+            -1
+        ),
+        "cursor": "size_horizontal",
     }
 
 def workspace_props(document, session, theme):
@@ -1678,10 +1679,9 @@ class MainArea(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['toc_divider']))
-        props['cursor'] = 'size_horizontal'
         handlers['drag'] = lambda event: self._on_toc_divider_drag(event)
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Panel, props, sizer, handlers, name)
+        self._create_widget(TableOfContentsDivider, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -1996,6 +1996,18 @@ class TableOfContentsDropLine(Panel):
                 return self.prop(["invalid_color"])
         else:
             return None
+
+class TableOfContentsDivider(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
 
 class Workspace(HScroll):
 
