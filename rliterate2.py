@@ -120,7 +120,8 @@ def main():
 def main_frame_props(document, session, theme):
     return {
         "toolbar": toolbar_props(
-            theme
+            theme.get(["toolbar"]),
+            actions(theme)
         ),
         "toolbar_divider": toolbar_divider_props(
             theme.get(["toolbar_divider"])
@@ -135,23 +136,22 @@ def main_frame_props(document, session, theme):
         ),
     }
 
+def actions(theme):
+    return {
+        "rotate_theme": theme.rotate,
+    }
+
 def format_title(path):
     return "{} ({}) - RLiterate 2".format(
         os.path.basename(path),
         os.path.abspath(os.path.dirname(path))
     )
 
-def toolbar_props(theme):
+def toolbar_props(toolbar_theme, actions):
     return {
-        "background": theme.get(
-            ["toolbar", "background"]
-        ),
-        "margin": theme.get(
-            ["toolbar", "margin"]
-        ),
-        "actions": {
-            "rotate_theme": theme.rotate,
-        },
+        "background": toolbar_theme["background"],
+        "margin": toolbar_theme["margin"],
+        "actions": actions,
     }
 
 def toolbar_divider_props(toolbar_divider_theme):

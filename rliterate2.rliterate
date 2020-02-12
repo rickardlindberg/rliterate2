@@ -397,11 +397,27 @@
 ],
 "fragments":[
 {
-"text":"def main_frame_props(document, session, theme):\n    return {\n        \"toolbar\": toolbar_props(\n            theme\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme.get([\"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
+"text":"def main_frame_props(document, session, theme):\n    return {\n        \"toolbar\": toolbar_props(\n            theme.get([\"toolbar\"]),\n            actions(theme)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme.get([\"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
 "type":"code"
 }
 ],
 "id":"817bfdde2cd042328c69a297120bdf9d",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def actions(theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n    }\n",
+"type":"code"
+}
+],
+"id":"d277c1f7e8c04947b3f2f8abc5802170",
 "type":"code"
 },
 {
@@ -429,22 +445,6 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def toolbar_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toolbar\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"toolbar\", \"margin\"]\n        ),\n        \"actions\": {\n            \"rotate_theme\": theme.rotate,\n        },\n    }\n",
-"type":"code"
-}
-],
-"id":"a2b6e1e17d804033bc21ab32625b15a9",
-"type":"code"
-},
-{
-"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -462,6 +462,22 @@
 "python",
 "rlgui/rlgui.py"
 ],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toolbar_props(toolbar_theme, actions):\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"actions\": actions,\n    }\n",
+"type":"code"
+}
+],
+"id":"a2b6e1e17d804033bc21ab32625b15a9",
 "type":"code"
 }
 ],
