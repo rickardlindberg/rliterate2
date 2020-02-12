@@ -588,7 +588,7 @@
 ],
 "fragments":[
 {
-"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme.get([\"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -1046,7 +1046,7 @@
 ],
 "fragments":[
 {
-"text":"def toc_divider_props(theme):\n    return {\n        \"background\": theme.get(\n            [\"toc_divider\", \"color\"]\n        ),\n        \"min_size\": (\n            theme.get([\"toc_divider\", \"thickness\"]),\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
+"text":"def toc_divider_props(toc_divider_theme):\n    return {\n        \"background\": toc_divider_theme[\"color\"],\n        \"min_size\": (\n            toc_divider_theme[\"thickness\"],\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
 "type":"code"
 }
 ],

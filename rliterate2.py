@@ -173,7 +173,7 @@ def main_area_props(document, session, theme, actions):
             theme
         ),
         "toc_divider": toc_divider_props(
-            theme
+            theme.get(["toc_divider"])
         ),
         "workspace": workspace_props(
             document,
@@ -349,13 +349,11 @@ def _generate_rows_and_drop_points_page(
         "drop_points": drop_points,
     }
 
-def toc_divider_props(theme):
+def toc_divider_props(toc_divider_theme):
     return {
-        "background": theme.get(
-            ["toc_divider", "color"]
-        ),
+        "background": toc_divider_theme["color"],
         "min_size": (
-            theme.get(["toc_divider", "thickness"]),
+            toc_divider_theme["thickness"],
             -1
         ),
         "cursor": "size_horizontal",
