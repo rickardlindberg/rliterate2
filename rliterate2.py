@@ -119,19 +119,19 @@ def main():
 
 def main_frame_props(document, session, theme):
     return {
-        "title": format_title(
-            document.get(["path"])
-        ),
         "toolbar": toolbar_props(
             theme
         ),
         "toolbar_divider": toolbar_divider_props(
-            theme
+            theme.get(["toolbar_divider"])
         ),
         "main_area": main_area_props(
             document,
             session,
             theme
+        ),
+        "title": format_title(
+            document.get(["path"])
         ),
     }
 
@@ -140,17 +140,6 @@ def format_title(path):
         os.path.basename(path),
         os.path.abspath(os.path.dirname(path))
     )
-
-def toolbar_divider_props(theme):
-    return {
-        "background": theme.get(
-            ["toolbar_divider", "color"]
-        ),
-        "min_size": (
-            -1,
-            theme.get(["toolbar_divider", "thickness"])
-        ),
-    }
 
 def toolbar_props(theme):
     return {
@@ -163,6 +152,15 @@ def toolbar_props(theme):
         "actions": {
             "rotate_theme": theme.rotate,
         },
+    }
+
+def toolbar_divider_props(toolbar_divider_theme):
+    return {
+        "background": toolbar_divider_theme["color"],
+        "min_size": (
+            -1,
+            toolbar_divider_theme["thickness"]
+        ),
     }
 
 def main_area_props(document, session, theme):
@@ -1601,7 +1599,7 @@ class MainFrame(Frame):
         handlers = {}
         props.update(self.prop(['toolbar_divider']))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Panel, props, sizer, handlers, name)
+        self._create_widget(ToolbarDivider, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -1643,6 +1641,18 @@ class Toolbar(Panel):
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers, name)
         self._create_space(self.prop(['margin']))
+
+class ToolbarDivider(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
 
 class MainArea(Panel):
 
