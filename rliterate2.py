@@ -1734,13 +1734,6 @@ class TableOfContents(Panel):
         sizer["proportion"] = 1
         self._create_widget(TableOfContentsScrollArea, props, sizer, handlers, name)
 
-TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
-    "row_index",
-    "target_index",
-    "target_page",
-    "level",
-])
-
 class TableOfContentsScrollArea(Scroll):
 
     def _get_local_props(self):
@@ -1838,6 +1831,13 @@ class TableOfContentsScrollArea(Scroll):
             (2 * self.prop(["row_extra", "row_margin"])) +
             (level + 1) * self.prop(["row_extra", "indent_size"])
         )
+
+TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
+    "row_index",
+    "target_index",
+    "target_page",
+    "level",
+])
 
 class TableOfContentsRow(Panel):
 
