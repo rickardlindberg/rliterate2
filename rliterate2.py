@@ -111,37 +111,33 @@ def main():
         MainFrame,
         create_props(
             main_frame_props,
-            Document(args["path"]),
-            Session(),
-            Theme()
+            Document(args["path"])
         )
     )
 
-def main_frame_props(document, session, theme):
+def main_frame_props(document):
     return {
         "toolbar": toolbar_props(
-            theme.get(["toolbar"]),
-            actions(session, theme)
+            document.get(["theme", "toolbar"]),
+            actions(document)
         ),
         "toolbar_divider": toolbar_divider_props(
-            theme.get(["toolbar_divider"])
+            document.get(["theme", "toolbar_divider"])
         ),
         "main_area": main_area_props(
             document,
-            session,
-            theme,
-            actions(session, theme)
+            actions(document)
         ),
         "title": format_title(
             document.get(["path"])
         ),
     }
 
-def actions(session, theme):
+def actions(document):
     return {
-        "rotate_theme": theme.rotate,
-        "set_toc_width": session.set_toc_width,
-        "set_hoisted_page": session.set_hoisted_page,
+        "rotate_theme": document.rotate,
+        "set_toc_width": document.set_toc_width,
+        "set_hoisted_page": document.set_hoisted_page,
     }
 
 def format_title(path):
@@ -166,45 +162,39 @@ def toolbar_divider_props(toolbar_divider_theme):
         ),
     }
 
-def main_area_props(document, session, theme, actions):
+def main_area_props(document, actions):
     return {
         "toc": table_of_contents_props(
             document,
-            session,
-            theme,
             actions
         ),
         "toc_divider": toc_divider_props(
-            theme.get(["toc_divider"])
+            document.get(["theme", "toc_divider"])
         ),
         "workspace": workspace_props(
-            document,
-            session,
-            theme
+            document
         ),
         "actions": actions,
     }
 
-def table_of_contents_props(document, session, theme, actions):
+def table_of_contents_props(document, actions):
     return {
-        "background": theme.get(
-            ["toc", "background"]
+        "background": document.get(
+            ["theme", "toc", "background"]
         ),
         "min_size": (
-            max(50, session.get(["toc", "width"])),
+            max(50, document.get(["toc", "width"])),
             -1
         ),
         "has_valid_hoisted_page": is_valid_hoisted_page(
             document,
-            session.get(["toc", "hoisted_page"]),
+            document.get(["toc", "hoisted_page"]),
         ),
-        "row_margin": theme.get(
-            ["toc", "row_margin"]
+        "row_margin": document.get(
+            ["theme", "toc", "row_margin"]
         ),
         "scroll_area": table_of_contents_scroll_area_props(
-            document,
-            session,
-            theme
+            document
         ),
         "actions": actions,
     }
@@ -219,14 +209,13 @@ def is_valid_hoisted_page(document, page_id):
         pass
     return False
 
-def table_of_contents_scroll_area_props(document, session, theme):
+def table_of_contents_scroll_area_props(document):
     props = {
         "rows_cache_limit": document.count_pages() - 1,
         "row_extra": table_of_contents_row_extra_props(
-            session,
-            theme
+            document
         ),
-        "dragged_page": session.get(
+        "dragged_page": document.get(
             ["toc", "dragged_page"]
         ),
         "actions": {
@@ -236,43 +225,43 @@ def table_of_contents_scroll_area_props(document, session, theme):
     }
     props.update(generate_rows_and_drop_points(
         document,
-        session.get(["toc", "collapsed"]),
-        session.get(["toc", "hoisted_page"]),
-        session.get(["toc", "dragged_page"]),
-        session.get_open_pages(),
-        theme.get(["toc", "foreground"]),
-        theme.get(["dragdrop_invalid_color"])
+        document.get(["toc", "collapsed"]),
+        document.get(["toc", "hoisted_page"]),
+        document.get(["toc", "dragged_page"]),
+        document.get_open_pages(),
+        document.get(["theme", "toc", "foreground"]),
+        document.get(["theme", "dragdrop_invalid_color"])
     ))
     return props
 
-def table_of_contents_row_extra_props(session, theme):
+def table_of_contents_row_extra_props(document):
     return {
-        "row_margin": theme.get(
-            ["toc", "row_margin"]
+        "row_margin": document.get(
+            ["theme", "toc", "row_margin"]
         ),
-        "indent_size": theme.get(
-            ["toc", "indent_size"]
+        "indent_size": document.get(
+            ["theme", "toc", "indent_size"]
         ),
-        "foreground": theme.get(
-            ["toc", "foreground"]
+        "foreground": document.get(
+            ["theme", "toc", "foreground"]
         ),
-        "hover_background": theme.get(
-            ["toc", "hover_background"]
+        "hover_background": document.get(
+            ["theme", "toc", "hover_background"]
         ),
-        "divider_thickness": theme.get(
-            ["toc", "divider_thickness"]
+        "divider_thickness": document.get(
+            ["theme", "toc", "divider_thickness"]
         ),
-        "dragdrop_color": theme.get(
-            ["dragdrop_color"]
+        "dragdrop_color": document.get(
+            ["theme", "dragdrop_color"]
         ),
-        "dragdrop_invalid_color": theme.get(
-            ["dragdrop_invalid_color"]
+        "dragdrop_invalid_color": document.get(
+            ["theme", "dragdrop_invalid_color"]
         ),
         "actions": {
-            "set_hoisted_page": session.set_hoisted_page,
-            "set_dragged_page": session.set_dragged_page,
-            "toggle_collapsed": session.toggle_collapsed,
-            "open_page": session.open_page,
+            "set_hoisted_page": document.set_hoisted_page,
+            "set_dragged_page": document.set_dragged_page,
+            "toggle_collapsed": document.toggle_collapsed,
+            "open_page": document.open_page,
         },
     }
 
@@ -359,31 +348,31 @@ def toc_divider_props(toc_divider_theme):
         "cursor": "size_horizontal",
     }
 
-def workspace_props(document, session, theme):
+def workspace_props(document):
     return {
-        "background": theme.get(
-            ["workspace", "background"]
+        "background": document.get(
+            ["theme", "workspace", "background"]
         ),
-        "margin": theme.get(
-            ["workspace", "margin"]
+        "margin": document.get(
+            ["theme", "workspace", "margin"]
         ),
         "column_width": (
-            session.get(["workspace", "page_body_width"]) +
-            2*theme.get(["page", "margin"]) +
-            theme.get(["page", "border", "size"])
+            document.get(["workspace", "page_body_width"]) +
+            2*document.get(["theme", "page", "margin"]) +
+            document.get(["theme", "page", "border", "size"])
         ),
         "columns": build_columns(
             document,
-            session.get(["workspace", "columns"]),
-            session.get(["workspace", "page_body_width"]),
-            theme.get(["page"]),
+            document.get(["workspace", "columns"]),
+            document.get(["workspace", "page_body_width"]),
+            document.get(["theme", "page"]),
             document.get(["selection"])
         ),
-        "page_body_width": session.get(
+        "page_body_width": document.get(
             ["workspace", "page_body_width"]
         ),
         "actions": {
-            "set_page_body_width": session.set_page_body_width,
+            "set_page_body_width": document.set_page_body_width,
             "edit_page": document.edit_page,
             "edit_paragraph": document.edit_paragraph,
             "show_selection": document.show_selection,
@@ -2749,6 +2738,29 @@ class Document(Immutable):
             "path": path,
             "doc": load_document_from_file(path),
             "selection": Selection.empty(),
+            "theme": self.DEFAULT_THEME,
+            "toc": {
+                "width": 230,
+                "collapsed": [],
+                "hoisted_page": None,
+                "dragged_page": None,
+            },
+            "workspace": {
+                "page_body_width": 300,
+                "columns": [
+                    [
+                        "cf689824aa3641828343eba2b5fbde9f",
+                        "ef8200090225487eab4ae35d8910ba8e",
+                        "97827e5f0096482a9a4eadf0ce07764f"
+                    ],
+                    [
+                        "e6a157bbac8842a2b8c625bfa9255159",
+                        "813ec304685345a19b1688074000d296",
+                        "004bc5a29bc94eeb95f4f6a56bd48729",
+                        "b987445070e84067ba90e71695763f72"
+                    ]
+                ],
+            },
         })
         self._build_page_index()
 
@@ -2880,71 +2892,6 @@ class Document(Immutable):
                     pass
             raise ParagraphNotFound()
         return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)
-
-class PageNotFound(Exception):
-    pass
-
-class PageMeta(object):
-
-    def __init__(self, id, path, parent, index):
-        self.id = id
-        self.path = path
-        self.parent = parent
-        self.index = index
-
-class ParagraphNotFound(Exception):
-    pass
-
-class CodeChunk(object):
-
-    def __init__(self):
-        self._fragments = []
-
-    def add(self, text, extra={}):
-        part = {"text": text}
-        part.update(extra)
-        self._fragments.append(part)
-
-    def tokenize(self, pygments_lexer):
-        self._apply_token_types(
-            pygments_lexer.get_tokens(
-                self._get_uncolorized_text()
-            )
-        )
-        return self._fragments
-
-    def _get_uncolorized_text(self):
-        return "".join(
-            part["text"]
-            for part in self._fragments
-            if "token_type" not in part
-        )
-
-    def _apply_token_types(self, pygments_tokens):
-        part_index = 0
-        for token_type, text in pygments_tokens:
-            while "token_type" in self._fragments[part_index]:
-                part_index += 1
-            while text:
-                if len(self._fragments[part_index]["text"]) > len(text):
-                    part = self._fragments[part_index]
-                    pre = dict(part)
-                    pre["text"] = pre["text"][:len(text)]
-                    pre["token_type"] = token_type
-                    self._fragments[part_index] = pre
-                    part_index += 1
-                    post = dict(part)
-                    post["text"] = post["text"][len(text):]
-                    self._fragments.insert(part_index, post)
-                    text = ""
-                else:
-                    part = self._fragments[part_index]
-                    part["token_type"] = token_type
-                    part_index += 1
-                    text = text[len(part["text"]):]
-
-class Theme(Immutable):
-
     base00  = "#657b83"
     base1   = "#93a1a1"
     yellow  = "#b58900"
@@ -2956,7 +2903,7 @@ class Theme(Immutable):
     cyan    = "#2aa198"
     green   = "#859900"
 
-    DEFAULT = {
+    DEFAULT_THEME = {
         "toolbar": {
             "margin": 4,
             "background": None,
@@ -3024,7 +2971,7 @@ class Theme(Immutable):
         "dragdrop_invalid_color": "#cccccc",
     }
 
-    ALTERNATIVE = {
+    ALTERNATIVE_THEME = {
         "toolbar": {
             "margin": 4,
             "background": "#dcd6c6",
@@ -3091,44 +3038,11 @@ class Theme(Immutable):
         "dragdrop_color": "#dc322f",
         "dragdrop_invalid_color": "#cccccc",
     }
-
-    def __init__(self):
-        Immutable.__init__(self, self.DEFAULT)
-
     def rotate(self):
-        if self.get([]) is self.ALTERNATIVE:
-            self.replace([], self.DEFAULT)
+        if self.get(["theme"]) is self.ALTERNATIVE_THEME:
+            self.replace(["theme"], self.DEFAULT_THEME)
         else:
-            self.replace([], self.ALTERNATIVE)
-
-class Session(Immutable):
-
-    def __init__(self):
-        Immutable.__init__(self, {
-            "toc": {
-                "width": 230,
-                "collapsed": [],
-                "hoisted_page": None,
-                "dragged_page": None,
-            },
-            "workspace": {
-                "page_body_width": 300,
-                "columns": [
-                    [
-                        "cf689824aa3641828343eba2b5fbde9f",
-                        "ef8200090225487eab4ae35d8910ba8e",
-                        "97827e5f0096482a9a4eadf0ce07764f"
-                    ],
-                    [
-                        "e6a157bbac8842a2b8c625bfa9255159",
-                        "813ec304685345a19b1688074000d296",
-                        "004bc5a29bc94eeb95f4f6a56bd48729",
-                        "b987445070e84067ba90e71695763f72"
-                    ]
-                ],
-            },
-        })
-
+            self.replace(["theme"], self.ALTERNATIVE_THEME)
     def open_page(self, page_id):
         self.replace(["workspace", "columns"], [[page_id]])
 
@@ -3158,6 +3072,68 @@ class Session(Immutable):
             else:
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
+
+class PageNotFound(Exception):
+    pass
+
+class PageMeta(object):
+
+    def __init__(self, id, path, parent, index):
+        self.id = id
+        self.path = path
+        self.parent = parent
+        self.index = index
+
+class ParagraphNotFound(Exception):
+    pass
+
+class CodeChunk(object):
+
+    def __init__(self):
+        self._fragments = []
+
+    def add(self, text, extra={}):
+        part = {"text": text}
+        part.update(extra)
+        self._fragments.append(part)
+
+    def tokenize(self, pygments_lexer):
+        self._apply_token_types(
+            pygments_lexer.get_tokens(
+                self._get_uncolorized_text()
+            )
+        )
+        return self._fragments
+
+    def _get_uncolorized_text(self):
+        return "".join(
+            part["text"]
+            for part in self._fragments
+            if "token_type" not in part
+        )
+
+    def _apply_token_types(self, pygments_tokens):
+        part_index = 0
+        for token_type, text in pygments_tokens:
+            while "token_type" in self._fragments[part_index]:
+                part_index += 1
+            while text:
+                if len(self._fragments[part_index]["text"]) > len(text):
+                    part = self._fragments[part_index]
+                    pre = dict(part)
+                    pre["text"] = pre["text"][:len(text)]
+                    pre["token_type"] = token_type
+                    self._fragments[part_index] = pre
+                    part_index += 1
+                    post = dict(part)
+                    post["text"] = post["text"][len(text):]
+                    self._fragments.insert(part_index, post)
+                    text = ""
+                else:
+                    part = self._fragments[part_index]
+                    part["token_type"] = token_type
+                    part_index += 1
+                    text = text[len(part["text"]):]
 
 DragEvent = namedtuple("DragEvent", "initial,x,y,dx,dy,initiate_drag_drop")
 

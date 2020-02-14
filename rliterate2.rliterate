@@ -351,7 +351,7 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        create_props(\n            main_frame_props,\n            Document(args[\"path\"]),\n            Session(),\n            Theme()\n        )\n    )\n",
+"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        create_props(\n            main_frame_props,\n            Document(args[\"path\"])\n        )\n    )\n",
 "type":"code"
 }
 ],
@@ -512,7 +512,7 @@
 ],
 "fragments":[
 {
-"text":"def main_area_props(document, session, theme, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            session,\n            theme,\n            actions\n        ),\n        \"toc_divider\": toc_divider_props(\n            theme.get([\"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def main_area_props(document, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            actions\n        ),\n        \"toc_divider\": toc_divider_props(\n            document.get([\"theme\", \"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document\n        ),\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -585,7 +585,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_scroll_area_props(document, session, theme):\n    props = {\n        \"rows_cache_limit\": document.count_pages() - 1,\n        \"row_extra\": table_of_contents_row_extra_props(\n            session,\n            theme\n        ),\n        \"dragged_page\": session.get(\n            [\"toc\", \"dragged_page\"]\n        ),\n        \"actions\": {\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        },\n    }\n    props.update(generate_rows_and_drop_points(\n        document,\n        session.get([\"toc\", \"collapsed\"]),\n        session.get([\"toc\", \"hoisted_page\"]),\n        session.get([\"toc\", \"dragged_page\"]),\n        session.get_open_pages(),\n        theme.get([\"toc\", \"foreground\"]),\n        theme.get([\"dragdrop_invalid_color\"])\n    ))\n    return props\n",
+"text":"def table_of_contents_scroll_area_props(document):\n    props = {\n        \"rows_cache_limit\": document.count_pages() - 1,\n        \"row_extra\": table_of_contents_row_extra_props(\n            document\n        ),\n        \"dragged_page\": document.get(\n            [\"toc\", \"dragged_page\"]\n        ),\n        \"actions\": {\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        },\n    }\n    props.update(generate_rows_and_drop_points(\n        document,\n        document.get([\"toc\", \"collapsed\"]),\n        document.get([\"toc\", \"hoisted_page\"]),\n        document.get([\"toc\", \"dragged_page\"]),\n        document.get_open_pages(),\n        document.get([\"theme\", \"toc\", \"foreground\"]),\n        document.get([\"theme\", \"dragdrop_invalid_color\"])\n    ))\n    return props\n",
 "type":"code"
 }
 ],
@@ -601,7 +601,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_row_extra_props(session, theme):\n    return {\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": theme.get(\n            [\"toc\", \"indent_size\"]\n        ),\n        \"foreground\": theme.get(\n            [\"toc\", \"foreground\"]\n        ),\n        \"hover_background\": theme.get(\n            [\"toc\", \"hover_background\"]\n        ),\n        \"divider_thickness\": theme.get(\n            [\"toc\", \"divider_thickness\"]\n        ),\n        \"dragdrop_color\": theme.get(\n            [\"dragdrop_color\"]\n        ),\n        \"dragdrop_invalid_color\": theme.get(\n            [\"dragdrop_invalid_color\"]\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": session.set_hoisted_page,\n            \"set_dragged_page\": session.set_dragged_page,\n            \"toggle_collapsed\": session.toggle_collapsed,\n            \"open_page\": session.open_page,\n        },\n    }\n",
+"text":"def table_of_contents_row_extra_props(document):\n    return {\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": document.get(\n            [\"theme\", \"toc\", \"indent_size\"]\n        ),\n        \"foreground\": document.get(\n            [\"theme\", \"toc\", \"foreground\"]\n        ),\n        \"hover_background\": document.get(\n            [\"theme\", \"toc\", \"hover_background\"]\n        ),\n        \"divider_thickness\": document.get(\n            [\"theme\", \"toc\", \"divider_thickness\"]\n        ),\n        \"dragdrop_color\": document.get(\n            [\"theme\", \"dragdrop_color\"]\n        ),\n        \"dragdrop_invalid_color\": document.get(\n            [\"theme\", \"dragdrop_invalid_color\"]\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": document.set_hoisted_page,\n            \"set_dragged_page\": document.set_dragged_page,\n            \"toggle_collapsed\": document.toggle_collapsed,\n            \"open_page\": document.open_page,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -910,7 +910,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_props(document, session, theme, actions):\n    return {\n        \"background\": theme.get(\n            [\"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, session.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            session.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": theme.get(\n            [\"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document,\n            session,\n            theme\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def table_of_contents_props(document, actions):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, document.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            document.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document\n        ),\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -1864,7 +1864,7 @@
 ],
 "fragments":[
 {
-"text":"def workspace_props(document, session, theme):\n    return {\n        \"background\": theme.get(\n            [\"workspace\", \"background\"]\n        ),\n        \"margin\": theme.get(\n            [\"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            session.get([\"workspace\", \"page_body_width\"]) +\n            2*theme.get([\"page\", \"margin\"]) +\n            theme.get([\"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            session.get([\"workspace\", \"columns\"]),\n            session.get([\"workspace\", \"page_body_width\"]),\n            theme.get([\"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": session.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": session.set_page_body_width,\n            \"edit_page\": document.edit_page,\n            \"edit_paragraph\": document.edit_paragraph,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
+"text":"def workspace_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"workspace\", \"background\"]\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            document.get([\"workspace\", \"page_body_width\"]) +\n            2*document.get([\"theme\", \"page\", \"margin\"]) +\n            document.get([\"theme\", \"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            document.get([\"workspace\", \"columns\"]),\n            document.get([\"workspace\", \"page_body_width\"]),\n            document.get([\"theme\", \"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": document.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": document.set_page_body_width,\n            \"edit_page\": document.edit_page,\n            \"edit_paragraph\": document.edit_paragraph,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1925,7 +1925,7 @@
 ],
 "fragments":[
 {
-"text":"def main_frame_props(document, session, theme):\n    return {\n        \"toolbar\": toolbar_props(\n            theme.get([\"toolbar\"]),\n            actions(session, theme)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            theme.get([\"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            session,\n            theme,\n            actions(session, theme)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
+"text":"def main_frame_props(document):\n    return {\n        \"toolbar\": toolbar_props(\n            document.get([\"theme\", \"toolbar\"]),\n            actions(document)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            document.get([\"theme\", \"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            actions(document)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1941,7 +1941,7 @@
 ],
 "fragments":[
 {
-"text":"def actions(session, theme):\n    return {\n        \"rotate_theme\": theme.rotate,\n        \"set_toc_width\": session.set_toc_width,\n        \"set_hoisted_page\": session.set_hoisted_page,\n    }\n",
+"text":"def actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
 "type":"code"
 }
 ],
@@ -2599,6 +2599,107 @@
 }
 ],
 "title":"Code paragraph utilities"
+},
+{
+"children":[],
+"id":"2bdaa3b1373945e0bb8ae77a1735df50",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"base00  = \"#657b83\"\nbase1   = \"#93a1a1\"\nyellow  = \"#b58900\"\norange  = \"#cb4b16\"\nred     = \"#dc322f\"\nmagenta = \"#d33682\"\nviolet  = \"#6c71c4\"\nblue    = \"#268bd2\"\ncyan    = \"#2aa198\"\ngreen   = \"#859900\"\n\nDEFAULT_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": None,\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 1,\n        \"color\": \"#aaaaaf\",\n    },\n    \"toc\": {\n        \"background\": \"#ffffff\",\n        \"foreground\": \"#000000\",\n        \"indent_size\": 20,\n        \"row_margin\": 2,\n        \"divider_thickness\": 2,\n        \"hover_background\": \"#cccccc\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 3,\n        \"color\": \"#aaaaaf\",\n    },\n    \"workspace\": {\n        \"background\": \"#cccccc\",\n        \"margin\": 12,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 16,\n        },\n        \"code_font\": {\n            \"size\": 10,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 2,\n            \"color\": \"#aaaaaf\",\n        },\n        \"background\": \"#ffffff\",\n        \"margin\": 10,\n        \"code\": {\n            \"margin\": 5,\n            \"header_background\": \"#eeeeee\",\n            \"body_background\": \"#f8f8f8\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n        },\n    },\n    \"dragdrop_color\": \"#ff6400\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n\nALTERNATIVE_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": \"#dcd6c6\",\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 2,\n        \"color\": \"#b0ab9e\",\n    },\n    \"toc\": {\n        \"background\": \"#fdf6e3\",\n        \"foreground\": \"#657b83\",\n        \"indent_size\": 22,\n        \"row_margin\": 3,\n        \"divider_thickness\": 3,\n        \"hover_background\": \"#d0cabb\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 5,\n        \"color\": \"#b0ab9e\",\n    },\n    \"workspace\": {\n        \"background\": \"#d0cabb\",\n        \"margin\": 18,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 18,\n        },\n        \"code_font\": {\n            \"size\": 12,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 3,\n            \"color\": \"#b0ab9e\",\n        },\n        \"background\": \"#fdf6e3\",\n        \"margin\": 14,\n        \"code\": {\n            \"margin\": 7,\n            \"header_background\": \"#eae4d2\",\n            \"body_background\": \"#f3ecdb\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n       },\n    },\n    \"dragdrop_color\": \"#dc322f\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n",
+"type":"code"
+}
+],
+"id":"fd85c4b0d0e34d6ea885dd572220e7ad",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document",
+"init"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"\"theme\": self.DEFAULT_THEME,\n",
+"type":"code"
+}
+],
+"id":"d19621b3c6244c739f6c13ef43a9edb8",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def rotate(self):\n    if self.get([\"theme\"]) is self.ALTERNATIVE_THEME:\n        self.replace([\"theme\"], self.DEFAULT_THEME)\n    else:\n        self.replace([\"theme\"], self.ALTERNATIVE_THEME)\n",
+"type":"code"
+}
+],
+"id":"1c7fb7cc5986472eba961bc7fa6bd81c",
+"type":"code"
+}
+],
+"title":"Theme"
+},
+{
+"children":[],
+"id":"0855548dfdab4aa68ae8e256f8a8fe0a",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"Document",
+"init"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"\"toc\": {\n    \"width\": 230,\n    \"collapsed\": [],\n    \"hoisted_page\": None,\n    \"dragged_page\": None,\n},\n\"workspace\": {\n    \"page_body_width\": 300,\n    \"columns\": [\n        [\n            \"cf689824aa3641828343eba2b5fbde9f\",\n            \"ef8200090225487eab4ae35d8910ba8e\",\n            \"97827e5f0096482a9a4eadf0ce07764f\"\n        ],\n        [\n            \"e6a157bbac8842a2b8c625bfa9255159\",\n            \"813ec304685345a19b1688074000d296\",\n            \"004bc5a29bc94eeb95f4f6a56bd48729\",\n            \"b987445070e84067ba90e71695763f72\"\n        ]\n    ],\n},\n",
+"type":"code"
+}
+],
+"id":"4e201e17e50241629bb3ac376d482c59",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def open_page(self, page_id):\n    self.replace([\"workspace\", \"columns\"], [[page_id]])\n\ndef get_open_pages(self):\n    pages = set()\n    for column in self.get([\"workspace\", \"columns\"]):\n        for page in column:\n            pages.add(page)\n    return pages\n\ndef set_hoisted_page(self, page_id):\n    self.replace([\"toc\", \"hoisted_page\"], page_id)\n\ndef set_dragged_page(self, page_id):\n    self.replace([\"toc\", \"dragged_page\"], page_id)\n\ndef set_toc_width(self, width):\n    self.replace([\"toc\", \"width\"], width)\n\ndef set_page_body_width(self, width):\n    self.replace([\"workspace\", \"page_body_width\"], width)\n\ndef toggle_collapsed(self, page_id):\n    def toggle(collapsed):\n        if page_id in collapsed:\n            return [x for x in collapsed if x != page_id]\n        else:\n            return collapsed + [page_id]\n    self.modify([\"toc\", \"collapsed\"], toggle)\n",
+"type":"code"
+}
+],
+"id":"ede93f168a854bd897ccd5ee9478a88f",
+"type":"code"
+}
+],
+"title":"Session"
 }
 ],
 "id":"27c8072213a94090a6d0d5e1362ab3ed",
@@ -2612,7 +2713,20 @@
 ],
 "fragments":[
 {
-"text":"class Document(Immutable):\n\n    ROOT_PAGE_PATH = [\"doc\", \"root_page\"]\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n            \"selection\": Selection.empty(),\n        })\n        self._build_page_index()\n\n",
+"text":"class Document(Immutable):\n\n    ROOT_PAGE_PATH = [\"doc\", \"root_page\"]\n\n    def __init__(self, path):\n        Immutable.__init__(self, {\n            \"path\": path,\n            \"doc\": load_document_from_file(path),\n            \"selection\": Selection.empty(),\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"Document",
+"init"
+],
+"prefix":"            ",
+"type":"chunk"
+},
+{
+"text":"        })\n        self._build_page_index()\n\n",
 "type":"code"
 },
 {
@@ -2678,52 +2792,6 @@
 }
 ],
 "title":"Document"
-},
-{
-"children":[],
-"id":"2bdaa3b1373945e0bb8ae77a1735df50",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Theme(Immutable):\n\n    base00  = \"#657b83\"\n    base1   = \"#93a1a1\"\n    yellow  = \"#b58900\"\n    orange  = \"#cb4b16\"\n    red     = \"#dc322f\"\n    magenta = \"#d33682\"\n    violet  = \"#6c71c4\"\n    blue    = \"#268bd2\"\n    cyan    = \"#2aa198\"\n    green   = \"#859900\"\n\n    DEFAULT = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": None,\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 1,\n            \"color\": \"#aaaaaf\",\n        },\n        \"toc\": {\n            \"background\": \"#ffffff\",\n            \"foreground\": \"#000000\",\n            \"indent_size\": 20,\n            \"row_margin\": 2,\n            \"divider_thickness\": 2,\n            \"hover_background\": \"#cccccc\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 3,\n            \"color\": \"#aaaaaf\",\n        },\n        \"workspace\": {\n            \"background\": \"#cccccc\",\n            \"margin\": 12,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 16,\n            },\n            \"code_font\": {\n                \"size\": 10,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 2,\n                \"color\": \"#aaaaaf\",\n            },\n            \"background\": \"#ffffff\",\n            \"margin\": 10,\n            \"code\": {\n                \"margin\": 5,\n                \"header_background\": \"#eeeeee\",\n                \"body_background\": \"#f8f8f8\",\n            },\n            \"token_styles\": {\n                \"\":                    {\"color\": base00},\n                \"Keyword\":             {\"color\": green},\n                \"Keyword.Constant\":    {\"color\": cyan},\n                \"Keyword.Declaration\": {\"color\": blue},\n                \"Keyword.Namespace\":   {\"color\": orange},\n                \"Name.Builtin\":        {\"color\": red},\n                \"Name.Builtin.Pseudo\": {\"color\": blue},\n                \"Name.Class\":          {\"color\": blue},\n                \"Name.Decorator\":      {\"color\": blue},\n                \"Name.Entity\":         {\"color\": violet},\n                \"Name.Exception\":      {\"color\": yellow},\n                \"Name.Function\":       {\"color\": blue},\n                \"String\":              {\"color\": cyan},\n                \"Number\":              {\"color\": cyan},\n                \"Operator.Word\":       {\"color\": green},\n                \"Comment\":             {\"color\": base1},\n                \"Comment.Preproc\":     {\"color\": magenta},\n            },\n        },\n        \"dragdrop_color\": \"#ff6400\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    ALTERNATIVE = {\n        \"toolbar\": {\n            \"margin\": 4,\n            \"background\": \"#dcd6c6\",\n        },\n        \"toolbar_divider\": {\n            \"thickness\": 2,\n            \"color\": \"#b0ab9e\",\n        },\n        \"toc\": {\n            \"background\": \"#fdf6e3\",\n            \"foreground\": \"#657b83\",\n            \"indent_size\": 22,\n            \"row_margin\": 3,\n            \"divider_thickness\": 3,\n            \"hover_background\": \"#d0cabb\",\n        },\n        \"toc_divider\": {\n            \"thickness\": 5,\n            \"color\": \"#b0ab9e\",\n        },\n        \"workspace\": {\n            \"background\": \"#d0cabb\",\n            \"margin\": 18,\n        },\n        \"page\": {\n            \"title_font\": {\n                \"size\": 18,\n            },\n            \"code_font\": {\n                \"size\": 12,\n                \"family\": \"Monospace\",\n            },\n            \"border\": {\n                \"size\": 3,\n                \"color\": \"#b0ab9e\",\n            },\n            \"background\": \"#fdf6e3\",\n            \"margin\": 14,\n            \"code\": {\n                \"margin\": 7,\n                \"header_background\": \"#eae4d2\",\n                \"body_background\": \"#f3ecdb\",\n            },\n            \"token_styles\": {\n                \"\":                    {\"color\": base00},\n                \"Keyword\":             {\"color\": green},\n                \"Keyword.Constant\":    {\"color\": cyan},\n                \"Keyword.Declaration\": {\"color\": blue},\n                \"Keyword.Namespace\":   {\"color\": orange},\n                \"Name.Builtin\":        {\"color\": red},\n                \"Name.Builtin.Pseudo\": {\"color\": blue},\n                \"Name.Class\":          {\"color\": blue},\n                \"Name.Decorator\":      {\"color\": blue},\n                \"Name.Entity\":         {\"color\": violet},\n                \"Name.Exception\":      {\"color\": yellow},\n                \"Name.Function\":       {\"color\": blue},\n                \"String\":              {\"color\": cyan},\n                \"Number\":              {\"color\": cyan},\n                \"Operator.Word\":       {\"color\": green},\n                \"Comment\":             {\"color\": base1},\n                \"Comment.Preproc\":     {\"color\": magenta},\n           },\n        },\n        \"dragdrop_color\": \"#dc322f\",\n        \"dragdrop_invalid_color\": \"#cccccc\",\n    }\n\n    def __init__(self):\n        Immutable.__init__(self, self.DEFAULT)\n\n    def rotate(self):\n        if self.get([]) is self.ALTERNATIVE:\n            self.replace([], self.DEFAULT)\n        else:\n            self.replace([], self.ALTERNATIVE)\n",
-"type":"code"
-}
-],
-"id":"fd85c4b0d0e34d6ea885dd572220e7ad",
-"type":"code"
-}
-],
-"title":"Theme"
-},
-{
-"children":[],
-"id":"0855548dfdab4aa68ae8e256f8a8fe0a",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"class Session(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"toc\": {\n                \"width\": 230,\n                \"collapsed\": [],\n                \"hoisted_page\": None,\n                \"dragged_page\": None,\n            },\n            \"workspace\": {\n                \"page_body_width\": 300,\n                \"columns\": [\n                    [\n                        \"cf689824aa3641828343eba2b5fbde9f\",\n                        \"ef8200090225487eab4ae35d8910ba8e\",\n                        \"97827e5f0096482a9a4eadf0ce07764f\"\n                    ],\n                    [\n                        \"e6a157bbac8842a2b8c625bfa9255159\",\n                        \"813ec304685345a19b1688074000d296\",\n                        \"004bc5a29bc94eeb95f4f6a56bd48729\",\n                        \"b987445070e84067ba90e71695763f72\"\n                    ]\n                ],\n            },\n        })\n\n    def open_page(self, page_id):\n        self.replace([\"workspace\", \"columns\"], [[page_id]])\n\n    def get_open_pages(self):\n        pages = set()\n        for column in self.get([\"workspace\", \"columns\"]):\n            for page in column:\n                pages.add(page)\n        return pages\n\n    def set_hoisted_page(self, page_id):\n        self.replace([\"toc\", \"hoisted_page\"], page_id)\n\n    def set_dragged_page(self, page_id):\n        self.replace([\"toc\", \"dragged_page\"], page_id)\n\n    def set_toc_width(self, width):\n        self.replace([\"toc\", \"width\"], width)\n\n    def set_page_body_width(self, width):\n        self.replace([\"workspace\", \"page_body_width\"], width)\n\n    def toggle_collapsed(self, page_id):\n        def toggle(collapsed):\n            if page_id in collapsed:\n                return [x for x in collapsed if x != page_id]\n            else:\n                return collapsed + [page_id]\n        self.modify([\"toc\", \"collapsed\"], toggle)\n",
-"type":"code"
-}
-],
-"id":"4e201e17e50241629bb3ac376d482c59",
-"type":"code"
-}
-],
-"title":"Session"
 },
 {
 "children":[
