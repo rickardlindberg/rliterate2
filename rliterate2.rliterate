@@ -278,16 +278,8 @@
 ],
 "fragments":[
 {
-"text":"from unittest.mock import Mock, call\n\nimport rliterate2\n\n",
+"text":"from unittest.mock import Mock, call\n\nimport rliterate2\n",
 "type":"code"
-},
-{
-"blank_lines_before":0,
-"path":[
-"test cases"
-],
-"prefix":"",
-"type":"chunk"
 }
 ],
 "id":"f4e95a10e48249d1986d0a03569aa7d4",
@@ -2451,7 +2443,7 @@
 ],
 "fragments":[
 {
-"text":"def _move_page(self, source_meta, target_meta, target_index):\n    if not self._can_move_page(source_meta, target_meta, target_index):\n        return\n    source_page = self.get(source_meta.path)\n    operation_insert = (\n        target_meta.path + [\"children\"],\n        lambda children: (\n            children[:target_index] +\n            [source_page] +\n            children[target_index:]\n        )\n    )\n    operation_remove = (\n        source_meta.parent.path + [\"children\"],\n        lambda children: (\n            children[:source_meta.index] +\n            children[source_meta.index+1:]\n        )\n    )\n    if target_meta.id == source_meta.parent.id:\n        insert_first = target_index > source_meta.index\n    else:\n        insert_first = len(target_meta.path) > len(source_meta.parent.path)\n    if insert_first:\n        operations = [operation_insert, operation_remove]\n    else:\n        operations = [operation_remove, operation_insert]\n    with self.transaction():\n        self.modify_many(operations)\n        self._build_page_index()\n",
+"text":"def _move_page(self, source_meta, target_meta, target_index):\n    if not self._can_move_page(source_meta, target_meta, target_index):\n        return\n    source_page = self.get(source_meta.path)\n    operation_insert = (\n        target_meta.path + [\"children\"],\n        lambda children: (\n            children[:target_index] +\n            [source_page] +\n            children[target_index:]\n        )\n    )\n    operation_remove = (\n        source_meta.parent.path + [\"children\"],\n        lambda children: (\n            children[:source_meta.index] +\n            children[source_meta.index+1:]\n        )\n    )\n    if target_meta.id == source_meta.parent.id:\n        insert_first = target_index > source_meta.index\n    else:\n        insert_first = len(target_meta.path) > len(source_meta.parent.path)\n    if insert_first:\n        operations = [operation_insert, operation_remove]\n    else:\n        operations = [operation_remove, operation_insert]\n    with self.transaction():\n        for path, fn in operations:\n            self.modify(path, fn)\n        self._build_page_index()\n",
 "type":"code"
 }
 ],
@@ -4755,11 +4747,27 @@
 ],
 "fragments":[
 {
-"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n        self._transaction_counter = 0\n        self._changed_paths = []\n\n    @contextlib.contextmanager\n    def transaction(self):\n        self._transaction_counter += 1\n        original_value = self._value\n        try:\n            yield\n        except:\n            self._value = original_value\n            self._changed_paths.clear()\n            raise\n        finally:\n            self._transaction_counter -= 1\n            self._notify()\n\n    def listen(self, listener, prefix=[]):\n        self._listeners.append((listener, prefix))\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify_many(\n            [(path, lambda old_value: value)],\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn):\n        self.modify_many([(path, fn)])\n\n    def modify_many(self, *args, **kwargs):\n        with self.transaction():\n            self._modify(*args, **kwargs)\n\n    @profile_sub(\"im_modify\")\n    def _modify(self, items, only_if_differs=False):\n        new_value = self._value\n        for path, fn in items:\n            if only_if_differs:\n                subvalue = self.get(path)\n                new_subvalue = fn(subvalue)\n                if new_subvalue != subvalue:\n                    new_value = im_modify(\n                        new_value,\n                        path,\n                        lambda old: new_subvalue\n                    )\n                    self._changed_paths.append(path)\n            else:\n                new_value = im_modify(\n                    new_value,\n                    path,\n                    fn\n                )\n                self._changed_paths.append(path)\n        self._value = new_value\n\n    def _notify(self):\n        if self._transaction_counter == 0:\n            listeners = []\n            for changed_path in self._changed_paths:\n                for listener, prefix in self._listeners:\n                    if ((len(changed_path) < len(prefix) and\n                        changed_path == prefix[:len(changed_path)]) or\n                        changed_path[:len(prefix)] == prefix):\n                        if listener not in listeners:\n                            listeners.append(listener)\n            self._changed_paths.clear()\n            for listener in listeners:\n                listener()\n",
+"text":"class Immutable(object):\n\n    def __init__(self, value):\n        self._listeners = []\n        self._value = value\n        self._transaction_counter = 0\n        self._notify_pending = False\n\n    def listen(self, listener):\n        self._listeners.append(listener)\n\n    @profile_sub(\"get\")\n    def get(self, path=[]):\n        value = self._value\n        for part in path:\n            value = value[part]\n        return value\n\n    def replace(self, path, value):\n        self.modify(\n            path,\n            lambda old_value: value,\n            only_if_differs=True\n        )\n\n    def modify(self, path, fn, only_if_differs=False):\n        try:\n            self._value = im_modify(\n                self._value,\n                path,\n                self._create_modify_fn(fn, only_if_differs)\n            )\n            self._notify()\n        except ValuesEqualError:\n            pass\n\n    def _create_modify_fn(self, fn, only_if_differs):\n        if only_if_differs:\n            def modify_fn(old_value):\n                new_value = fn(old_value)\n                if new_value == old_value:\n                    raise ValuesEqualError()\n                return new_value\n            return modify_fn\n        else:\n            return fn\n\n    @contextlib.contextmanager\n    def transaction(self):\n        self._transaction_counter += 1\n        original_value = self._value\n        try:\n            yield\n        except:\n            self._value = original_value\n            raise\n        finally:\n            self._transaction_counter -= 1\n            if self._notify_pending:\n                self._notify()\n\n    def _notify(self):\n        if self._transaction_counter == 0:\n            for listener in self._listeners:\n                listener()\n            self._notify_pending = False\n        else:\n            self._notify_pending = True\n",
 "type":"code"
 }
 ],
 "id":"3a72a7fbda6a4099864ce0d1ac7ac146",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ValuesEqualError(Exception):\n    pass\n",
+"type":"code"
+}
+],
+"id":"f71642f0e93545a087ec50aa575af8ab",
 "type":"code"
 },
 {
@@ -4771,31 +4779,11 @@
 ],
 "fragments":[
 {
-"text":"def im_modify(obj, path, modify_fn):\n    if path:\n        if isinstance(obj, list):\n            new_obj = list(obj)\n        elif isinstance(obj, dict):\n            new_obj = dict(obj)\n        else:\n            raise ValueError(\"unknown type\")\n        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)\n        return new_obj\n    return modify_fn(obj)\n",
+"text":"@profile_sub(\"im_modify\")\ndef im_modify(obj, path, fn):\n    def inner(obj, path):\n        if path:\n            new_child = inner(obj[path[0]], path[1:])\n            if isinstance(obj, list):\n                new_obj = list(obj)\n            elif isinstance(obj, dict):\n                new_obj = dict(obj)\n            else:\n                raise ValueError(\"unknown type\")\n            new_obj[path[0]] = new_child\n            return new_obj\n        else:\n            return fn(obj)\n    return inner(obj, path)\n",
 "type":"code"
 }
 ],
-"id":"95dd623524c84e72a68d55645dc7dbca",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"test cases"
-],
-"filepath":[
-"test_rliterate2.py"
-],
-"fragments":[
-{
-"text":"def test_notification():\n    listeners = Mock()\n    immutable = rliterate2.Immutable({\n        \"foo\": 1,\n        \"bar\": {\n            \"foobar\": 2,\n        },\n    })\n    immutable.listen(listeners.foo, [\"foo\"])\n    immutable.listen(listeners.bar, [\"bar\"])\n    immutable.listen(listeners.foobar, [\"bar\", \"foobar\"])\n\n    listeners.reset_mock()\n    immutable.replace([\"foo\"], 2)\n    assert listeners.mock_calls == [\n        call.foo(),\n    ]\n\n    listeners.reset_mock()\n    immutable.replace([\"bar\", \"foobar\"], 3)\n    assert listeners.mock_calls == [\n        call.bar(),\n        call.foobar(),\n    ]\n\n    listeners.reset_mock()\n    immutable.replace([\"bar\"], {\"foobar\", 3})\n    assert listeners.mock_calls == [\n        call.bar(),\n        call.foobar(),\n    ]\n",
-"type":"code"
-}
-],
-"id":"57eaf7932f074f50a010cbb77f7dd8a4",
-"language":"",
-"post_process":[],
+"id":"df086ca5f6fd406583fe92948b007c67",
 "type":"code"
 }
 ],

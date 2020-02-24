@@ -810,17 +810,22 @@ def profile_print_summary(text, cprofile_out):
             "\033[0m"
         ))
 
-def im_modify(obj, path, modify_fn):
-    if path:
-        if isinstance(obj, list):
-            new_obj = list(obj)
-        elif isinstance(obj, dict):
-            new_obj = dict(obj)
+@profile_sub("im_modify")
+def im_modify(obj, path, fn):
+    def inner(obj, path):
+        if path:
+            new_child = inner(obj[path[0]], path[1:])
+            if isinstance(obj, list):
+                new_obj = list(obj)
+            elif isinstance(obj, dict):
+                new_obj = dict(obj)
+            else:
+                raise ValueError("unknown type")
+            new_obj[path[0]] = new_child
+            return new_obj
         else:
-            raise ValueError("unknown type")
-        new_obj[path[0]] = im_modify(new_obj[path[0]], path[1:], modify_fn)
-        return new_obj
-    return modify_fn(obj)
+            return fn(obj)
+    return inner(obj, path)
 
 class Immutable(object):
 
@@ -828,24 +833,10 @@ class Immutable(object):
         self._listeners = []
         self._value = value
         self._transaction_counter = 0
-        self._changed_paths = []
+        self._notify_pending = False
 
-    @contextlib.contextmanager
-    def transaction(self):
-        self._transaction_counter += 1
-        original_value = self._value
-        try:
-            yield
-        except:
-            self._value = original_value
-            self._changed_paths.clear()
-            raise
-        finally:
-            self._transaction_counter -= 1
-            self._notify()
-
-    def listen(self, listener, prefix=[]):
-        self._listeners.append((listener, prefix))
+    def listen(self, listener):
+        self._listeners.append(listener)
 
     @profile_sub("get")
     def get(self, path=[]):
@@ -855,54 +846,55 @@ class Immutable(object):
         return value
 
     def replace(self, path, value):
-        self.modify_many(
-            [(path, lambda old_value: value)],
+        self.modify(
+            path,
+            lambda old_value: value,
             only_if_differs=True
         )
 
-    def modify(self, path, fn):
-        self.modify_many([(path, fn)])
+    def modify(self, path, fn, only_if_differs=False):
+        try:
+            self._value = im_modify(
+                self._value,
+                path,
+                self._create_modify_fn(fn, only_if_differs)
+            )
+            self._notify()
+        except ValuesEqualError:
+            pass
 
-    def modify_many(self, *args, **kwargs):
-        with self.transaction():
-            self._modify(*args, **kwargs)
+    def _create_modify_fn(self, fn, only_if_differs):
+        if only_if_differs:
+            def modify_fn(old_value):
+                new_value = fn(old_value)
+                if new_value == old_value:
+                    raise ValuesEqualError()
+                return new_value
+            return modify_fn
+        else:
+            return fn
 
-    @profile_sub("im_modify")
-    def _modify(self, items, only_if_differs=False):
-        new_value = self._value
-        for path, fn in items:
-            if only_if_differs:
-                subvalue = self.get(path)
-                new_subvalue = fn(subvalue)
-                if new_subvalue != subvalue:
-                    new_value = im_modify(
-                        new_value,
-                        path,
-                        lambda old: new_subvalue
-                    )
-                    self._changed_paths.append(path)
-            else:
-                new_value = im_modify(
-                    new_value,
-                    path,
-                    fn
-                )
-                self._changed_paths.append(path)
-        self._value = new_value
+    @contextlib.contextmanager
+    def transaction(self):
+        self._transaction_counter += 1
+        original_value = self._value
+        try:
+            yield
+        except:
+            self._value = original_value
+            raise
+        finally:
+            self._transaction_counter -= 1
+            if self._notify_pending:
+                self._notify()
 
     def _notify(self):
         if self._transaction_counter == 0:
-            listeners = []
-            for changed_path in self._changed_paths:
-                for listener, prefix in self._listeners:
-                    if ((len(changed_path) < len(prefix) and
-                        changed_path == prefix[:len(changed_path)]) or
-                        changed_path[:len(prefix)] == prefix):
-                        if listener not in listeners:
-                            listeners.append(listener)
-            self._changed_paths.clear()
-            for listener in listeners:
+            for listener in self._listeners:
                 listener()
+            self._notify_pending = False
+        else:
+            self._notify_pending = True
 
 class WidgetMixin(object):
 
@@ -2848,7 +2840,8 @@ class Document(Immutable):
         else:
             operations = [operation_remove, operation_insert]
         with self.transaction():
-            self.modify_many(operations)
+            for path, fn in operations:
+                self.modify(path, fn)
             self._build_page_index()
     def _can_move_page(self, source_meta, target_meta, target_index):
         page_meta = target_meta
@@ -3413,6 +3406,9 @@ class Text(wx.Panel, WxWidgetMixin):
         return (character, True)
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
+
+class ValuesEqualError(Exception):
+    pass
 
 if __name__ == "__main__":
     main()
