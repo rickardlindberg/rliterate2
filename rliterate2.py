@@ -21,10 +21,10 @@ import pygments.lexers
 import pygments.token
 import wx
 
-WX_DEBUG_FOCUS = os.environ.get("WX_DEBUG_FOCUS", "") != ""
-
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
+
+WX_DEBUG_FOCUS = os.environ.get("WX_DEBUG_FOCUS", "") != ""
 
 def profile_sub(text):
     def wrap(fn):
@@ -677,37 +677,15 @@ def build_style_dict(theme_style):
         styles[string_to_tokentype(name)] = value
     return styles
 
-def text_fragments_to_props(fragments, selection=None, **kwargs):
-    builder = TextPropsBuilder(**kwargs)
-    if selection is not None and selection.present():
-        value = selection.get()
-    else:
-        value = None
-    for index, fragment in enumerate(fragments):
-        params = {}
-        if "color" in fragment:
-            params["color"] = fragment["color"]
-        if fragment.get("type", None) == "strong":
-            params["bold"] = True
-        if value is not None:
-            if value["start"][0] == index:
-                builder.selection_start(value["start"][1])
-                if value["cursor_at_start"]:
-                    builder.cursor(value["start"][1])
-            if value["end"][0] == index:
-                builder.selection_end(value["end"][1])
-                if not value["cursor_at_start"]:
-                    builder.cursor(value["end"][1])
-        params["index_prefix"] = [index]
-        params["index_increment"] = 0
-        builder.text(fragment["text"], **params)
-    return builder.get()
-
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
     else:
         return create_new_document()
+
+def load_json_from_file(path):
+    with open(path) as f:
+        return json.load(f)
 
 def create_new_document():
     return {
@@ -736,6 +714,71 @@ def create_props(fn, *args):
 
 def makeTuple(*args):
     return tuple(args)
+
+def text_fragments_to_props(fragments, selection=None, **kwargs):
+    builder = TextPropsBuilder(**kwargs)
+    if selection is not None and selection.present():
+        value = selection.get()
+    else:
+        value = None
+    for index, fragment in enumerate(fragments):
+        params = {}
+        if "color" in fragment:
+            params["color"] = fragment["color"]
+        if fragment.get("type", None) == "strong":
+            params["bold"] = True
+        if value is not None:
+            if value["start"][0] == index:
+                builder.selection_start(value["start"][1])
+                if value["cursor_at_start"]:
+                    builder.cursor(value["start"][1])
+            if value["end"][0] == index:
+                builder.selection_end(value["end"][1])
+                if not value["cursor_at_start"]:
+                    builder.cursor(value["end"][1])
+        params["index_prefix"] = [index]
+        params["index_increment"] = 0
+        builder.text(fragment["text"], **params)
+    return builder.get()
+
+def profile_print_summary(text, cprofile_out):
+    text_width = 0
+    for name, times in PROFILING_TIMES.items():
+        text_width = max(text_width, len(f"{name} ({len(times)})"))
+    print(f"=== {text} {'='*60}")
+    print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
+    print(f"--- {text} {'-'*60}")
+    for name, times in PROFILING_TIMES.items():
+        time = sum(times)*1000
+        if time > 10:
+            color = "\033[31m"
+        elif time > 5:
+            color = "\033[33m"
+        else:
+            color = "\033[0m"
+        print("    {}{} = {:.3f}ms{}".format(
+            color,
+            f"{name} ({len(times)})".ljust(text_width),
+            time,
+            "\033[0m"
+        ))
+
+@profile_sub("im_modify")
+def im_modify(obj, path, fn):
+    def inner(obj, path):
+        if path:
+            new_child = inner(obj[path[0]], path[1:])
+            if isinstance(obj, list):
+                new_obj = list(obj)
+            elif isinstance(obj, dict):
+                new_obj = dict(obj)
+            else:
+                raise ValueError("unknown type")
+            new_obj[path[0]] = new_child
+            return new_obj
+        else:
+            return fn(obj)
+    return inner(obj, path)
 
 def base64_to_image(data):
     try:
@@ -783,49 +826,6 @@ def start_app(frame_cls, props):
         focus_timer = wx.Timer(frame)
         focus_timer.Start(1000)
     app.MainLoop()
-
-def load_json_from_file(path):
-    with open(path) as f:
-        return json.load(f)
-
-def profile_print_summary(text, cprofile_out):
-    text_width = 0
-    for name, times in PROFILING_TIMES.items():
-        text_width = max(text_width, len(f"{name} ({len(times)})"))
-    print(f"=== {text} {'='*60}")
-    print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
-    print(f"--- {text} {'-'*60}")
-    for name, times in PROFILING_TIMES.items():
-        time = sum(times)*1000
-        if time > 10:
-            color = "\033[31m"
-        elif time > 5:
-            color = "\033[33m"
-        else:
-            color = "\033[0m"
-        print("    {}{} = {:.3f}ms{}".format(
-            color,
-            f"{name} ({len(times)})".ljust(text_width),
-            time,
-            "\033[0m"
-        ))
-
-@profile_sub("im_modify")
-def im_modify(obj, path, fn):
-    def inner(obj, path):
-        if path:
-            new_child = inner(obj[path[0]], path[1:])
-            if isinstance(obj, list):
-                new_obj = list(obj)
-            elif isinstance(obj, dict):
-                new_obj = dict(obj)
-            else:
-                raise ValueError("unknown type")
-            new_obj[path[0]] = new_child
-            return new_obj
-        else:
-            return fn(obj)
-    return inner(obj, path)
 
 class Immutable(object):
 
@@ -2632,95 +2632,6 @@ class TextEdit(Panel):
         else:
             return None
 
-class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
-
-    @staticmethod
-    def empty():
-        return Selection(trail=[], value=[], visible=False)
-
-    def add(self, *args):
-        new_value = self.value
-        new_trail = self.trail
-        for arg in args:
-            if new_value and new_value[0] == arg:
-                new_value = new_value[1:]
-                visible = self.visible
-            else:
-                new_value = []
-                visible = False
-            new_trail = new_trail + [arg]
-        return Selection(trail=new_trail, value=new_value, visible=visible)
-
-    def create(self, *args):
-        return Selection(trail=[], value=self.trail+list(args), visible=True)
-
-    def present(self):
-        return len(self.value) > 0 and self.visible
-
-    def get(self):
-        if len(self.value) == 1:
-            return self.value[0]
-
-    def path(self):
-        return self.trail + self.value
-
-class TextPropsBuilder(object):
-
-    def __init__(self, **styles):
-        self._characters = []
-        self._cursors = []
-        self._selections = []
-        self._base_style = dict(styles)
-
-    def get(self):
-        return {
-            "characters": self._characters,
-            "cursors": self._cursors,
-            "selections": self._selections,
-            "base_style": self._base_style,
-        }
-
-    def text(self, text, **kwargs):
-        fragment = {}
-        for field in TextStyle._fields:
-            if field in kwargs:
-                fragment[field] = kwargs[field]
-        index_prefix = kwargs.get("index_prefix", None)
-        if index_prefix is None:
-            create_index = lambda x: x
-        else:
-            create_index = lambda x: index_prefix + [x]
-        index_increment = kwargs.get("index_increment", None)
-        index_constant = kwargs.get("index_constant", None)
-        for index, character in enumerate(text):
-            x = dict(fragment, text=character)
-            if index_increment is not None:
-                x["index_left"] = create_index(
-                    index_increment + index
-                )
-                x["index_right"] = create_index(
-                    index_increment + index + 1
-                )
-            if index_constant is not None:
-                x["index"] = create_index(
-                    index_constant
-                )
-            self._characters.append(x)
-        return self
-
-    def selection_start(self, offset=0):
-        self._selections.append((self._index(offset), self._index(offset)))
-
-    def selection_end(self, offset=0):
-        last_selection = self._selections[-1]
-        self._selections[-1] = (last_selection[0], self._index(offset))
-
-    def cursor(self, offset=0):
-        self._cursors.append(self._index(offset))
-
-    def _index(self, offset):
-        return len(self._characters) + offset
-
 class Document(Immutable):
 
     ROOT_PAGE_PATH = ["doc", "root_page"]
@@ -3128,6 +3039,38 @@ class CodeChunk(object):
                     part_index += 1
                     text = text[len(part["text"]):]
 
+class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
+
+    @staticmethod
+    def empty():
+        return Selection(trail=[], value=[], visible=False)
+
+    def add(self, *args):
+        new_value = self.value
+        new_trail = self.trail
+        for arg in args:
+            if new_value and new_value[0] == arg:
+                new_value = new_value[1:]
+                visible = self.visible
+            else:
+                new_value = []
+                visible = False
+            new_trail = new_trail + [arg]
+        return Selection(trail=new_trail, value=new_value, visible=visible)
+
+    def create(self, *args):
+        return Selection(trail=[], value=self.trail+list(args), visible=True)
+
+    def present(self):
+        return len(self.value) > 0 and self.visible
+
+    def get(self):
+        if len(self.value) == 1:
+            return self.value[0]
+
+    def path(self):
+        return self.trail + self.value
+
 DragEvent = namedtuple("DragEvent", "initial,x,y,dx,dy,initiate_drag_drop")
 
 SliderEvent = namedtuple("SliderEvent", "value")
@@ -3137,6 +3080,66 @@ HoverEvent = namedtuple("HoverEvent", "mouse_inside")
 MouseEvent = namedtuple("MouseEvent", "x,y,show_context_menu")
 
 KeyEvent = namedtuple("KeyEvent", "key")
+
+class TextPropsBuilder(object):
+
+    def __init__(self, **styles):
+        self._characters = []
+        self._cursors = []
+        self._selections = []
+        self._base_style = dict(styles)
+
+    def get(self):
+        return {
+            "characters": self._characters,
+            "cursors": self._cursors,
+            "selections": self._selections,
+            "base_style": self._base_style,
+        }
+
+    def text(self, text, **kwargs):
+        fragment = {}
+        for field in TextStyle._fields:
+            if field in kwargs:
+                fragment[field] = kwargs[field]
+        index_prefix = kwargs.get("index_prefix", None)
+        if index_prefix is None:
+            create_index = lambda x: x
+        else:
+            create_index = lambda x: index_prefix + [x]
+        index_increment = kwargs.get("index_increment", None)
+        index_constant = kwargs.get("index_constant", None)
+        for index, character in enumerate(text):
+            x = dict(fragment, text=character)
+            if index_increment is not None:
+                x["index_left"] = create_index(
+                    index_increment + index
+                )
+                x["index_right"] = create_index(
+                    index_increment + index + 1
+                )
+            if index_constant is not None:
+                x["index"] = create_index(
+                    index_constant
+                )
+            self._characters.append(x)
+        return self
+
+    def selection_start(self, offset=0):
+        self._selections.append((self._index(offset), self._index(offset)))
+
+    def selection_end(self, offset=0):
+        last_selection = self._selections[-1]
+        self._selections[-1] = (last_selection[0], self._index(offset))
+
+    def cursor(self, offset=0):
+        self._cursors.append(self._index(offset))
+
+    def _index(self, offset):
+        return len(self._characters) + offset
+
+class ValuesEqualError(Exception):
+    pass
 
 class Text(wx.Panel, WxWidgetMixin):
 
@@ -3406,9 +3409,6 @@ class Text(wx.Panel, WxWidgetMixin):
         return (character, True)
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
-
-class ValuesEqualError(Exception):
-    pass
 
 if __name__ == "__main__":
     main()
