@@ -437,18 +437,22 @@ def build_title(page, page_body_width, page_theme, selection):
         "title": page["title"],
         "text_edit_props": {
             "text_props": build_title_text_props(
+                TextPropsBuilder(
+                    **page_theme["title_font"],
+                    selection_color=page_theme["selection_color"],
+                    cursor_color=page_theme["cursor_color"]
+                ),
                 page["title"],
-                page_theme["title_font"],
-                selection
+                selection,
+                page_theme["placeholder_color"]
             ),
             "max_width": page_body_width,
             "selection": selection,
-            "selection_color": "red",
+            "selection_color": page_theme["selection_border"],
         },
     }
 
-def build_title_text_props(title, font, selection):
-    builder = TextPropsBuilder(**font)
+def build_title_text_props(builder, title, selection, cursor_color):
     if title:
         if selection.present():
             value = selection.get()
@@ -462,7 +466,7 @@ def build_title_text_props(title, font, selection):
     else:
         if selection.present():
             builder.cursor()
-        builder.text("Enter title...", color="pink", index_constant=0)
+        builder.text("Enter title...", color=placeholder_color, index_constant=0)
     return builder.get()
 
 def build_paragraphs(paragraphs, page_theme, selection):
@@ -498,10 +502,12 @@ def build_text_paragraph(paragraph, page_theme, selection):
         "text_edit_props": {
             "text_props": dict(text_fragments_to_props(
                 paragraph["fragments"],
-                selection=selection
+                selection=selection,
+                selection_color=page_theme["selection_color"],
+                cursor_color=page_theme["cursor_color"]
             ), break_at_word=True, line_height=1.2),
             "selection": selection,
-            "selection_color": "blue",
+            "selection_color": page_theme["selection_border"],
         },
     }
 
@@ -520,6 +526,7 @@ def build_list_paragraph(paragraph, page_theme, selection):
             paragraph["children"],
             paragraph["child_type"]
         ),
+        "indent": page_theme["margin"],
     }
 
 def build_list_item_rows(children, child_type, level=0):
@@ -627,6 +634,7 @@ def build_image_paragraph(paragraph, page_theme, selection):
         "widget": ImageParagraph,
         "base64_image": paragraph.get("image_base64", None),
         "text_props": text_fragments_to_props(paragraph["fragments"]),
+        "indent": page_theme["margin"]*2,
     }
 
 def build_unknown_paragraph(paragraph, page_theme, selection):
@@ -2364,9 +2372,9 @@ class ListParagraph(Panel):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['left_margin'] = mul(loopvar['level'], 20)
+            props['left_margin'] = mul(loopvar['level'], self.prop(['indent']))
             props['right_margin'] = 0
-            props['max_width'] = sub(self.prop(['body_width']), mul(loopvar['level'], 20))
+            props['max_width'] = sub(self.prop(['body_width']), mul(loopvar['level'], self.prop(['indent'])))
             props['text_props'] = loopvar['text_props']
             sizer["flag"] |= wx.EXPAND
             self._create_widget(TextWithMargin, props, sizer, handlers, name)
@@ -2470,10 +2478,10 @@ class ImageParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['left_margin'] = 10
-        props['right_margin'] = 10
+        props['left_margin'] = self.prop(['indent'])
+        props['right_margin'] = self.prop(['indent'])
         props['text_props'] = self.prop(['text_props'])
-        props['max_width'] = sub(self.prop(['body_width']), 20)
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
         sizer["flag"] |= wx.ALIGN_CENTER
         self._create_widget(TextWithMargin, props, sizer, handlers, name)
 
@@ -2827,6 +2835,10 @@ class Document(Immutable):
                 "color": "#aaaaaf",
             },
             "background": "#ffffff",
+            "selection_border": "red",
+            "selection_color": "red",
+            "cursor_color": "red",
+            "placeholder_color": "gray",
             "margin": 10,
             "code": {
                 "margin": 5,
@@ -2895,6 +2907,10 @@ class Document(Immutable):
                 "color": "#b0ab9e",
             },
             "background": "#fdf6e3",
+            "selection_border": "blue",
+            "selection_color": "blue",
+            "cursor_color": "blue",
+            "placeholder_color": "gray",
             "margin": 14,
             "code": {
                 "margin": 7,
@@ -3125,15 +3141,23 @@ class TextPropsBuilder(object):
             self._characters.append(x)
         return self
 
-    def selection_start(self, offset=0):
-        self._selections.append((self._index(offset), self._index(offset)))
+    def selection_start(self, offset=0, color=None):
+        self._selections.append((
+            self._index(offset),
+            self._index(offset),
+            color
+        ))
 
     def selection_end(self, offset=0):
         last_selection = self._selections[-1]
-        self._selections[-1] = (last_selection[0], self._index(offset))
+        self._selections[-1] = (
+            last_selection[0],
+            self._index(offset),
+            last_selection[2]
+        )
 
-    def cursor(self, offset=0):
-        self._cursors.append(self._index(offset))
+    def cursor(self, offset=0, color=None):
+        self._cursors.append((self._index(offset), color))
 
     def _index(self, offset):
         return len(self._characters) + offset
@@ -3197,7 +3221,10 @@ class Text(wx.Panel, WxWidgetMixin):
             "color": "#000000",
             "bold": False,
         }
-        style.update(self.prop_with_default(["base_style"], {}))
+        base_style = self.prop_with_default(["base_style"], {})
+        for field in TextStyle._fields:
+            if field in base_style:
+                style[field] = base_style[field]
         for field in TextStyle._fields:
             if field in character:
                 style[field] = character[field]
@@ -3344,22 +3371,35 @@ class Text(wx.Panel, WxWidgetMixin):
             self._cursor_positions.append(self._calculate_cursor_position(cursor))
 
     def _calculate_cursor_position(self, cursor):
+        cursor, color = cursor
+        if color is None:
+            color = self.prop_with_default(["base_style", "cursor_color"], "black")
         if cursor >= len(self._characters_bounding_rect):
             rect = self._characters_bounding_rect[-1][1]
-            return (rect.Right, rect.Top, rect.Height)
+            return (rect.Right, rect.Top, rect.Height, color)
         elif cursor < 0:
             cursor = 0
         rect = self._characters_bounding_rect[cursor][1]
-        return (rect.X, rect.Y, rect.Height)
+        return (rect.X, rect.Y, rect.Height, color)
 
     def _calculate_selection_rects(self, selections):
         self._selection_rects = []
-        for start, end in selections:
+        self._selection_pens = []
+        self._selection_brushes = []
+        for start, end, color in selections:
             self._selection_rects.extend([
                 rect
                 for character, rect
                 in self._characters_bounding_rect[start:end]
             ])
+            if color is None:
+                color = self.prop_with_default(["base_style", "selection_color"], "black")
+            color = wx.Colour(color)
+            color = wx.Colour(color.Red(), color.Green(), color.Blue(), 100)
+            while len(self._selection_pens) < len(self._selection_rects):
+                self._selection_pens.append(wx.Pen(color, width=0))
+            while len(self._selection_brushes) < len(self._selection_rects):
+                self._selection_brushes.append(wx.Brush(color))
 
     def _on_paint(self, wx_event):
         dc = wx.PaintDC(self)
@@ -3367,17 +3407,16 @@ class Text(wx.Panel, WxWidgetMixin):
             self._apply_style(style, dc)
             dc.DrawTextList(*items)
         if self._show_cursors:
-            dc.SetPen(wx.Pen("pink", width=2))
-            for x, y, height in self._cursor_positions:
+            for x, y, height, color in self._cursor_positions:
+                dc.SetPen(wx.Pen(color, width=2))
                 dc.DrawLines([
                     (x, y),
                     (x, y+height),
                 ])
-        color = wx.Colour(255, 0, 0, 100)
         dc.DrawRectangleList(
             self._selection_rects,
-            wx.Pen(color, width=0),
-            wx.Brush(color)
+            self._selection_pens,
+            self._selection_brushes
         )
 
     def _on_timer(self, wx_event):

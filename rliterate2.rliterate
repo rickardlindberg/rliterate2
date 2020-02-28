@@ -1211,7 +1211,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": page[\"title\"],\n        \"text_edit_props\": {\n            \"text_props\": build_title_text_props(\n                page[\"title\"],\n                page_theme[\"title_font\"],\n                selection\n            ),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": \"red\",\n        },\n    }\n",
+"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": page[\"title\"],\n        \"text_edit_props\": {\n            \"text_props\": build_title_text_props(\n                TextPropsBuilder(\n                    **page_theme[\"title_font\"],\n                    selection_color=page_theme[\"selection_color\"],\n                    cursor_color=page_theme[\"cursor_color\"]\n                ),\n                page[\"title\"],\n                selection,\n                page_theme[\"placeholder_color\"]\n            ),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1229,7 +1229,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title_text_props(title, font, selection):\n    builder = TextPropsBuilder(**font)\n    if title:\n        if selection.present():\n            value = selection.get()\n            builder.selection_start(value[\"start\"])\n            builder.selection_end(value[\"end\"])\n            if value[\"cursor_at_start\"]:\n                builder.cursor(value[\"start\"])\n            else:\n                builder.cursor(value[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection.present():\n            builder.cursor()\n        builder.text(\"Enter title...\", color=\"pink\", index_constant=0)\n    return builder.get()\n",
+"text":"def build_title_text_props(builder, title, selection, cursor_color):\n    if title:\n        if selection.present():\n            value = selection.get()\n            builder.selection_start(value[\"start\"])\n            builder.selection_end(value[\"end\"])\n            if value[\"cursor_at_start\"]:\n                builder.cursor(value[\"start\"])\n            else:\n                builder.cursor(value[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection.present():\n            builder.cursor()\n        builder.text(\"Enter title...\", color=placeholder_color, index_constant=0)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1304,7 +1304,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"id\": paragraph[\"id\"],\n        \"fragments\": paragraph[\"fragments\"],\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection\n            ), break_at_word=True, line_height=1.2),\n            \"selection\": selection,\n            \"selection_color\": \"blue\",\n        },\n    }\n",
+"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"id\": paragraph[\"id\"],\n        \"fragments\": paragraph[\"fragments\"],\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection,\n                selection_color=page_theme[\"selection_color\"],\n                cursor_color=page_theme[\"cursor_color\"]\n            ), break_at_word=True, line_height=1.2),\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1375,7 +1375,7 @@
 ],
 "fragments":[
 {
-"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        TextWithMargin(\n            left_margin  = mul($level 20)\n            right_margin = 0\n            max_width    = sub(#body_width mul($level 20))\n            text_props   = $text_props\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        TextWithMargin(\n            left_margin  = mul($level #indent)\n            right_margin = 0\n            max_width    = sub(#body_width mul($level #indent))\n            text_props   = $text_props\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1396,7 +1396,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"]\n        ),\n    }\n",
+"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"]\n        ),\n        \"indent\": page_theme[\"margin\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1614,7 +1614,7 @@
 ],
 "fragments":[
 {
-"text":"panel ImageParagraph %layout_rows {\n    Image(\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    )\n    TextWithMargin(\n        left_margin  = 10\n        right_margin = 10\n        text_props   = #text_props\n        max_width    = sub(#body_width 20)\n        %align[CENTER]\n    )\n}\n",
+"text":"panel ImageParagraph %layout_rows {\n    Image(\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    )\n    TextWithMargin(\n        left_margin  = #indent\n        right_margin = #indent\n        text_props   = #text_props\n        max_width    = sub(#body_width mul(2 #indent))\n        %align[CENTER]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1635,7 +1635,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n    }\n",
+"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": text_fragments_to_props(paragraph[\"fragments\"]),\n        \"indent\": page_theme[\"margin\"]*2,\n    }\n",
 "type":"code"
 }
 ],
@@ -2537,7 +2537,7 @@
 ],
 "fragments":[
 {
-"text":"base00  = \"#657b83\"\nbase1   = \"#93a1a1\"\nyellow  = \"#b58900\"\norange  = \"#cb4b16\"\nred     = \"#dc322f\"\nmagenta = \"#d33682\"\nviolet  = \"#6c71c4\"\nblue    = \"#268bd2\"\ncyan    = \"#2aa198\"\ngreen   = \"#859900\"\n\nDEFAULT_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": None,\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 1,\n        \"color\": \"#aaaaaf\",\n    },\n    \"toc\": {\n        \"background\": \"#ffffff\",\n        \"foreground\": \"#000000\",\n        \"indent_size\": 20,\n        \"row_margin\": 2,\n        \"divider_thickness\": 2,\n        \"hover_background\": \"#cccccc\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 3,\n        \"color\": \"#aaaaaf\",\n    },\n    \"workspace\": {\n        \"background\": \"#cccccc\",\n        \"margin\": 12,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 16,\n        },\n        \"code_font\": {\n            \"size\": 10,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 2,\n            \"color\": \"#aaaaaf\",\n        },\n        \"background\": \"#ffffff\",\n        \"margin\": 10,\n        \"code\": {\n            \"margin\": 5,\n            \"header_background\": \"#eeeeee\",\n            \"body_background\": \"#f8f8f8\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n        },\n    },\n    \"dragdrop_color\": \"#ff6400\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n\nALTERNATIVE_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": \"#dcd6c6\",\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 2,\n        \"color\": \"#b0ab9e\",\n    },\n    \"toc\": {\n        \"background\": \"#fdf6e3\",\n        \"foreground\": \"#657b83\",\n        \"indent_size\": 22,\n        \"row_margin\": 3,\n        \"divider_thickness\": 3,\n        \"hover_background\": \"#d0cabb\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 5,\n        \"color\": \"#b0ab9e\",\n    },\n    \"workspace\": {\n        \"background\": \"#d0cabb\",\n        \"margin\": 18,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 18,\n        },\n        \"code_font\": {\n            \"size\": 12,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 3,\n            \"color\": \"#b0ab9e\",\n        },\n        \"background\": \"#fdf6e3\",\n        \"margin\": 14,\n        \"code\": {\n            \"margin\": 7,\n            \"header_background\": \"#eae4d2\",\n            \"body_background\": \"#f3ecdb\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n       },\n    },\n    \"dragdrop_color\": \"#dc322f\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n",
+"text":"base00  = \"#657b83\"\nbase1   = \"#93a1a1\"\nyellow  = \"#b58900\"\norange  = \"#cb4b16\"\nred     = \"#dc322f\"\nmagenta = \"#d33682\"\nviolet  = \"#6c71c4\"\nblue    = \"#268bd2\"\ncyan    = \"#2aa198\"\ngreen   = \"#859900\"\n\nDEFAULT_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": None,\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 1,\n        \"color\": \"#aaaaaf\",\n    },\n    \"toc\": {\n        \"background\": \"#ffffff\",\n        \"foreground\": \"#000000\",\n        \"indent_size\": 20,\n        \"row_margin\": 2,\n        \"divider_thickness\": 2,\n        \"hover_background\": \"#cccccc\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 3,\n        \"color\": \"#aaaaaf\",\n    },\n    \"workspace\": {\n        \"background\": \"#cccccc\",\n        \"margin\": 12,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 16,\n        },\n        \"code_font\": {\n            \"size\": 10,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 2,\n            \"color\": \"#aaaaaf\",\n        },\n        \"background\": \"#ffffff\",\n        \"selection_border\": \"red\",\n        \"selection_color\": \"red\",\n        \"cursor_color\": \"red\",\n        \"placeholder_color\": \"gray\",\n        \"margin\": 10,\n        \"code\": {\n            \"margin\": 5,\n            \"header_background\": \"#eeeeee\",\n            \"body_background\": \"#f8f8f8\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n        },\n    },\n    \"dragdrop_color\": \"#ff6400\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n\nALTERNATIVE_THEME = {\n    \"toolbar\": {\n        \"margin\": 4,\n        \"background\": \"#dcd6c6\",\n    },\n    \"toolbar_divider\": {\n        \"thickness\": 2,\n        \"color\": \"#b0ab9e\",\n    },\n    \"toc\": {\n        \"background\": \"#fdf6e3\",\n        \"foreground\": \"#657b83\",\n        \"indent_size\": 22,\n        \"row_margin\": 3,\n        \"divider_thickness\": 3,\n        \"hover_background\": \"#d0cabb\",\n    },\n    \"toc_divider\": {\n        \"thickness\": 5,\n        \"color\": \"#b0ab9e\",\n    },\n    \"workspace\": {\n        \"background\": \"#d0cabb\",\n        \"margin\": 18,\n    },\n    \"page\": {\n        \"title_font\": {\n            \"size\": 18,\n        },\n        \"code_font\": {\n            \"size\": 12,\n            \"family\": \"Monospace\",\n        },\n        \"border\": {\n            \"size\": 3,\n            \"color\": \"#b0ab9e\",\n        },\n        \"background\": \"#fdf6e3\",\n        \"selection_border\": \"blue\",\n        \"selection_color\": \"blue\",\n        \"cursor_color\": \"blue\",\n        \"placeholder_color\": \"gray\",\n        \"margin\": 14,\n        \"code\": {\n            \"margin\": 7,\n            \"header_background\": \"#eae4d2\",\n            \"body_background\": \"#f3ecdb\",\n        },\n        \"token_styles\": {\n            \"\":                    {\"color\": base00},\n            \"Keyword\":             {\"color\": green},\n            \"Keyword.Constant\":    {\"color\": cyan},\n            \"Keyword.Declaration\": {\"color\": blue},\n            \"Keyword.Namespace\":   {\"color\": orange},\n            \"Name.Builtin\":        {\"color\": red},\n            \"Name.Builtin.Pseudo\": {\"color\": blue},\n            \"Name.Class\":          {\"color\": blue},\n            \"Name.Decorator\":      {\"color\": blue},\n            \"Name.Entity\":         {\"color\": violet},\n            \"Name.Exception\":      {\"color\": yellow},\n            \"Name.Function\":       {\"color\": blue},\n            \"String\":              {\"color\": cyan},\n            \"Number\":              {\"color\": cyan},\n            \"Operator.Word\":       {\"color\": green},\n            \"Comment\":             {\"color\": base1},\n            \"Comment.Preproc\":     {\"color\": magenta},\n       },\n    },\n    \"dragdrop_color\": \"#dc322f\",\n    \"dragdrop_invalid_color\": \"#cccccc\",\n}\n",
 "type":"code"
 }
 ],
@@ -3013,7 +3013,7 @@
 ],
 "fragments":[
 {
-"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        index_prefix = kwargs.get(\"index_prefix\", None)\n        if index_prefix is None:\n            create_index = lambda x: x\n        else:\n            create_index = lambda x: index_prefix + [x]\n        index_increment = kwargs.get(\"index_increment\", None)\n        index_constant = kwargs.get(\"index_constant\", None)\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if index_increment is not None:\n                x[\"index_left\"] = create_index(\n                    index_increment + index\n                )\n                x[\"index_right\"] = create_index(\n                    index_increment + index + 1\n                )\n            if index_constant is not None:\n                x[\"index\"] = create_index(\n                    index_constant\n                )\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0):\n        self._selections.append((self._index(offset), self._index(offset)))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (last_selection[0], self._index(offset))\n\n    def cursor(self, offset=0):\n        self._cursors.append(self._index(offset))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
+"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        index_prefix = kwargs.get(\"index_prefix\", None)\n        if index_prefix is None:\n            create_index = lambda x: x\n        else:\n            create_index = lambda x: index_prefix + [x]\n        index_increment = kwargs.get(\"index_increment\", None)\n        index_constant = kwargs.get(\"index_constant\", None)\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if index_increment is not None:\n                x[\"index_left\"] = create_index(\n                    index_increment + index\n                )\n                x[\"index_right\"] = create_index(\n                    index_increment + index + 1\n                )\n            if index_constant is not None:\n                x[\"index\"] = create_index(\n                    index_constant\n                )\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0, color=None):\n        self._selections.append((\n            self._index(offset),\n            self._index(offset),\n            color\n        ))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (\n            last_selection[0],\n            self._index(offset),\n            last_selection[2]\n        )\n\n    def cursor(self, offset=0, color=None):\n        self._cursors.append((self._index(offset), color))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
 "type":"code"
 }
 ],
@@ -4207,7 +4207,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_style(self, character):\n    style = {\n        \"size\": 10,\n        \"family\": None,\n        \"color\": \"#000000\",\n        \"bold\": False,\n    }\n    style.update(self.prop_with_default([\"base_style\"], {}))\n    for field in TextStyle._fields:\n        if field in character:\n            style[field] = character[field]\n    return TextStyle(**style)\n\ndef _apply_style(self, style, dc):\n    dc.SetTextForeground(style.color)\n    font_info = wx.FontInfo(style.size)\n    if style.family == \"Monospace\":\n        font_info.Family(wx.FONTFAMILY_TELETYPE)\n    if style.bold:\n        font_info = font_info.Bold()\n    dc.SetFont(wx.Font(font_info))\n",
+"text":"def _get_style(self, character):\n    style = {\n        \"size\": 10,\n        \"family\": None,\n        \"color\": \"#000000\",\n        \"bold\": False,\n    }\n    base_style = self.prop_with_default([\"base_style\"], {})\n    for field in TextStyle._fields:\n        if field in base_style:\n            style[field] = base_style[field]\n    for field in TextStyle._fields:\n        if field in character:\n            style[field] = character[field]\n    return TextStyle(**style)\n\ndef _apply_style(self, style, dc):\n    dc.SetTextForeground(style.color)\n    font_info = wx.FontInfo(style.size)\n    if style.family == \"Monospace\":\n        font_info.Family(wx.FONTFAMILY_TELETYPE)\n    if style.bold:\n        font_info = font_info.Bold()\n    dc.SetFont(wx.Font(font_info))\n",
 "type":"code"
 }
 ],
@@ -4377,7 +4377,7 @@
 ],
 "fragments":[
 {
-"text":"def _calculate_cursor_positions(self, cursors):\n    self._cursor_positions = []\n    for cursor in cursors:\n        self._cursor_positions.append(self._calculate_cursor_position(cursor))\n\ndef _calculate_cursor_position(self, cursor):\n    if cursor >= len(self.",
+"text":"def _calculate_cursor_positions(self, cursors):\n    self._cursor_positions = []\n    for cursor in cursors:\n        self._cursor_positions.append(self._calculate_cursor_position(cursor))\n\ndef _calculate_cursor_position(self, cursor):\n    cursor, color = cursor\n    if color is None:\n        color = self.prop_with_default([\"base_style\", \"cursor_color\"], \"black\")\n    if cursor >= len(self.",
 "type":"code"
 },
 {
@@ -4393,7 +4393,7 @@
 "type":"variable"
 },
 {
-"text":"[-1][1]\n        return (rect.Right, rect.Top, rect.Height)\n    elif cursor < 0:\n        cursor = 0\n    rect = self.",
+"text":"[-1][1]\n        return (rect.Right, rect.Top, rect.Height, color)\n    elif cursor < 0:\n        cursor = 0\n    rect = self.",
 "type":"code"
 },
 {
@@ -4401,7 +4401,7 @@
 "type":"variable"
 },
 {
-"text":"[cursor][1]\n    return (rect.X, rect.Y, rect.Height)\n",
+"text":"[cursor][1]\n    return (rect.X, rect.Y, rect.Height, color)\n",
 "type":"code"
 }
 ],
@@ -4425,7 +4425,7 @@
 ],
 "fragments":[
 {
-"text":"def _calculate_selection_rects(self, selections):\n    self._selection_rects = []\n    for start, end in selections:\n        self._selection_rects.extend([\n            rect\n            for character, rect\n            in self.",
+"text":"def _calculate_selection_rects(self, selections):\n    self._selection_rects = []\n    self._selection_pens = []\n    self._selection_brushes = []\n    for start, end, color in selections:\n        self._selection_rects.extend([\n            rect\n            for character, rect\n            in self.",
 "type":"code"
 },
 {
@@ -4433,7 +4433,7 @@
 "type":"variable"
 },
 {
-"text":"[start:end]\n        ])\n",
+"text":"[start:end]\n        ])\n        if color is None:\n            color = self.prop_with_default([\"base_style\", \"selection_color\"], \"black\")\n        color = wx.Colour(color)\n        color = wx.Colour(color.Red(), color.Green(), color.Blue(), 100)\n        while len(self._selection_pens) < len(self._selection_rects):\n            self._selection_pens.append(wx.Pen(color, width=0))\n        while len(self._selection_brushes) < len(self._selection_rects):\n            self._selection_brushes.append(wx.Brush(color))\n",
 "type":"code"
 }
 ],
@@ -4465,7 +4465,7 @@
 "type":"variable"
 },
 {
-"text":".items():\n        self._apply_style(style, dc)\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        dc.SetPen(wx.Pen(\"pink\", width=2))\n        for x, y, height in self._cursor_positions:\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    color = wx.Colour(255, 0, 0, 100)\n    dc.DrawRectangleList(\n        self._selection_rects,\n        wx.Pen(color, width=0),\n        wx.Brush(color)\n    )\n",
+"text":".items():\n        self._apply_style(style, dc)\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        for x, y, height, color in self._cursor_positions:\n            dc.SetPen(wx.Pen(color, width=2))\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    dc.DrawRectangleList(\n        self._selection_rects,\n        self._selection_pens,\n        self._selection_brushes\n    )\n",
 "type":"code"
 }
 ],
