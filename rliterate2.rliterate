@@ -2630,6 +2630,23 @@
 "paragraphs":[
 {
 "chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, selection):\n    self._set_selection_visible(selection, True)\n\ndef hide_selection(self, selection):\n    self._set_selection_visible(selection, False)\n\ndef _set_selection_visible(self, selection, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.path() == selection.path() and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
+"type":"code"
+}
+],
+"id":"ffc6a8285b8a476499496a546c81172e",
+"type":"code"
+},
+{
+"chunkpath":[
 "classes"
 ],
 "filepath":[
@@ -2637,7 +2654,7 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"visible\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], visible=False)\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                visible = self.visible\n            else:\n                new_value = []\n                visible = False\n            new_trail = new_trail + [arg]\n        return Selection(trail=new_trail, value=new_value, visible=visible)\n\n    def create(self, *args):\n        return Selection(trail=[], value=self.trail+list(args), visible=True)\n\n    def present(self):\n        return len(self.value) > 0 and self.visible\n\n    def get(self):\n        if len(self.value) == 1:\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"visible\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], visible=False)\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                visible = self.visible\n            else:\n                new_value = []\n                visible = False\n            new_trail = new_trail + [arg]\n        return Selection(trail=new_trail, value=new_value, visible=visible)\n\n    def create(self, *args):\n        return Selection(trail=[], value=self.trail+list(args), visible=True)\n\n    def present(self):\n        return len(self.value) > 0 and self.visible\n\n    def get(self):\n        if self.present():\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
 "type":"code"
 }
 ],
@@ -2733,23 +2750,6 @@
 }
 ],
 "id":"1c35c112ce9f41659a6a6c8a4062f564",
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"Document"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, selection):\n    self._set_selection_visible(selection, True)\n\ndef hide_selection(self, selection):\n    self._set_selection_visible(selection, False)\n\ndef _set_selection_visible(self, selection, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.path() == selection.path() and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
-"type":"code"
-}
-],
-"id":"ffc6a8285b8a476499496a546c81172e",
 "type":"code"
 }
 ],
@@ -3029,7 +3029,7 @@
 ],
 "fragments":[
 {
-"text":"def text_fragments_to_props(fragments, selection=None, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    if selection is not None and selection.present():\n        value = selection.get()\n    else:\n        value = None\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        if fragment.get(\"type\", None) == \"strong\":\n            params[\"bold\"] = True\n        if value is not None:\n            if value[\"start\"][0] == index:\n                builder.selection_start(value[\"start\"][1])\n                if value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"start\"][1])\n            if value[\"end\"][0] == index:\n                builder.selection_end(value[\"end\"][1])\n                if not value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"end\"][1])\n        params[\"index_prefix\"] = [index]\n        params[\"index_increment\"] = 0\n        builder.text(fragment[\"text\"], **params)\n    return builder.get()\n",
+"text":"def text_fragments_to_props(fragments, selection=None, **kwargs):\n    builder = TextPropsBuilder(**kwargs)\n    if selection is not None:\n        value = selection.get()\n    else:\n        value = None\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        if fragment.get(\"type\", None) == \"strong\":\n            params[\"bold\"] = True\n        if value is not None:\n            if value[\"start\"][0] == index:\n                builder.selection_start(value[\"start\"][1])\n                if value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"start\"][1])\n            if value[\"end\"][0] == index:\n                builder.selection_end(value[\"end\"][1])\n                if not value[\"cursor_at_start\"]:\n                    builder.cursor(value[\"end\"][1])\n        params[\"index_prefix\"] = [index]\n        params[\"index_increment\"] = 0\n        builder.text(fragment[\"text\"], **params)\n    return builder.get()\n",
 "type":"code"
 }
 ],

@@ -717,7 +717,7 @@ def makeTuple(*args):
 
 def text_fragments_to_props(fragments, selection=None, **kwargs):
     builder = TextPropsBuilder(**kwargs)
-    if selection is not None and selection.present():
+    if selection is not None:
         value = selection.get()
     else:
         value = None
@@ -2667,24 +2667,6 @@ class Document(Immutable):
         })
         self._build_page_index()
 
-    def set_selection(self, selection):
-        self.replace(["selection"], selection)
-
-    def show_selection(self, selection):
-        self._set_selection_visible(selection, True)
-
-    def hide_selection(self, selection):
-        self._set_selection_visible(selection, False)
-
-    def _set_selection_visible(self, selection, visible):
-        current_selection = self.get(["selection"])
-        if (current_selection.path() == selection.path() and
-            current_selection.visible != visible):
-            self.modify(
-                ["selection"],
-                lambda x: x._replace(visible=visible)
-            )
-
     def _build_page_index(self):
         def build(page, path, parent, index):
             page_meta = PageMeta(page["id"], path, parent, index)
@@ -2976,6 +2958,24 @@ class Document(Immutable):
             else:
                 return collapsed + [page_id]
         self.modify(["toc", "collapsed"], toggle)
+    def set_selection(self, selection):
+        self.replace(["selection"], selection)
+
+    def show_selection(self, selection):
+        self._set_selection_visible(selection, True)
+
+    def hide_selection(self, selection):
+        self._set_selection_visible(selection, False)
+
+    def _set_selection_visible(self, selection, visible):
+        current_selection = self.get(["selection"])
+        if (current_selection.path() == selection.path() and
+            current_selection.visible != visible):
+            self.modify(
+                ["selection"],
+                lambda x: x._replace(visible=visible)
+            )
+
 
 class PageNotFound(Exception):
     pass
@@ -3065,7 +3065,7 @@ class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
         return len(self.value) > 0 and self.visible
 
     def get(self):
-        if len(self.value) == 1:
+        if self.present():
             return self.value[0]
 
     def path(self):
