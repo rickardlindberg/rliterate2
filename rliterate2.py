@@ -284,55 +284,68 @@ def generate_rows_and_drop_points(
         dragged_page,
         open_pages,
         foreground,
-        dragdrop_invalid_color
+        dragdrop_invalid_color,
+        0,
+        False
     )
 
-@cache()
+@cache(limit=1000, key_path=[0, "id"])
 def _generate_rows_and_drop_points_page(
-    root_page,
+    page,
     collapsed,
     dragged_page,
     open_pages,
     foreground,
-    dragdrop_invalid_color
+    dragdrop_invalid_color,
+    level,
+    dragged
 ):
-    def traverse(page, level=0, dragged=False):
-        is_collapsed = page["id"] in collapsed
-        num_children = len(page["children"])
-        dragged = dragged or page["id"] == dragged_page
-        rows.append({
-            "id": page["id"],
-            "text_props": TextPropsBuilder(
-                bold=page["id"] in open_pages,
-                color=dragdrop_invalid_color if dragged else foreground
-            ).text(page["title"]).get(),
-            "level": level,
-            "has_children": num_children > 0,
-            "collapsed": is_collapsed,
-            "dragged": dragged,
-        })
-        if is_collapsed:
-            target_index = num_children
-        else:
-            target_index = 0
-        drop_points.append(TableOfContentsDropPoint(
-            row_index=len(rows)-1,
-            target_index=target_index,
-            target_page=page["id"],
-            level=level+1
-        ))
-        if not is_collapsed:
-            for target_index, child in enumerate(page["children"]):
-                traverse(child, level+1, dragged=dragged)
-                drop_points.append(TableOfContentsDropPoint(
-                    row_index=len(rows)-1,
-                    target_index=target_index+1,
-                    target_page=page["id"],
-                    level=level+1
-                ))
     rows = []
     drop_points = []
-    traverse(root_page)
+    is_collapsed = page["id"] in collapsed
+    num_children = len(page["children"])
+    dragged = dragged or page["id"] == dragged_page
+    rows.append({
+        "id": page["id"],
+        "text_props": TextPropsBuilder(
+            bold=page["id"] in open_pages,
+            color=dragdrop_invalid_color if dragged else foreground
+        ).text(page["title"]).get(),
+        "level": level,
+        "has_children": num_children > 0,
+        "collapsed": is_collapsed,
+        "dragged": dragged,
+    })
+    if is_collapsed:
+        target_index = num_children
+    else:
+        target_index = 0
+    drop_points.append(TableOfContentsDropPoint(
+        row_index=len(rows)-1,
+        target_index=target_index,
+        target_page=page["id"],
+        level=level+1
+    ))
+    if not is_collapsed:
+        for target_index, child in enumerate(page["children"]):
+            sub_result = _generate_rows_and_drop_points_page(
+                child,
+                collapsed,
+                dragged_page,
+                open_pages,
+                foreground,
+                dragdrop_invalid_color,
+                level+1,
+                dragged
+            )
+            rows.extend(sub_result["rows"])
+            drop_points.extend(sub_result["drop_points"])
+            drop_points.append(TableOfContentsDropPoint(
+                row_index=len(rows)-1,
+                target_index=target_index+1,
+                target_page=page["id"],
+                level=level+1
+            ))
     return {
         "rows": rows,
         "drop_points": drop_points,
