@@ -3110,7 +3110,7 @@
 ],
 "fragments":[
 {
-"text":"def profile_print_summary(text, cprofile_out):\n    text_width = 0\n    for name, times in PROFILING_TIMES.items():\n        text_width = max(text_width, len(f\"{name} ({len(times)})\"))\n    print(f\"=== {text} {'='*60}\")\n    print(f\"{textwrap.indent(cprofile_out.strip(), '    ')}\")\n    print(f\"--- {text} {'-'*60}\")\n    for name, times in PROFILING_TIMES.items():\n        time = sum(times)*1000\n        if time > 10:\n            color = \"\\033[31m\"\n        elif time > 5:\n            color = \"\\033[33m\"\n        else:\n            color = \"\\033[0m\"\n        print(\"    {}{} = {:.3f}ms{}\".format(\n            color,\n            f\"{name} ({len(times)})\".ljust(text_width),\n            time,\n            \"\\033[0m\"\n        ))\n",
+"text":"def profile_print_summary(text, cprofile_out):\n    text_width = 0\n    for name, times in PROFILING_TIMES.items():\n        text_width = max(text_width, len(f\"{name} ({len(times)})\"))\n    print(f\"=== {text} {'='*60}\")\n    print(f\"{textwrap.indent(cprofile_out.strip(), '    ')}\")\n    print(f\"--- {text} {'-'*60}\")\n    for name, times in sorted(PROFILING_TIMES.items(), key=lambda x: sum(x[1])):\n        time = sum(times)*1000\n        if time > 10:\n            color = \"\\033[31m\"\n        elif time > 5:\n            color = \"\\033[33m\"\n        else:\n            color = \"\\033[0m\"\n        print(\"    {}{} = {:.3f}ms{}\".format(\n            color,\n            f\"{name} ({len(times)})\".ljust(text_width),\n            time,\n            \"\\033[0m\"\n        ))\n",
 "type":"code"
 }
 ],

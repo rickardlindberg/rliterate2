@@ -756,7 +756,7 @@ def profile_print_summary(text, cprofile_out):
     print(f"=== {text} {'='*60}")
     print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
     print(f"--- {text} {'-'*60}")
-    for name, times in PROFILING_TIMES.items():
+    for name, times in sorted(PROFILING_TIMES.items(), key=lambda x: sum(x[1])):
         time = sum(times)*1000
         if time > 10:
             color = "\033[31m"
