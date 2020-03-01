@@ -2249,17 +2249,30 @@ class Title(Panel):
         print(key_event)
         value = selection.get()
         title = self.prop(["title"])
-        self.prop(["actions", "edit_page"])(
-            self.prop(["id"]),
-            {
-                "title": title[:value["start"]] + key_event.key + title[value["end"]:],
-            },
-            selection.create({
-                "start": value["start"] + 1,
-                "end": value["start"] + 1,
-                "cursor_at_start": True,
-            })
-        )
+        if key_event.key == "\x08":
+            self.prop(["actions", "edit_page"])(
+                self.prop(["id"]),
+                {
+                    "title": title[:value["start"]-1] + title[value["end"]:],
+                },
+                selection.create({
+                    "start": value["start"] - 1,
+                    "end": value["start"] - 1,
+                    "cursor_at_start": True,
+                })
+            )
+        else:
+            self.prop(["actions", "edit_page"])(
+                self.prop(["id"]),
+                {
+                    "title": title[:value["start"]] + key_event.key + title[value["end"]:],
+                },
+                selection.create({
+                    "start": value["start"] + 1,
+                    "end": value["start"] + 1,
+                    "cursor_at_start": True,
+                })
+            )
 
 class TextParagraph(Panel):
 

@@ -1193,7 +1193,7 @@
 ],
 "fragments":[
 {
-"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    title = self.prop([\"title\"])\n    self.prop([\"actions\", \"edit_page\"])(\n        self.prop([\"id\"]),\n        {\n            \"title\": title[:value[\"start\"]] + key_event.key + title[value[\"end\"]:],\n        },\n        selection.create({\n            \"start\": value[\"start\"] + 1,\n            \"end\": value[\"start\"] + 1,\n            \"cursor_at_start\": True,\n        })\n    )\n",
+"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    title = self.prop([\"title\"])\n    if key_event.key == \"\\x08\":\n        self.prop([\"actions\", \"edit_page\"])(\n            self.prop([\"id\"]),\n            {\n                \"title\": title[:value[\"start\"]-1] + title[value[\"end\"]:],\n            },\n            selection.create({\n                \"start\": value[\"start\"] - 1,\n                \"end\": value[\"start\"] - 1,\n                \"cursor_at_start\": True,\n            })\n        )\n    else:\n        self.prop([\"actions\", \"edit_page\"])(\n            self.prop([\"id\"]),\n            {\n                \"title\": title[:value[\"start\"]] + key_event.key + title[value[\"end\"]:],\n            },\n            selection.create({\n                \"start\": value[\"start\"] + 1,\n                \"end\": value[\"start\"] + 1,\n                \"cursor_at_start\": True,\n            })\n        )\n",
 "type":"code"
 }
 ],
