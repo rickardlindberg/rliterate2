@@ -834,8 +834,6 @@ def start_app(frame_cls, props):
     def show_frame():
         props.listen(lambda: update(props.get()))
         frame = frame_cls(None, None, {}, props.get())
-        frame.Layout()
-        frame.Refresh()
         frame.Show()
         return frame
     app = wx.App()
@@ -1354,7 +1352,6 @@ class WxContainerWidgetMixin(WxWidgetMixin):
     @profile_sub("layout")
     def _layout(self):
         self.Layout()
-        self.Refresh()
 
     def _create_sizer(self):
         return wx.BoxSizer(wx.HORIZONTAL)
@@ -3239,6 +3236,7 @@ class Text(wx.Panel, WxWidgetMixin):
             self._calculate_selection_rects(
                 self.prop_with_default(["selections"], [])
             )
+            self.Refresh()
 
     def _get_style(self, character):
         style = {
