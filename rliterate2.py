@@ -24,6 +24,8 @@ import wx
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
 
+WX_DEBUG_REFRESH = os.environ.get("WX_DEBUG_REFRESH", "") != ""
+
 WX_DEBUG_FOCUS = os.environ.get("WX_DEBUG_FOCUS", "") != ""
 
 def profile_sub(text):
@@ -1258,10 +1260,11 @@ class WxWidgetMixin(WidgetMixin):
 
     def _handle_refresh_request(self, request):
         widget = request["widget"]
-        print("processing {}\tlayout={}".format(
-            widget.__class__.__name__,
-            request["layout"]
-        ))
+        if WX_DEBUG_REFRESH:
+            print("Refresh layout={!r:<5} widget={}".format(
+                request["layout"],
+                widget.__class__.__name__
+            ))
         if request["layout"]:
             widget.Layout()
         widget.Refresh()

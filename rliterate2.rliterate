@@ -5403,11 +5403,27 @@
 "type":"variable"
 },
 {
-"text":"\"]\n    print(\"processing {}\\tlayout={}\".format(\n        widget.__class__.__name__,\n        request[\"layout\"]\n    ))\n    if request[\"layout\"]:\n        widget.Layout()\n    widget.Refresh()\n",
+"text":"\"]\n    if WX_DEBUG_REFRESH:\n        print(\"Refresh layout={!r:<5} widget={}\".format(\n            request[\"layout\"],\n            widget.__class__.__name__\n        ))\n    if request[\"layout\"]:\n        widget.Layout()\n    widget.Refresh()\n",
 "type":"code"
 }
 ],
 "id":"500576d993904260a52242cef8bb4bef",
+"type":"code"
+},
+{
+"chunkpath":[
+"globals"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"WX_DEBUG_REFRESH = os.environ.get(\"WX_DEBUG_REFRESH\", \"\") != \"\"\n",
+"type":"code"
+}
+],
+"id":"521f68cc2f7543a0b54f66ef9248fe09",
 "type":"code"
 },
 {
