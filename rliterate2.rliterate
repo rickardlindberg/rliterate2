@@ -1163,7 +1163,7 @@
 ],
 "fragments":[
 {
-"text":"panel Title %layout_rows {\n    TextEdit(\n        #text_edit_props\n        actions    = #actions\n        handle_key = self._handle_key\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel Title %layout_rows {\n    TextEdit(\n        #text_edit_props\n        actions    = #actions\n        handle_key = self._handle_key\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -2002,7 +2002,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text](\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    )\n}\n\n",
+"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text](\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    )\n}\n\n",
 "type":"code"
 },
 {
@@ -2037,6 +2037,25 @@
 }
 ],
 "id":"67de3f033f87463fa7f31e69ca7023b4",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TextEdit"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _immediate(self, selection):\n    return selection.present()\n",
+"type":"code"
+}
+],
+"id":"f14ceafb631248e9ab68e8ddab892be0",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -2853,7 +2872,7 @@
 ],
 "fragments":[
 {
-"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._parent = parent\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props, parent_updated=True)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props, parent_updated=False):\n        if self._update_props(props):\n            self._update_gui(parent_updated)\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self, parent_updated):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
+"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._parent = parent\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
 "type":"code"
 }
 ],
@@ -4041,7 +4060,15 @@
 ],
 "fragments":[
 {
-"text":"class ToolbarButton(wx.BitmapButton, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.BitmapButton.__init__(self, wx_parent, style=wx.NO_BORDER)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"icon\", lambda value:\n            self.SetBitmap(wx.ArtProvider.GetBitmap(\n                {\n                    \"add\": wx.ART_ADD_BOOKMARK,\n                    \"back\": wx.ART_GO_BACK,\n                    \"forward\": wx.ART_GO_FORWARD,\n                    \"undo\": wx.ART_UNDO,\n                    \"redo\": wx.ART_REDO,\n                    \"quit\": wx.ART_QUIT,\n                    \"save\": wx.ART_FILE_SAVE,\n                    \"settings\": wx.ART_HELP_SETTINGS,\n                }.get(value, wx.ART_QUESTION),\n                wx.ART_BUTTON,\n                (24, 24)\n            ))\n        )\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
+"text":"class ToolbarButton(wx.BitmapButton, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.BitmapButton.__init__(self, wx_parent, style=wx.NO_BORDER)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"icon\", self._set_icon)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _set_icon(self, value):\n        self.SetBitmap(wx.ArtProvider.GetBitmap(\n            {\n                \"add\": wx.ART_ADD_BOOKMARK,\n                \"back\": wx.ART_GO_BACK,\n                \"forward\": wx.ART_GO_FORWARD,\n                \"undo\": wx.ART_UNDO,\n                \"redo\": wx.ART_REDO,\n                \"quit\": wx.ART_QUIT,\n                \"save\": wx.ART_FILE_SAVE,\n                \"settings\": wx.ART_HELP_SETTINGS,\n            }.get(value, wx.ART_QUESTION),\n            wx.ART_BUTTON,\n            (24, 24)\n        ))\n        self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(layout=True)\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
 "type":"code"
 }
 ],
@@ -4064,7 +4091,15 @@
 ],
 "fragments":[
 {
-"text":"class Button(wx.Button, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"label\", self.SetLabel)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
+"text":"class Button(wx.Button, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"label\", self._set_label)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _set_label(self, label):\n        self.SetLabel(label)\n        self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(layout=True)\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
 "type":"code"
 }
 ],
@@ -4110,7 +4145,15 @@
 ],
 "fragments":[
 {
-"text":"class Image(wx.StaticBitmap, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.StaticBitmap.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        reset = False\n        if self.prop_changed(\"base64_image\"):\n            self._image = base64_to_image(self.prop([\"base64_image\"]))\n            self._scaled_image = self._image\n            reset = True\n        if reset or self.prop_changed(\"width\"):\n            self._scaled_image = fit_image(self._image, self.prop([\"width\"]))\n            reset = True\n        if reset:\n            self.SetBitmap(self._scaled_image.ConvertToBitmap())\n",
+"text":"class Image(wx.StaticBitmap, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.StaticBitmap.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _update_gui(self):\n        WxWidgetMixin._update_gui(self)\n        reset = False\n        if self.prop_changed(\"base64_image\"):\n            self._image = base64_to_image(self.prop([\"base64_image\"]))\n            self._scaled_image = self._image\n            reset = True\n        if reset or self.prop_changed(\"width\"):\n            self._scaled_image = fit_image(self._image, self.prop([\"width\"]))\n            reset = True\n        if reset:\n            self.SetBitmap(self._scaled_image.ConvertToBitmap())\n            self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(layout=True)\n",
 "type":"code"
 }
 ],
@@ -4165,7 +4208,15 @@
 ],
 "fragments":[
 {
-"text":"class ExpandCollapse(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n\n    def _get_local_props(self):\n        return {\n            \"min_size\": (self.prop([\"size\"]), -1),\n        }\n\n    def _on_paint(self, event):\n        dc = wx.GCDC(wx.PaintDC(self))\n        render = wx.RendererNative.Get()\n        (w, h) = self.Size\n        render.DrawTreeItemButton(\n            self,\n            dc,\n            (\n                0,\n                (h-self.prop([\"size\"]))/2,\n                self.prop([\"size\"])-1,\n                self.prop([\"size\"])-1\n            ),\n            flags=0 if self.prop([\"collapsed\"]) else wx.CONTROL_EXPANDED\n        )\n",
+"text":"class ExpandCollapse(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n\n    def _get_local_props(self):\n        return {\n            \"min_size\": (self.prop([\"size\"]), -1),\n        }\n\n    def _update_gui(self):\n        WxWidgetMixin._update_gui(self)\n        self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"()\n\n    def _on_paint(self, event):\n        dc = wx.GCDC(wx.PaintDC(self))\n        render = wx.RendererNative.Get()\n        (w, h) = self.Size\n        render.DrawTreeItemButton(\n            self,\n            dc,\n            (\n                0,\n                (h-self.prop([\"size\"]))/2,\n                self.prop([\"size\"])-1,\n                self.prop([\"size\"])-1\n            ),\n            flags=0 if self.prop([\"collapsed\"]) else wx.CONTROL_EXPANDED\n        )\n",
 "type":"code"
 }
 ],
@@ -4313,7 +4364,7 @@
 "type":"variable"
 },
 {
-"text":"):\n        line = self._extract_line(index, max_width, break_at_word)\n        w, h = self._layout_line(dc, line, line_height, y)\n        max_w = max(max_w, w)\n        y += h\n        index += len(line)\n    self.SetMinSize((max_w, y))\n\ndef _extract_line(self, index, max_width, break_at_word):\n    x = 0\n    line = []\n    while index < len(self.",
+"text":"):\n        line = self._extract_line(index, max_width, break_at_word)\n        w, h = self._layout_line(dc, line, line_height, y)\n        max_w = max(max_w, w)\n        y += h\n        index += len(line)\n    self.SetMinSize((max_w if max_width is None else max_width, y))\n\ndef _extract_line(self, index, max_width, break_at_word):\n    x = 0\n    line = []\n    while index < len(self.",
 "type":"code"
 },
 {
@@ -4489,7 +4540,15 @@
 ],
 "fragments":[
 {
-"text":"def _on_timer(self, wx_event):\n    self._show_cursors = not self._show_cursors\n    self.Refresh()\n",
+"text":"def _on_timer(self, wx_event):\n    self._show_cursors = not self._show_cursors\n    self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"()\n",
 "type":"code"
 }
 ],
@@ -4568,7 +4627,15 @@
 ],
 "fragments":[
 {
-"text":"class Text(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n        self.Bind(wx.EVT_TIMER, self._on_timer)\n        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._timer = wx.Timer(self)\n        self._show_cursors = True\n        self._cursor_positions = []\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        did_measure = False\n        if (self.prop_changed(\"base_style\") or\n            self.prop_changed(\"characters\")):\n            self._measure(\n                self.prop_with_default([\"characters\"], [])\n            )\n            did_measure = True\n        did_reflow = False\n        if (did_measure or\n            self.prop_changed(\"max_width\") or\n            self.prop_changed(\"break_at_word\") or\n            self.prop_changed(\"line_height\")):\n            self._reflow(\n                self.prop_with_default([\"max_width\"], None),\n                self.prop_with_default([\"break_at_word\"], False),\n                self.prop_with_default([\"line_height\"], 1)\n            )\n            did_reflow = True\n        if did_reflow or self.prop_changed(\"cursors\"):\n            self._show_cursors = True\n            self._calculate_cursor_positions(\n                self.prop_with_default([\"cursors\"], [])\n            )\n            if self.prop([\"cursors\"]):\n                self._timer.Start(400)\n            else:\n                self._timer.Stop()\n        if did_reflow or self.prop_changed(\"selections\"):\n            self._calculate_selection_rects(\n                self.prop_with_default([\"selections\"], [])\n            )\n            self.Refresh()\n\n",
+"text":"class Text(wx.Panel, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Panel.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n        self.Bind(wx.EVT_PAINT, self._on_paint)\n        self.Bind(wx.EVT_TIMER, self._on_timer)\n        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._timer = wx.Timer(self)\n        self._show_cursors = True\n        self._cursor_positions = []\n\n    def _update_gui(self):\n        WxWidgetMixin._update_gui(self)\n        old_min_size = self.GetMinSize()\n        did_measure = False\n        if (self.prop_changed(\"base_style\") or\n            self.prop_changed(\"characters\")):\n            self._measure(\n                self.prop_with_default([\"characters\"], [])\n            )\n            did_measure = True\n        did_reflow = False\n        if (did_measure or\n            self.prop_changed(\"max_width\") or\n            self.prop_changed(\"break_at_word\") or\n            self.prop_changed(\"line_height\")):\n            self._reflow(\n                self.prop_with_default([\"max_width\"], None),\n                self.prop_with_default([\"break_at_word\"], False),\n                self.prop_with_default([\"line_height\"], 1)\n            )\n            did_reflow = True\n        if did_reflow or self.prop_changed(\"cursors\"):\n            self._show_cursors = True\n            self._calculate_cursor_positions(\n                self.prop_with_default([\"cursors\"], [])\n            )\n            if self.prop([\"cursors\"]):\n                self._timer.Start(400)\n            else:\n                self._timer.Stop()\n        if did_reflow or self.prop_changed(\"selections\"):\n            self._calculate_selection_rects(\n                self.prop_with_default([\"selections\"], [])\n            )\n            self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(\n                layout=self.GetMinSize() != old_min_size,\n                immediate=self.prop_with_default([\"immediate\"], False)\n            )\n\n",
 "type":"code"
 },
 {
@@ -4598,8 +4665,45 @@
 ],
 "fragments":[
 {
-"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._default_cursor = self.GetCursor()\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self.SetBackgroundColour)\n        self._register_builtin(\"min_size\", self.SetMinSize)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"focus\", self._set_focus)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n                \"beam\": wx.Cursor(wx.CURSOR_IBEAM),\n                None: self._default_cursor,\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"left_down\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n            ],\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"right_click\": [\n                (wx.EVT_RIGHT_UP, self._on_wx_right_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n            \"key\": [\n                (wx.EVT_CHAR, self._on_wx_char),\n            ],\n            \"focus\": [\n                (wx.EVT_SET_FOCUS, self._on_wx_set_focus),\n            ],\n            \"unfocus\": [\n                (wx.EVT_KILL_FOCUS, self._on_wx_kill_focus),\n            ],\n        }\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self, parent_updated):\n        WidgetMixin._update_gui(self, parent_updated)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self._call_mouse_event_handler(wx_event, \"left_down\")\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            self._wx_down_pos.x,\n            self._wx_down_pos.y,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"right_click\")\n\n    def _call_mouse_event_handler(self, wx_event, name):\n        screen_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\n            name,\n            MouseEvent(screen_pos.x, screen_pos.y, self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                new_pos.x,\n                new_pos.y,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def _set_focus(self, focus):\n        if focus:\n            self.SetFocus()\n\n    def _on_wx_char(self, wx_event):\n        self.call_event_handler(\n            \"key\",\n            KeyEvent(chr(wx_event.GetUnicodeKey())),\n            propagate=False\n        )\n\n    def _on_wx_set_focus(self, wx_event):\n        self.call_event_handler(\n            \"focus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def _on_wx_kill_focus(self, wx_event):\n        self.call_event_handler(\n            \"unfocus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n",
+"text":"class WxWidgetMixin(WidgetMixin):\n\n    def _setup_gui(self):\n        WidgetMixin._setup_gui(self)\n        self._default_cursor = self.GetCursor()\n        self._setup_wx_events()\n        self._register_builtin(\"background\", self._set_background)\n        self._register_builtin(\"min_size\", self._set_min_size)\n        self._register_builtin(\"drop_target\", self._set_drop_target)\n        self._register_builtin(\"focus\", self._set_focus)\n        self._register_builtin(\"cursor\", lambda value:\n            self.SetCursor({\n                \"size_horizontal\": wx.Cursor(wx.CURSOR_SIZEWE),\n                \"hand\": wx.Cursor(wx.CURSOR_HAND),\n                \"beam\": wx.Cursor(wx.CURSOR_IBEAM),\n                None: self._default_cursor,\n            }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))\n        )\n        self._event_map = {\n            \"left_down\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n            ],\n            \"drag\": [\n                (wx.EVT_LEFT_DOWN, self._on_wx_left_down),\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n                (wx.EVT_MOTION, self._on_wx_motion),\n            ],\n            \"click\": [\n                (wx.EVT_LEFT_UP, self._on_wx_left_up),\n            ],\n            \"right_click\": [\n                (wx.EVT_RIGHT_UP, self._on_wx_right_up),\n            ],\n            \"hover\": [\n                (wx.EVT_ENTER_WINDOW, self._on_wx_enter_window),\n                (wx.EVT_LEAVE_WINDOW, self._on_wx_leave_window),\n            ],\n            \"key\": [\n                (wx.EVT_CHAR, self._on_wx_char),\n            ],\n            \"focus\": [\n                (wx.EVT_SET_FOCUS, self._on_wx_set_focus),\n            ],\n            \"unfocus\": [\n                (wx.EVT_KILL_FOCUS, self._on_wx_kill_focus),\n            ],\n        }\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"WxWidgetMixin",
+"_setup_gui"
+],
+"prefix":"        ",
+"type":"chunk"
+},
+{
+"text":"\n    def _set_background(self, color):\n        self.SetBackgroundColour(color)\n        self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"()\n\n    def _set_min_size(self, size):\n        self.SetMinSize(size)\n        self.",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(layout=True)\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self):\n        WidgetMixin._update_gui(self)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self._call_mouse_event_handler(wx_event, \"left_down\")\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            self._wx_down_pos.x,\n            self._wx_down_pos.y,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"right_click\")\n\n    def _call_mouse_event_handler(self, wx_event, name):\n        screen_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\n            name,\n            MouseEvent(screen_pos.x, screen_pos.y, self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                new_pos.x,\n                new_pos.y,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def _set_focus(self, focus):\n        if focus:\n            self.SetFocus()\n\n    def _on_wx_char(self, wx_event):\n        self.call_event_handler(\n            \"key\",\n            KeyEvent(chr(wx_event.GetUnicodeKey())),\n            propagate=False\n        )\n\n    def _on_wx_set_focus(self, wx_event):\n        self.call_event_handler(\n            \"focus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def _on_wx_kill_focus(self, wx_event):\n        self.call_event_handler(\n            \"unfocus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"WxWidgetMixin"
+],
+"prefix":"    ",
+"type":"chunk"
 }
 ],
 "id":"b1beaccda0d04dd28ece317b5f5d8c55",
@@ -4685,7 +4789,7 @@
 ],
 "fragments":[
 {
-"text":"class CompactScrolledWindow(wx.ScrolledWindow):\n\n    MIN_WIDTH = 200\n    MIN_HEIGHT = 200\n\n    def __init__(self, parent, style=0, size=wx.DefaultSize, step=100):\n        w, h = size\n        size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))\n        wx.ScrolledWindow.__init__(self, parent, style=style, size=size)\n        self.Size = size\n        self._style = style\n        if style == wx.HSCROLL:\n            self.SetScrollRate(1, 0)\n        elif style == wx.VSCROLL:\n            self.SetScrollRate(0, 1)\n        else:\n            self.SetScrollRate(1, 1)\n        self.step = step\n        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)\n\n    def _on_mousewheel(self, event):\n        if self._style == wx.HSCROLL and not wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        if self._style == wx.VSCROLL and wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        else:\n            x, y = self.GetViewStart()\n            delta = event.GetWheelRotation() / event.GetWheelDelta()\n            if wx.GetKeyState(wx.WXK_SHIFT):\n                pos = self._calc_scroll_pos_hscroll(x, y, delta)\n            else:\n                pos = self._calc_scroll_pos_vscroll(x, y, delta)\n            self.Scroll(*pos)\n\n    def _forward_scroll_event(self, event):\n        parent = self.Parent\n        while parent:\n            if isinstance(parent, CompactScrolledWindow):\n                parent._on_mousewheel(event)\n                return\n            parent = parent.Parent\n\n    def _calc_scroll_pos_hscroll(self, x, y, delta):\n        return (x-delta*self.step, y)\n\n    def _calc_scroll_pos_vscroll(self, x, y, delta):\n        return (x, y-delta*self.step)\n",
+"text":"class CompactScrolledWindow(wx.ScrolledWindow):\n\n    MIN_WIDTH = 200\n    MIN_HEIGHT = 200\n\n    def __init__(self, parent, style=0, size=wx.DefaultSize, step=100):\n        w, h = size\n        size = (max(w, self.MIN_WIDTH), max(h, self.MIN_HEIGHT))\n        wx.ScrolledWindow.__init__(self, parent, style=style, size=size)\n        self.Size = size\n        self._style = style\n        if style == wx.HSCROLL:\n            self.SetScrollRate(1, 0)\n        elif style == wx.VSCROLL:\n            self.SetScrollRate(0, 1)\n        else:\n            self.SetScrollRate(1, 1)\n        self.step = step\n        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)\n\n    def _on_mousewheel(self, event):\n        if self._style == wx.HSCROLL and not wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        if self._style == wx.VSCROLL and wx.GetKeyState(wx.WXK_SHIFT):\n            self._forward_scroll_event(event)\n        else:\n            x, y = self.GetViewStart()\n            delta = event.GetWheelRotation() / event.GetWheelDelta()\n            if wx.GetKeyState(wx.WXK_SHIFT):\n                pos = self._calc_scroll_pos_hscroll(x, y, delta)\n            else:\n                pos = self._calc_scroll_pos_vscroll(x, y, delta)\n            self.Scroll(*pos)\n\n    def _forward_scroll_event(self, event):\n        parent = self.Parent\n        while parent:\n            if isinstance(parent, CompactScrolledWindow):\n                parent._on_mousewheel(event)\n                return\n            parent = parent.Parent\n\n    def _calc_scroll_pos_hscroll(self, x, y, delta):\n        return (x-delta*self.step, y)\n\n    def _calc_scroll_pos_vscroll(self, x, y, delta):\n        return (x, y-delta*self.step)\n\n    def Layout(self):\n        wx.ScrolledWindow.Layout(self)\n        self.FitInside()\n",
 "type":"code"
 }
 ],
@@ -4755,8 +4859,29 @@
 ],
 "fragments":[
 {
-"text":"class WxContainerWidgetMixin(WxWidgetMixin):\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_gui(self, parent_updated):\n        WxWidgetMixin._update_gui(self, parent_updated)\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        if not parent_updated:\n            self._layout()\n\n    @profile_sub(\"layout\")\n    def _layout(self):\n        self.Layout()\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props, parent_updated=True)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props, parent_updated=True)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n",
+"text":"class WxContainerWidgetMixin(WxWidgetMixin):\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._setup_layout()\n        self._children = []\n        self._inside_loop = False\n        self._sizer_index = 0\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"WxContainerWidgetMixin",
+"_setup_gui"
+],
+"prefix":"        ",
+"type":"chunk"
+},
+{
+"text":"\n    def _setup_layout(self):\n        self.Sizer = self._sizer = self._create_sizer()\n        self._wx_parent = self\n\n    def _update_children(self):\n        old_sizer_index = self._sizer_index\n        self._sizer_index = 0\n        self._child_index = 0\n        self._names = defaultdict(list)\n        self._create_widgets()\n        return old_sizer_index != self._sizer_index\n\n    def _create_sizer(self):\n        return wx.BoxSizer(wx.HORIZONTAL)\n\n    def _create_widgets(self):\n        pass\n\n    @contextlib.contextmanager\n    def _loop(self, cache_limit=-1):\n        if self._child_index >= len(self._children):\n            self._children.append([])\n        old_children = self._children\n        next_index = self._child_index + 1\n        self._children = self._children[self._child_index]\n        self._child_index = 0\n        self._inside_loop = True\n        try:\n            yield\n        finally:\n            self._clear_leftovers(cache_limit=cache_limit)\n            self._children = old_children\n            self._child_index = next_index\n            self._inside_loop = False\n\n    def _clear_leftovers(self, cache_limit):\n        child_index = self._child_index\n        sizer_index = self._sizer_index\n        num_cached = 0\n        while child_index < len(self._children):\n            widget, sizer_item = self._children[child_index]\n            if (widget is not None and\n                widget.prop_with_default([\"__cache\"], False) and\n                (cache_limit < 0 or num_cached < cache_limit)):\n                sizer_item.Show(False)\n                child_index += 1\n                sizer_index += 1\n                num_cached += 1\n            else:\n                if widget is None:\n                    self._sizer.Remove(sizer_index)\n                else:\n                    widget.Destroy()\n                self._children.pop(child_index)\n\n    def _create_widget(self, widget_cls, props, sizer, handlers, name):\n        if not self._inside_loop:\n            def re_use_condition(widget):\n                return True\n        elif \"__reuse\" in props:\n            def re_use_condition(widget):\n                return (\n                    type(widget) is widget_cls and\n                    widget.prop([\"__reuse\"]) == props[\"__reuse\"]\n                )\n        else:\n            def re_use_condition(widget):\n                return type(widget) is widget_cls\n        re_use_offset = self._reuse(re_use_condition)\n        if re_use_offset == 0:\n            widget, sizer_item = self._children[self._child_index]\n            widget.update_event_handlers(handlers)\n            widget.update_props(props)\n            sizer_item.SetBorder(sizer[\"border\"])\n            sizer_item.SetProportion(sizer[\"proportion\"])\n        else:\n            if re_use_offset is None:\n                widget = widget_cls(self._wx_parent, self, handlers, props)\n            else:\n                widget = self._children.pop(self._child_index+re_use_offset)[0]\n                widget.update_event_handlers(handlers)\n                widget.update_props(props)\n                self._sizer.Detach(self._sizer_index+re_use_offset)\n            sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)\n            self._children.insert(self._child_index, (widget, sizer_item))\n        sizer_item.Show(True)\n        if name is not None:\n            self._names[name].append(widget)\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _create_space(self, thickness):\n        if (self._child_index < len(self._children) and\n            self._children[self._child_index][0] is None):\n            self._children[self._child_index][1].SetMinSize(\n                self._get_space_size(thickness)\n            )\n        else:\n            self._children.insert(self._child_index, (None, self._insert_sizer(\n                self._sizer_index,\n                self._get_space_size(thickness)\n            )))\n        self._sizer_index += 1\n        self._child_index += 1\n\n    def _reuse(self, condition):\n        index = 0\n        while (self._child_index+index) < len(self._children):\n            widget = self._children[self._child_index+index][0]\n            if widget is not None and condition(widget):\n                return index\n            else:\n                index += 1\n        return None\n\n    @profile_sub(\"insert sizer\")\n    def _insert_sizer(self, *args, **kwargs):\n        return self._sizer.Insert(*args, **kwargs)\n\n    def _get_space_size(self, size):\n        if self._sizer.Orientation == wx.HORIZONTAL:\n            return (size, 1)\n        else:\n            return (1, size)\n\n    def get_widget(self, name, index=0):\n        return self._names[name][index]\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"WxContainerWidgetMixin"
+],
+"prefix":"    ",
+"type":"chunk"
 }
 ],
 "id":"e09eeec305864f0e9a791b0e287def75",
@@ -4764,6 +4889,838 @@
 }
 ],
 "title":"Containers"
+},
+{
+"children":[],
+"id":"5fb3048d154d4f50af92d4cbe63db75a",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"When a widget changes, the screen must be refreshed. But it is not always enough to refresh the portion of the screen that the widget covers. If the widget changes size, other widgets might have to be drawn at different locations. This section deals with correctly and efficiently refreshing the screen when a widget changes.",
+"type":"text"
+}
+],
+"id":"ec669dc33db047f58ab251a82612fbd5",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"When a widget changes, it should call ",
+"type":"text"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":". It is a thin wrapper that creates a ",
+"type":"text"
+},
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":" object and passes it to ",
+"type":"text"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":". Optional keyword arguments are used to inform what has changed. ",
+"type":"text"
+},
+{
+"id":"1ee3df1321aa4ed28bca5a0114b08124",
+"type":"variable"
+},
+{
+"text":" should be true if the size of the widget has changed so that parent widgets need to be refreshed. ",
+"type":"text"
+},
+{
+"id":"03156156ebb247f5afb5616c81807c6a",
+"type":"variable"
+},
+{
+"text":" should be true if the number of visible child widgets have changed so that this widget need to be refreshed. ",
+"type":"text"
+},
+{
+"id":"ba9ffd65ca7645189dee63e3474c0f98",
+"type":"variable"
+},
+{
+"text":" should be true if this refresh should be done before other refresh requests.",
+"type":"text"
+}
+],
+"id":"a16588541f6748be8aee110b0f87529f",
+"type":"text"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"22bd861e7bd74b2480512d1003d55174",
+"type":"variable"
+},
+{
+"text":"(self, ",
+"type":"code"
+},
+{
+"id":"1ee3df1321aa4ed28bca5a0114b08124",
+"type":"variable"
+},
+{
+"text":"=False, ",
+"type":"code"
+},
+{
+"id":"03156156ebb247f5afb5616c81807c6a",
+"type":"variable"
+},
+{
+"text":"=False, ",
+"type":"code"
+},
+{
+"id":"ba9ffd65ca7645189dee63e3474c0f98",
+"type":"variable"
+},
+{
+"text":"=False):\n    self.",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(",
+"type":"code"
+},
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":"(\n        {\n            \"",
+"type":"code"
+},
+{
+"id":"7783f19273504229bb20053bc01b7057",
+"type":"variable"
+},
+{
+"text":"\": self.",
+"type":"code"
+},
+{
+"id":"5f71ca24cdae4919bb3a5612fa704ac3",
+"type":"variable"
+},
+{
+"text":"(\n                ",
+"type":"code"
+},
+{
+"id":"1ee3df1321aa4ed28bca5a0114b08124",
+"type":"variable"
+},
+{
+"text":",\n                ",
+"type":"code"
+},
+{
+"id":"03156156ebb247f5afb5616c81807c6a",
+"type":"variable"
+},
+{
+"text":"\n            ),\n            \"layout\": ",
+"type":"code"
+},
+{
+"id":"1ee3df1321aa4ed28bca5a0114b08124",
+"type":"variable"
+},
+{
+"text":" or ",
+"type":"code"
+},
+{
+"id":"03156156ebb247f5afb5616c81807c6a",
+"type":"variable"
+},
+{
+"text":",\n            \"immediate\": ",
+"type":"code"
+},
+{
+"id":"ba9ffd65ca7645189dee63e3474c0f98",
+"type":"variable"
+},
+{
+"text":",\n        },\n    ))\n",
+"type":"code"
+}
+],
+"id":"9047c5e3b073411f8c38dadac3ef1a85",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"5f71ca24cdae4919bb3a5612fa704ac3",
+"type":"variable"
+},
+{
+"text":"(self, layout, layout_me):\n    if layout_me:\n        return self.",
+"type":"code"
+},
+{
+"id":"a3a769cc4fba4437af66b01dcc1f11f5",
+"type":"variable"
+},
+{
+"text":"(self)\n    elif layout:\n        return self.",
+"type":"code"
+},
+{
+"id":"a3a769cc4fba4437af66b01dcc1f11f5",
+"type":"variable"
+},
+{
+"text":"(self.Parent)\n    else:\n        return self\n",
+"type":"code"
+}
+],
+"id":"77522083404f4a0997c19d9bfb0feac4",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"a3a769cc4fba4437af66b01dcc1f11f5",
+"type":"variable"
+},
+{
+"text":"(self, widget):\n    while widget.Parent is not None:\n        if isinstance(widget, wx.ScrolledWindow) or widget.IsTopLevel():\n            break\n        widget = widget.Parent\n    return widget\n",
+"type":"code"
+}
+],
+"id":"64a5fc2afad54388a8df82d399c04e9f",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Refresh requests are always handled at the top level, so if a parent exists, refresh requests are passed to it.",
+"type":"text"
+}
+],
+"id":"ef0e4b8ea1b242948837119b01d4f735",
+"type":"text"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(self, refresh_requests):\n    if self._parent is None:\n        self.",
+"type":"code"
+},
+{
+"id":"a63c726153be41248cdc4161b319a2ac",
+"type":"variable"
+},
+{
+"text":"(refresh_requests)\n    else:\n        self._parent.",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(refresh_requests)\n",
+"type":"code"
+}
+],
+"id":"b0c2d0cf68c14051b29a07ab337ad3e3",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Handling refresh requests means first handling all immediate requests. If any, the handling of others are delayed.",
+"type":"text"
+}
+],
+"id":"38d0806d05124065bee9a4ed5d50b914",
+"type":"text"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"a63c726153be41248cdc4161b319a2ac",
+"type":"variable"
+},
+{
+"text":"(self, refresh_requests):\n    if any(refresh_requests.process(self.",
+"type":"code"
+},
+{
+"id":"ead9d70512b04e6aac36796c76954814",
+"type":"variable"
+},
+{
+"text":")):\n        if self._later_timer:\n            self._later_timer.Start(300)\n        else:\n            self._later_timer = wx.CallLater(300, self.",
+"type":"code"
+},
+{
+"id":"fd51fddc61434acd9476c3404fa1da65",
+"type":"variable"
+},
+{
+"text":")\n    else:\n        self.",
+"type":"code"
+},
+{
+"id":"fd51fddc61434acd9476c3404fa1da65",
+"type":"variable"
+},
+{
+"text":"()\n",
+"type":"code"
+}
+],
+"id":"3ef5c92857c04e65a71ff487a3335e4e",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"ead9d70512b04e6aac36796c76954814",
+"type":"variable"
+},
+{
+"text":"(self, request):\n    if request[\"immediate\"]:\n        self.",
+"type":"code"
+},
+{
+"id":"cab99d6fbc0047a6b8424d8aa365f599",
+"type":"variable"
+},
+{
+"text":"(request)\n        return True\n    else:\n        self._delayed_requests.add(request)\n        return False\n",
+"type":"code"
+}
+],
+"id":"8ffc29fa6701478ebfd5e10d6a04de6e",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin",
+"_setup_gui"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"self._delayed_requests = ",
+"type":"code"
+},
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":"()\nself._later_timer = None\n",
+"type":"code"
+}
+],
+"id":"5ef46366e55c430ba8320b7eff7218fe",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"fd51fddc61434acd9476c3404fa1da65",
+"type":"variable"
+},
+{
+"text":"(self):\n    self._delayed_requests.process(self.",
+"type":"code"
+},
+{
+"id":"cab99d6fbc0047a6b8424d8aa365f599",
+"type":"variable"
+},
+{
+"text":")\n    self._later_timer = None\n",
+"type":"code"
+}
+],
+"id":"adf73263456349a5a820d09776a45fe5",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Handling a refresh requests means that ",
+"type":"text"
+},
+{
+"text":"Layout",
+"type":"code"
+},
+{
+"text":" and ",
+"type":"text"
+},
+{
+"text":"Refresh",
+"type":"code"
+},
+{
+"text":" is called on the given widget.",
+"type":"text"
+}
+],
+"id":"17e13a5762bf4232a6f7ef6c52578a57",
+"type":"text"
+},
+{
+"chunkpath":[
+"base classes",
+"WxWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"cab99d6fbc0047a6b8424d8aa365f599",
+"type":"variable"
+},
+{
+"text":"(self, request):\n    widget = request[\"",
+"type":"code"
+},
+{
+"id":"7783f19273504229bb20053bc01b7057",
+"type":"variable"
+},
+{
+"text":"\"]\n    print(\"processing {}\\tlayout={}\".format(\n        widget.__class__.__name__,\n        request[\"layout\"]\n    ))\n    if request[\"layout\"]:\n        widget.Layout()\n    widget.Refresh()\n",
+"type":"code"
+}
+],
+"id":"500576d993904260a52242cef8bb4bef",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Container widgets need extra handling. While child widgets are being processed, all refresh requests need to be captured, and when the container is finished, all captured refresh requests should be processed.",
+"type":"text"
+}
+],
+"id":"3d903e86cfc641689754bf718a3c140a",
+"type":"text"
+},
+{
+"chunkpath":[
+"base classes",
+"WxContainerWidgetMixin",
+"_setup_gui"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":" = None\nself.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" = None\n",
+"type":"code"
+}
+],
+"id":"4156917c14d743d7b93deabebf951451",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxContainerWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(self, requests):\n    if self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":" is None:\n        WxWidgetMixin.",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(self, requests)\n    else:\n        if self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" is not None:\n            requests.prune(**self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":")\n        self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":".",
+"type":"code"
+},
+{
+"id":"269966a674484b8598126b56bfc28284",
+"type":"variable"
+},
+{
+"text":"(requests)\n",
+"type":"code"
+}
+],
+"id":"06c4e75d9a244f0da336ef510500f84b",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxContainerWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _update_gui(self):\n    self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":" = ",
+"type":"code"
+},
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":"()\n    try:\n        self._updagte_gui_with_capture_active()\n    finally:\n        captured = self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":"\n        self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":" = None\n        self.",
+"type":"code"
+},
+{
+"id":"de67e0ffd0c347cca785c1fa0c4e9560",
+"type":"variable"
+},
+{
+"text":"(captured)\n",
+"type":"code"
+}
+],
+"id":"0166b60af9aa446c91cae803417fdade",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes",
+"WxContainerWidgetMixin"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _updagte_gui_with_capture_active(self):\n    self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" = None\n    WxWidgetMixin._update_gui(self)\n    if self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":".has(\n        layout=True,\n        immediate=False\n    ):\n        self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":".prune(\n            layout=False,\n            immediate=False\n        )\n        self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" = {\n            \"immediate\": False,\n        }\n    elif self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":".has(\n        immediate=False\n    ):\n        self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" = {\n            \"layout\": False,\n            \"immediate\": False,\n        }\n    if self._update_children():\n        self.",
+"type":"code"
+},
+{
+"id":"1a3c1e487f6943c0a391a189560ab24f",
+"type":"variable"
+},
+{
+"text":" = None\n        self.",
+"type":"code"
+},
+{
+"id":"2ac57c86cd51471681d75d98de62f1ba",
+"type":"variable"
+},
+{
+"text":".prune(\n            immediate=False\n        )\n        self.",
+"type":"code"
+},
+{
+"id":"8d0220baf28046c79a4cd7ff7062a47b",
+"type":"variable"
+},
+{
+"text":"(layout_me=True)\n",
+"type":"code"
+}
+],
+"id":"4a2fb20016084f57ad8b9a6f3f38d7e3",
+"type":"code"
+},
+{
+"fragments":[
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":" is an object to simplify working with refresh requests.",
+"type":"text"
+}
+],
+"id":"52fe5f26d3ae4519bd5b233813fac0b8",
+"type":"text"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ",
+"type":"code"
+},
+{
+"id":"f9aa655efb5b47b8ac4bcd3a78394fd2",
+"type":"variable"
+},
+{
+"text":"(object):\n\n    def __init__(self, *initial_requests):\n        self._requests = list(initial_requests)\n\n    def ",
+"type":"code"
+},
+{
+"id":"269966a674484b8598126b56bfc28284",
+"type":"variable"
+},
+{
+"text":"(self, requests):\n        requests.process(self.add)\n\n    def add(self, request):\n        if request not in self._requests:\n            self._requests.append(request)\n\n    def process(self, fn):\n        result = [\n            fn(x)\n            for x\n            in self._requests\n        ]\n        self._requests = []\n        return result\n\n    def has(self, **attrs):\n        return any(\n            self._match(x, **attrs)\n            for x\n            in self._requests\n        )\n\n    def prune(self, **attrs):\n        index = 0\n        while index < len(self._requests):\n            if self._match(self._requests[index], **attrs):\n                self._requests.pop(index)\n            else:\n                index += 1\n\n    def _match(self, request, **attrs):\n        for key, value in attrs.items():\n            if request[key] != value:\n                return False\n        return True\n",
+"type":"code"
+}
+],
+"id":"c1982aee8ca542adb7524cfcc819beb3",
+"type":"code"
+}
+],
+"title":"Refreshing widgets"
 },
 {
 "children":[],
@@ -6026,13 +6983,31 @@
 "title":"RLiterate 2"
 },
 "variables":{
+"03156156ebb247f5afb5616c81807c6a":"layout_me",
 "0f86edb70f4c42d2a13500eafb09f308":"target_page",
+"1a3c1e487f6943c0a391a189560ab24f":"_prune_filter",
+"1ee3df1321aa4ed28bca5a0114b08124":"layout",
 "1fc209a79645474fa733e046abf50cc8":"_characters_bounding_rect",
+"22bd861e7bd74b2480512d1003d55174":"_request_refresh",
+"269966a674484b8598126b56bfc28284":"take_from",
+"2ac57c86cd51471681d75d98de62f1ba":"_captured_requests",
 "3bdb899dc8ff44fc955b9ad365b56cea":"_characters_by_line",
+"5f71ca24cdae4919bb3a5612fa704ac3":"_find_refresh_widget",
+"7783f19273504229bb20053bc01b7057":"widget",
 "7f02baf9597a44618c7942768716bba3":"OnDataDropped",
+"8d0220baf28046c79a4cd7ff7062a47b":"_request_refresh",
+"a3a769cc4fba4437af66b01dcc1f11f5":"_find_layout_root",
+"a63c726153be41248cdc4161b319a2ac":"_handle_refresh_requests",
 "ad962b534b9b4f9b8052f054d1631b07":"_measured_characters",
+"ba9ffd65ca7645189dee63e3474c0f98":"immediate",
+"c340457cd58f4189a088de460d37f9b9":"_capture_container_requests",
+"cab99d6fbc0047a6b8424d8aa365f599":"_handle_refresh_request",
 "d1440232958142d18f9a52920dabf4b1":"FindClosestDropPoint",
 "d1d29eb0717a4a31932fd140365de7f5":"_draw_fragments_by_style",
-"d2aa737fb7224d9a8e3903670cddc46b":"target_index"
+"d2aa737fb7224d9a8e3903670cddc46b":"target_index",
+"de67e0ffd0c347cca785c1fa0c4e9560":"handle_refresh_requests",
+"ead9d70512b04e6aac36796c76954814":"_handle_immediate_refresh_request",
+"f9aa655efb5b47b8ac4bcd3a78394fd2":"RefreshRequests",
+"fd51fddc61434acd9476c3404fa1da65":"_handle_delayed_refresh_requests"
 }
 }

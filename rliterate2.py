@@ -924,7 +924,7 @@ class WidgetMixin(object):
         self._event_handlers = {}
         self._setup_gui()
         self.update_event_handlers(handlers)
-        self.update_props(props, parent_updated=True)
+        self.update_props(props)
 
     def update_event_handlers(self, handlers):
         for name, fn in handlers.items():
@@ -958,9 +958,9 @@ class WidgetMixin(object):
             value = value[part]
         return value
 
-    def update_props(self, props, parent_updated=False):
+    def update_props(self, props):
         if self._update_props(props):
-            self._update_gui(parent_updated)
+            self._update_gui()
 
     def _update_props(self, props):
         self._changed_props = []
@@ -985,7 +985,7 @@ class WidgetMixin(object):
             return False
         return prop != value
 
-    def _update_gui(self, parent_updated):
+    def _update_gui(self):
         for name in self._changed_props:
             if name in self._builtin_props:
                 self._builtin_props[name](self._props[name])
@@ -1000,8 +1000,8 @@ class WxWidgetMixin(WidgetMixin):
         WidgetMixin._setup_gui(self)
         self._default_cursor = self.GetCursor()
         self._setup_wx_events()
-        self._register_builtin("background", self.SetBackgroundColour)
-        self._register_builtin("min_size", self.SetMinSize)
+        self._register_builtin("background", self._set_background)
+        self._register_builtin("min_size", self._set_min_size)
         self._register_builtin("drop_target", self._set_drop_target)
         self._register_builtin("focus", self._set_focus)
         self._register_builtin("cursor", lambda value:
@@ -1041,13 +1041,23 @@ class WxWidgetMixin(WidgetMixin):
                 (wx.EVT_KILL_FOCUS, self._on_wx_kill_focus),
             ],
         }
+        self._delayed_requests = RefreshRequests()
+        self._later_timer = None
+
+    def _set_background(self, color):
+        self.SetBackgroundColour(color)
+        self._request_refresh()
+
+    def _set_min_size(self, size):
+        self.SetMinSize(size)
+        self._request_refresh(layout=True)
 
     def _setup_wx_events(self):
         self._wx_event_handlers = set()
         self._wx_down_pos = None
 
-    def _update_gui(self, parent_updated):
-        WidgetMixin._update_gui(self, parent_updated)
+    def _update_gui(self):
+        WidgetMixin._update_gui(self)
         for name in ["drag", "hover", "click", "right_click"]:
             if self._parent is not None and self._parent.has_event_handler(name):
                 self._register_wx_events(name)
@@ -1192,6 +1202,70 @@ class WxWidgetMixin(WidgetMixin):
         menu.Destroy()
         self._hover_leave()
 
+    def _request_refresh(self, layout=False, layout_me=False, immediate=False):
+        self.handle_refresh_requests(RefreshRequests(
+            {
+                "widget": self._find_refresh_widget(
+                    layout,
+                    layout_me
+                ),
+                "layout": layout or layout_me,
+                "immediate": immediate,
+            },
+        ))
+
+    def _find_refresh_widget(self, layout, layout_me):
+        if layout_me:
+            return self._find_layout_root(self)
+        elif layout:
+            return self._find_layout_root(self.Parent)
+        else:
+            return self
+
+    def _find_layout_root(self, widget):
+        while widget.Parent is not None:
+            if isinstance(widget, wx.ScrolledWindow) or widget.IsTopLevel():
+                break
+            widget = widget.Parent
+        return widget
+
+    def handle_refresh_requests(self, refresh_requests):
+        if self._parent is None:
+            self._handle_refresh_requests(refresh_requests)
+        else:
+            self._parent.handle_refresh_requests(refresh_requests)
+
+    def _handle_refresh_requests(self, refresh_requests):
+        if any(refresh_requests.process(self._handle_immediate_refresh_request)):
+            if self._later_timer:
+                self._later_timer.Start(300)
+            else:
+                self._later_timer = wx.CallLater(300, self._handle_delayed_refresh_requests)
+        else:
+            self._handle_delayed_refresh_requests()
+
+    def _handle_immediate_refresh_request(self, request):
+        if request["immediate"]:
+            self._handle_refresh_request(request)
+            return True
+        else:
+            self._delayed_requests.add(request)
+            return False
+
+    def _handle_delayed_refresh_requests(self):
+        self._delayed_requests.process(self._handle_refresh_request)
+        self._later_timer = None
+
+    def _handle_refresh_request(self, request):
+        widget = request["widget"]
+        print("processing {}\tlayout={}".format(
+            widget.__class__.__name__,
+            request["layout"]
+        ))
+        if request["layout"]:
+            widget.Layout()
+        widget.Refresh()
+
 class RLiterateDropTarget(wx.DropTarget):
 
     def __init__(self, widget, kind):
@@ -1227,23 +1301,25 @@ class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
-        self._register_builtin("icon", lambda value:
-            self.SetBitmap(wx.ArtProvider.GetBitmap(
-                {
-                    "add": wx.ART_ADD_BOOKMARK,
-                    "back": wx.ART_GO_BACK,
-                    "forward": wx.ART_GO_FORWARD,
-                    "undo": wx.ART_UNDO,
-                    "redo": wx.ART_REDO,
-                    "quit": wx.ART_QUIT,
-                    "save": wx.ART_FILE_SAVE,
-                    "settings": wx.ART_HELP_SETTINGS,
-                }.get(value, wx.ART_QUESTION),
-                wx.ART_BUTTON,
-                (24, 24)
-            ))
-        )
+        self._register_builtin("icon", self._set_icon)
         self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
+
+    def _set_icon(self, value):
+        self.SetBitmap(wx.ArtProvider.GetBitmap(
+            {
+                "add": wx.ART_ADD_BOOKMARK,
+                "back": wx.ART_GO_BACK,
+                "forward": wx.ART_GO_FORWARD,
+                "undo": wx.ART_UNDO,
+                "redo": wx.ART_REDO,
+                "quit": wx.ART_QUIT,
+                "save": wx.ART_FILE_SAVE,
+                "settings": wx.ART_HELP_SETTINGS,
+            }.get(value, wx.ART_QUESTION),
+            wx.ART_BUTTON,
+            (24, 24)
+        ))
+        self._request_refresh(layout=True)
 
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
@@ -1256,8 +1332,12 @@ class Button(wx.Button, WxWidgetMixin):
 
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
-        self._register_builtin("label", self.SetLabel)
+        self._register_builtin("label", self._set_label)
         self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
+
+    def _set_label(self, label):
+        self.SetLabel(label)
+        self._request_refresh(layout=True)
 
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
@@ -1287,8 +1367,8 @@ class Image(wx.StaticBitmap, WxWidgetMixin):
         wx.StaticBitmap.__init__(self, wx_parent)
         WxWidgetMixin.__init__(self, *args)
 
-    def _update_gui(self, parent_updated):
-        WxWidgetMixin._update_gui(self, parent_updated)
+    def _update_gui(self):
+        WxWidgetMixin._update_gui(self)
         reset = False
         if self.prop_changed("base64_image"):
             self._image = base64_to_image(self.prop(["base64_image"]))
@@ -1299,6 +1379,7 @@ class Image(wx.StaticBitmap, WxWidgetMixin):
             reset = True
         if reset:
             self.SetBitmap(self._scaled_image.ConvertToBitmap())
+            self._request_refresh(layout=True)
 
 class ExpandCollapse(wx.Panel, WxWidgetMixin):
 
@@ -1311,6 +1392,10 @@ class ExpandCollapse(wx.Panel, WxWidgetMixin):
         return {
             "min_size": (self.prop(["size"]), -1),
         }
+
+    def _update_gui(self):
+        WxWidgetMixin._update_gui(self)
+        self._request_refresh()
 
     def _on_paint(self, event):
         dc = wx.GCDC(wx.PaintDC(self))
@@ -1335,23 +1420,21 @@ class WxContainerWidgetMixin(WxWidgetMixin):
         self._setup_layout()
         self._children = []
         self._inside_loop = False
+        self._sizer_index = 0
+        self._captured_requests = None
+        self._prune_filter = None
 
     def _setup_layout(self):
         self.Sizer = self._sizer = self._create_sizer()
         self._wx_parent = self
 
-    def _update_gui(self, parent_updated):
-        WxWidgetMixin._update_gui(self, parent_updated)
+    def _update_children(self):
+        old_sizer_index = self._sizer_index
         self._sizer_index = 0
         self._child_index = 0
         self._names = defaultdict(list)
         self._create_widgets()
-        if not parent_updated:
-            self._layout()
-
-    @profile_sub("layout")
-    def _layout(self):
-        self.Layout()
+        return old_sizer_index != self._sizer_index
 
     def _create_sizer(self):
         return wx.BoxSizer(wx.HORIZONTAL)
@@ -1413,7 +1496,7 @@ class WxContainerWidgetMixin(WxWidgetMixin):
         if re_use_offset == 0:
             widget, sizer_item = self._children[self._child_index]
             widget.update_event_handlers(handlers)
-            widget.update_props(props, parent_updated=True)
+            widget.update_props(props)
             sizer_item.SetBorder(sizer["border"])
             sizer_item.SetProportion(sizer["proportion"])
         else:
@@ -1422,7 +1505,7 @@ class WxContainerWidgetMixin(WxWidgetMixin):
             else:
                 widget = self._children.pop(self._child_index+re_use_offset)[0]
                 widget.update_event_handlers(handlers)
-                widget.update_props(props, parent_updated=True)
+                widget.update_props(props)
                 self._sizer.Detach(self._sizer_index+re_use_offset)
             sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
@@ -1468,6 +1551,51 @@ class WxContainerWidgetMixin(WxWidgetMixin):
 
     def get_widget(self, name, index=0):
         return self._names[name][index]
+
+    def handle_refresh_requests(self, requests):
+        if self._captured_requests is None:
+            WxWidgetMixin.handle_refresh_requests(self, requests)
+        else:
+            if self._prune_filter is not None:
+                requests.prune(**self._prune_filter)
+            self._captured_requests.take_from(requests)
+
+    def _update_gui(self):
+        self._captured_requests = RefreshRequests()
+        try:
+            self._updagte_gui_with_capture_active()
+        finally:
+            captured = self._captured_requests
+            self._captured_requests = None
+            self.handle_refresh_requests(captured)
+
+    def _updagte_gui_with_capture_active(self):
+        self._prune_filter = None
+        WxWidgetMixin._update_gui(self)
+        if self._captured_requests.has(
+            layout=True,
+            immediate=False
+        ):
+            self._captured_requests.prune(
+                layout=False,
+                immediate=False
+            )
+            self._prune_filter = {
+                "immediate": False,
+            }
+        elif self._captured_requests.has(
+            immediate=False
+        ):
+            self._prune_filter = {
+                "layout": False,
+                "immediate": False,
+            }
+        if self._update_children():
+            self._prune_filter = None
+            self._captured_requests.prune(
+                immediate=False
+            )
+            self._request_refresh(layout_me=True)
 
 class Frame(wx.Frame, WxContainerWidgetMixin):
 
@@ -1554,6 +1682,10 @@ class CompactScrolledWindow(wx.ScrolledWindow):
 
     def _calc_scroll_pos_vscroll(self, x, y, delta):
         return (x, y-delta*self.step)
+
+    def Layout(self):
+        wx.ScrolledWindow.Layout(self)
+        self.FitInside()
 
 class VScroll(CompactScrolledWindow, WxContainerWidgetMixin):
 
@@ -2239,7 +2371,6 @@ class Title(Panel):
         props.update(self.prop(['text_edit_props']))
         props['actions'] = self.prop(['actions'])
         props['handle_key'] = self._handle_key
-        sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
     def _handle_key(self, key_event, selection):
@@ -2571,6 +2702,7 @@ class TextEdit(Panel):
         name = 'text'
         props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['max_width']), mul(2, self._margin()))
+        props['immediate'] = self._immediate(self.prop(['selection']))
         props['focus'] = self._focus(self.prop(['selection']))
         props['cursor'] = self._get_cursor(self.prop(['selection']))
         handlers['click'] = lambda event: self._on_click(event, self.prop(['selection']))
@@ -2589,6 +2721,9 @@ class TextEdit(Panel):
             "width": 1 if selection.present() else 0,
             "color": selection_color,
         }
+
+    def _immediate(self, selection):
+        return selection.present()
 
     def _focus(self, selection):
         return selection.present()
@@ -3203,8 +3338,9 @@ class Text(wx.Panel, WxWidgetMixin):
         self._show_cursors = True
         self._cursor_positions = []
 
-    def _update_gui(self, parent_updated):
-        WxWidgetMixin._update_gui(self, parent_updated)
+    def _update_gui(self):
+        WxWidgetMixin._update_gui(self)
+        old_min_size = self.GetMinSize()
         did_measure = False
         if (self.prop_changed("base_style") or
             self.prop_changed("characters")):
@@ -3236,7 +3372,10 @@ class Text(wx.Panel, WxWidgetMixin):
             self._calculate_selection_rects(
                 self.prop_with_default(["selections"], [])
             )
-            self.Refresh()
+            self._request_refresh(
+                layout=self.GetMinSize() != old_min_size,
+                immediate=self.prop_with_default(["immediate"], False)
+            )
 
     def _get_style(self, character):
         style = {
@@ -3306,7 +3445,7 @@ class Text(wx.Panel, WxWidgetMixin):
             max_w = max(max_w, w)
             y += h
             index += len(line)
-        self.SetMinSize((max_w, y))
+        self.SetMinSize((max_w if max_width is None else max_width, y))
 
     def _extract_line(self, index, max_width, break_at_word):
         x = 0
@@ -3445,7 +3584,7 @@ class Text(wx.Panel, WxWidgetMixin):
 
     def _on_timer(self, wx_event):
         self._show_cursors = not self._show_cursors
-        self.Refresh()
+        self._request_refresh()
 
     def _on_window_destroy(self, event):
         self._timer.Stop()
@@ -3472,6 +3611,48 @@ class Text(wx.Panel, WxWidgetMixin):
         return (character, True)
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
+
+class RefreshRequests(object):
+
+    def __init__(self, *initial_requests):
+        self._requests = list(initial_requests)
+
+    def take_from(self, requests):
+        requests.process(self.add)
+
+    def add(self, request):
+        if request not in self._requests:
+            self._requests.append(request)
+
+    def process(self, fn):
+        result = [
+            fn(x)
+            for x
+            in self._requests
+        ]
+        self._requests = []
+        return result
+
+    def has(self, **attrs):
+        return any(
+            self._match(x, **attrs)
+            for x
+            in self._requests
+        )
+
+    def prune(self, **attrs):
+        index = 0
+        while index < len(self._requests):
+            if self._match(self._requests[index], **attrs):
+                self._requests.pop(index)
+            else:
+                index += 1
+
+    def _match(self, request, **attrs):
+        for key, value in attrs.items():
+            if request[key] != value:
+                return False
+        return True
 
 if __name__ == "__main__":
     main()
