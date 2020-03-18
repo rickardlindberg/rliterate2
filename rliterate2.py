@@ -288,7 +288,8 @@ def generate_rows_and_drop_points(
         foreground,
         dragdrop_invalid_color,
         0,
-        False
+        False,
+        0
     )
 
 @cache(limit=1000, key_path=[0, "id"])
@@ -300,7 +301,8 @@ def _generate_rows_and_drop_points_page(
     foreground,
     dragdrop_invalid_color,
     level,
-    dragged
+    dragged,
+    row_offset
 ):
     rows = []
     drop_points = []
@@ -323,7 +325,7 @@ def _generate_rows_and_drop_points_page(
     else:
         target_index = 0
     drop_points.append(TableOfContentsDropPoint(
-        row_index=len(rows)-1,
+        row_index=row_offset+len(rows)-1,
         target_index=target_index,
         target_page=page["id"],
         level=level+1
@@ -338,12 +340,13 @@ def _generate_rows_and_drop_points_page(
                 foreground,
                 dragdrop_invalid_color,
                 level+1,
-                dragged
+                dragged,
+                row_offset+len(rows)
             )
             rows.extend(sub_result["rows"])
             drop_points.extend(sub_result["drop_points"])
             drop_points.append(TableOfContentsDropPoint(
-                row_index=len(rows)-1,
+                row_index=row_offset+len(rows)-1,
                 target_index=target_index+1,
                 target_page=page["id"],
                 level=level+1
