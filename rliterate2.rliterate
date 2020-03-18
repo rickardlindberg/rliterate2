@@ -4635,7 +4635,7 @@
 "type":"variable"
 },
 {
-"text":"(\n                layout=self.GetMinSize() != old_min_size,\n                immediate=self.prop_with_default([\"immediate\"], False)\n            )\n\n",
+"text":"(\n                layout=self.GetMinSize() != old_min_size,\n                immediate=(\n                    self.prop_with_default([\"immediate\"], False) and\n                    self.prop_changed(\"characters\")\n                )\n            )\n\n",
 "type":"code"
 },
 {

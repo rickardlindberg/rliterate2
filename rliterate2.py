@@ -3390,7 +3390,10 @@ class Text(wx.Panel, WxWidgetMixin):
             )
             self._request_refresh(
                 layout=self.GetMinSize() != old_min_size,
-                immediate=self.prop_with_default(["immediate"], False)
+                immediate=(
+                    self.prop_with_default(["immediate"], False) and
+                    self.prop_changed("characters")
+                )
             )
 
     def _get_style(self, character):
