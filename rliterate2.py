@@ -1432,12 +1432,13 @@ class WxContainerWidgetMixin(WxWidgetMixin):
         self._wx_parent = self
 
     def _update_children(self):
+        self._sizer_changed = False
         old_sizer_index = self._sizer_index
         self._sizer_index = 0
         self._child_index = 0
         self._names = defaultdict(list)
         self._create_widgets()
-        return old_sizer_index != self._sizer_index
+        return old_sizer_index != self._sizer_index or self._sizer_changed
 
     def _create_sizer(self):
         return wx.BoxSizer(wx.HORIZONTAL)
@@ -1500,8 +1501,12 @@ class WxContainerWidgetMixin(WxWidgetMixin):
             widget, sizer_item = self._children[self._child_index]
             widget.update_event_handlers(handlers)
             widget.update_props(props)
-            sizer_item.SetBorder(sizer["border"])
-            sizer_item.SetProportion(sizer["proportion"])
+            if sizer_item.Border != sizer["border"]:
+                sizer_item.SetBorder(sizer["border"])
+                self._sizer_changed = True
+            if sizer_item.Proportion != sizer["proportion"]:
+                sizer_item.SetProportion(sizer["proportion"])
+                self._sizer_changed = True
         else:
             if re_use_offset is None:
                 widget = widget_cls(self._wx_parent, self, handlers, props)
@@ -1512,6 +1517,7 @@ class WxContainerWidgetMixin(WxWidgetMixin):
                 self._sizer.Detach(self._sizer_index+re_use_offset)
             sizer_item = self._insert_sizer(self._sizer_index, widget, **sizer)
             self._children.insert(self._child_index, (widget, sizer_item))
+            self._sizer_changed = True
         sizer_item.Show(True)
         if name is not None:
             self._names[name].append(widget)
@@ -1521,14 +1527,18 @@ class WxContainerWidgetMixin(WxWidgetMixin):
     def _create_space(self, thickness):
         if (self._child_index < len(self._children) and
             self._children[self._child_index][0] is None):
-            self._children[self._child_index][1].SetMinSize(
-                self._get_space_size(thickness)
-            )
+            new_min_size = self._get_space_size(thickness)
+            if self._children[self._child_index][1].MinSize != new_min_size:
+                self._children[self._child_index][1].SetMinSize(
+                    new_min_size
+                )
+                self._sizer_changed = True
         else:
             self._children.insert(self._child_index, (None, self._insert_sizer(
                 self._sizer_index,
                 self._get_space_size(thickness)
             )))
+            self._sizer_changed = True
         self._sizer_index += 1
         self._child_index += 1
 
