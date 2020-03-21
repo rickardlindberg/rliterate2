@@ -1230,7 +1230,15 @@
 ],
 "fragments":[
 {
-"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    title = self.prop([\"title\"])\n    if key_event.key == \"\\x08\":\n        self.prop([\"actions\", \"edit_page\"])(\n            self.prop([\"id\"]),\n            {\n                \"title\": title[:value[\"start\"]-1] + title[value[\"end\"]:],\n            },\n            selection.create({\n                \"start\": value[\"start\"] - 1,\n                \"end\": value[\"start\"] - 1,\n                \"cursor_at_start\": True,\n            })\n        )\n    else:\n        self.prop([\"actions\", \"edit_page\"])(\n            self.prop([\"id\"]),\n            {\n                \"title\": title[:value[\"start\"]] + key_event.key + title[value[\"end\"]:],\n            },\n            selection.create({\n                \"start\": value[\"start\"] + 1,\n                \"end\": value[\"start\"] + 1,\n                \"cursor_at_start\": True,\n            })\n        )\n",
+"text":"def _handle_key(self, key_event, selection):\n    def save(new_title, new_selection):\n        self.prop([\"actions\", \"edit_page\"])(\n            self.prop([\"id\"]),\n            {\n                \"title\": new_title,\n            },\n            selection.create(new_selection)\n        )\n    ",
+"type":"code"
+},
+{
+"id":"e8b2beada24e443aa229cf6e6b85e403",
+"type":"variable"
+},
+{
+"text":"(\n        self.prop([\"title\"]),\n        selection.get(),\n        save\n    ).handle_key(key_event)\n",
 "type":"code"
 }
 ],
@@ -1266,7 +1274,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title_text_props(builder, title, selection, cursor_color):\n    if title:\n        if selection.present():\n            value = selection.get()\n            builder.selection_start(value[\"start\"])\n            builder.selection_end(value[\"end\"])\n            if value[\"cursor_at_start\"]:\n                builder.cursor(value[\"start\"])\n            else:\n                builder.cursor(value[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection.present():\n            builder.cursor()\n        builder.text(\"Enter title...\", color=placeholder_color, index_constant=0)\n    return builder.get()\n",
+"text":"def build_title_text_props(builder, title, selection, placeholder_color):\n    if title:\n        if selection.present():\n            value = selection.get()\n            builder.selection_start(value[\"start\"])\n            builder.selection_end(value[\"end\"])\n            if value[\"cursor_at_start\"]:\n                builder.cursor(value[\"start\"])\n            else:\n                builder.cursor(value[\"end\"])\n        builder.text(title, index_increment=0)\n    else:\n        if selection.present():\n            builder.cursor()\n        builder.text(\"Enter title...\", color=placeholder_color, index_constant=0)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1323,7 +1331,15 @@
 ],
 "fragments":[
 {
-"text":"def _handle_key(self, key_event, selection):\n    print(key_event)\n    value = selection.get()\n    fragments = self.prop([\"fragments\"])\n    before = fragments[:value[\"start\"][0]]\n    after = fragments[value[\"end\"][0]+1:]\n    if value[\"start\"][0] == value[\"end\"][0]:\n        middle = fragments[value[\"start\"][0]]\n        new_middle = [\n            dict(\n                middle,\n                text=(\n                    middle[\"text\"][:value[\"start\"][1]] +\n                    key_event.key +\n                    middle[\"text\"][value[\"end\"][1]:]\n                )\n            ),\n        ]\n    else:\n        start = fragments[value[\"start\"][0]]\n        end = fragments[value[\"end\"][0]]\n        if value[\"cursor_at_start\"]:\n            new_middle = [\n                dict(\n                    start,\n                    text=(\n                        start[\"text\"][:value[\"start\"][1]] + key_event.key\n                    )\n                ),\n                dict(\n                    end,\n                    text=(\n                        end[\"text\"][value[\"end\"][1]:]\n                    )\n                ),\n            ]\n        else:\n            new_middle = [\n                dict(\n                    start,\n                    text=(\n                        start[\"text\"][:value[\"start\"][1]]\n                    )\n                ),\n                dict(\n                    end,\n                    text=(\n                        key_event.key + end[\"text\"][value[\"end\"][1]:]\n                    )\n                ),\n            ]\n    self.prop([\"actions\", \"edit_paragraph\"])(\n        self.prop([\"id\"]),\n        {\n            \"fragments\": before + new_middle + after,\n        },\n        selection.create({\n            \"start\": [value[\"start\"][0], value[\"start\"][1]+1],\n            \"end\": [value[\"start\"][0], value[\"start\"][1]+1],\n            \"cursor_at_start\": True,\n        })\n    )\n",
+"text":"def _handle_key(self, key_event, selection):\n    def save(self, new_text_fragments, new_selection):\n        self.prop([\"actions\", \"edit_paragraph\"])(\n            self.prop([\"id\"]),\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    ",
+"type":"code"
+},
+{
+"id":"1eaa3d40e7f94d83acb420fed05432f8",
+"type":"variable"
+},
+{
+"text":"(\n        self.prop([\"fragments\"]),\n        selection.get(),\n        save\n    ).handle_key(key_event)\n",
 "type":"code"
 }
 ],
@@ -1966,7 +1982,75 @@
 {
 "children":[
 {
+"children":[
+{
 "children":[],
+"id":"3323a1458ae341688ab960a5adbe18ab",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ",
+"type":"code"
+},
+{
+"id":"e8b2beada24e443aa229cf6e6b85e403",
+"type":"variable"
+},
+{
+"text":"(object):\n\n    def __init__(self, data, selection, save):\n        self.data = data\n        self.selection = selection\n        self.save = save\n\n    @property\n    def start(self):\n        return self.selection[\"start\"]\n\n    @start.setter\n    def start(self, value):\n        return self.select(\n            value,\n            self.end,\n            self.cursor_at_start\n        )\n\n    @property\n    def end(self):\n        return self.selection[\"end\"]\n\n    @property\n    def cursor_at_start(self):\n        return self.selection[\"cursor_at_start\"]\n\n    @property\n    def has_selection(self):\n        return self.start != self.end\n\n    def select(self, start, end=None, cursor_at_start=True):\n        self.selection = {\n            \"start\": max(0, start),\n            \"end\": min(len(self.data), start if end is None else end),\n            \"cursor_at_start\": True if end is None else cursor_at_start,\n        }\n\n    def replace(self, text):\n        self.data = self.data[:self.start] + text + self.data[self.end:]\n        self.select(self.start + len(text))\n\n    def handle_key(self, key_event):\n        print(key_event)\n        if key_event.key == \"\\x08\":\n            if not self.has_selection:\n                self.start -= 1\n            self.replace(\"\")\n            self.save(self.data, self.selection)\n        else:\n            self.replace(key_event.key)\n            self.save(self.data, self.selection)\n",
+"type":"code"
+}
+],
+"id":"122607d3322a4227bba7d6b81b1beedc",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ",
+"type":"code"
+},
+{
+"id":"1eaa3d40e7f94d83acb420fed05432f8",
+"type":"variable"
+},
+{
+"text":"(",
+"type":"code"
+},
+{
+"id":"e8b2beada24e443aa229cf6e6b85e403",
+"type":"variable"
+},
+{
+"text":"):\n\n    def handle_key(self, key_event):\n        print(key_event)\n",
+"type":"code"
+}
+],
+"id":"ad0ea06f8ec64ac0a0f072871d3ec748",
+"language":"",
+"post_process":[],
+"type":"code"
+}
+],
+"title":"Key handlers"
+}
+],
 "id":"a9bc8a6bfde64b1297d0ef467f0112ba",
 "paragraphs":[
 {
@@ -7506,6 +7590,7 @@
 "03156156ebb247f5afb5616c81807c6a":"layout_me",
 "0f86edb70f4c42d2a13500eafb09f308":"target_page",
 "1a3c1e487f6943c0a391a189560ab24f":"_prune_filter",
+"1eaa3d40e7f94d83acb420fed05432f8":"TextFragmentsDataKeyHandler",
 "1ee3df1321aa4ed28bca5a0114b08124":"layout",
 "1fc209a79645474fa733e046abf50cc8":"_characters_bounding_rect",
 "22bd861e7bd74b2480512d1003d55174":"_request_refresh",
@@ -7528,6 +7613,7 @@
 "d1d29eb0717a4a31932fd140365de7f5":"_draw_fragments_by_style",
 "d2aa737fb7224d9a8e3903670cddc46b":"target_index",
 "de67e0ffd0c347cca785c1fa0c4e9560":"handle_refresh_requests",
+"e8b2beada24e443aa229cf6e6b85e403":"StringDataKeyHandler",
 "ead9d70512b04e6aac36796c76954814":"_handle_immediate_refresh_request",
 "f9aa655efb5b47b8ac4bcd3a78394fd2":"RefreshRequests",
 "fd51fddc61434acd9476c3404fa1da65":"_handle_delayed_refresh_requests"

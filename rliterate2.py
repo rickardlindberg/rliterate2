@@ -480,7 +480,7 @@ def build_title(page, page_body_width, page_theme, selection):
         },
     }
 
-def build_title_text_props(builder, title, selection, cursor_color):
+def build_title_text_props(builder, title, selection, placeholder_color):
     if title:
         if selection.present():
             value = selection.get()
@@ -2415,33 +2415,19 @@ class Title(Panel):
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
     def _handle_key(self, key_event, selection):
-        print(key_event)
-        value = selection.get()
-        title = self.prop(["title"])
-        if key_event.key == "\x08":
+        def save(new_title, new_selection):
             self.prop(["actions", "edit_page"])(
                 self.prop(["id"]),
                 {
-                    "title": title[:value["start"]-1] + title[value["end"]:],
+                    "title": new_title,
                 },
-                selection.create({
-                    "start": value["start"] - 1,
-                    "end": value["start"] - 1,
-                    "cursor_at_start": True,
-                })
+                selection.create(new_selection)
             )
-        else:
-            self.prop(["actions", "edit_page"])(
-                self.prop(["id"]),
-                {
-                    "title": title[:value["start"]] + key_event.key + title[value["end"]:],
-                },
-                selection.create({
-                    "start": value["start"] + 1,
-                    "end": value["start"] + 1,
-                    "cursor_at_start": True,
-                })
-            )
+        StringDataKeyHandler(
+            self.prop(["title"]),
+            selection.get(),
+            save
+        ).handle_key(key_event)
 
 class TextParagraph(Panel):
 
@@ -2466,67 +2452,19 @@ class TextParagraph(Panel):
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
     def _handle_key(self, key_event, selection):
-        print(key_event)
-        value = selection.get()
-        fragments = self.prop(["fragments"])
-        before = fragments[:value["start"][0]]
-        after = fragments[value["end"][0]+1:]
-        if value["start"][0] == value["end"][0]:
-            middle = fragments[value["start"][0]]
-            new_middle = [
-                dict(
-                    middle,
-                    text=(
-                        middle["text"][:value["start"][1]] +
-                        key_event.key +
-                        middle["text"][value["end"][1]:]
-                    )
-                ),
-            ]
-        else:
-            start = fragments[value["start"][0]]
-            end = fragments[value["end"][0]]
-            if value["cursor_at_start"]:
-                new_middle = [
-                    dict(
-                        start,
-                        text=(
-                            start["text"][:value["start"][1]] + key_event.key
-                        )
-                    ),
-                    dict(
-                        end,
-                        text=(
-                            end["text"][value["end"][1]:]
-                        )
-                    ),
-                ]
-            else:
-                new_middle = [
-                    dict(
-                        start,
-                        text=(
-                            start["text"][:value["start"][1]]
-                        )
-                    ),
-                    dict(
-                        end,
-                        text=(
-                            key_event.key + end["text"][value["end"][1]:]
-                        )
-                    ),
-                ]
-        self.prop(["actions", "edit_paragraph"])(
-            self.prop(["id"]),
-            {
-                "fragments": before + new_middle + after,
-            },
-            selection.create({
-                "start": [value["start"][0], value["start"][1]+1],
-                "end": [value["start"][0], value["start"][1]+1],
-                "cursor_at_start": True,
-            })
-        )
+        def save(self, new_text_fragments, new_selection):
+            self.prop(["actions", "edit_paragraph"])(
+                self.prop(["id"]),
+                {
+                    "fragments": new_text_fragments,
+                },
+                selection.create(new_selection)
+            )
+        TextFragmentsDataKeyHandler(
+            self.prop(["fragments"]),
+            selection.get(),
+            save
+        ).handle_key(key_event)
 
 class QuoteParagraph(Panel):
 
@@ -2857,6 +2795,64 @@ class TextEdit(Panel):
             return "beam"
         else:
             return None
+
+class StringDataKeyHandler(object):
+
+    def __init__(self, data, selection, save):
+        self.data = data
+        self.selection = selection
+        self.save = save
+
+    @property
+    def start(self):
+        return self.selection["start"]
+
+    @start.setter
+    def start(self, value):
+        return self.select(
+            value,
+            self.end,
+            self.cursor_at_start
+        )
+
+    @property
+    def end(self):
+        return self.selection["end"]
+
+    @property
+    def cursor_at_start(self):
+        return self.selection["cursor_at_start"]
+
+    @property
+    def has_selection(self):
+        return self.start != self.end
+
+    def select(self, start, end=None, cursor_at_start=True):
+        self.selection = {
+            "start": max(0, start),
+            "end": min(len(self.data), start if end is None else end),
+            "cursor_at_start": True if end is None else cursor_at_start,
+        }
+
+    def replace(self, text):
+        self.data = self.data[:self.start] + text + self.data[self.end:]
+        self.select(self.start + len(text))
+
+    def handle_key(self, key_event):
+        print(key_event)
+        if key_event.key == "\x08":
+            if not self.has_selection:
+                self.start -= 1
+            self.replace("")
+            self.save(self.data, self.selection)
+        else:
+            self.replace(key_event.key)
+            self.save(self.data, self.selection)
+
+class TextFragmentsDataKeyHandler(StringDataKeyHandler):
+
+    def handle_key(self, key_event):
+        print(key_event)
 
 class Document(Immutable):
 
