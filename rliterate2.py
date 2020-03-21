@@ -545,7 +545,8 @@ def build_quote_paragraph(paragraph, page_theme, selection):
                 **page_theme["text_font"]
             ),
             line_height=page_theme["line_height"]
-        )
+        ),
+        "indent_size": page_theme["indent_size"],
     }
 
 @profile_sub("build_list_paragraph")
@@ -557,7 +558,7 @@ def build_list_paragraph(paragraph, page_theme, selection):
             paragraph["child_type"],
             page_theme
         ),
-        "indent": page_theme["margin"],
+        "indent": page_theme["indent_size"],
     }
 
 def build_list_item_rows(children, child_type, page_theme, level=0):
@@ -671,7 +672,7 @@ def build_image_paragraph(paragraph, page_theme, selection):
             line_height=page_theme["line_height"],
             align="center"
         ),
-        "indent": page_theme["margin"]*2,
+        "indent": page_theme["indent_size"],
     }
 
 def build_unknown_paragraph(paragraph, page_theme, selection):
@@ -2533,13 +2534,13 @@ class QuoteParagraph(Panel):
 
     def _create_widgets(self):
         pass
-        self._create_space(20)
+        self._create_space(self.prop(['indent_size']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
         props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), 20)
+        props['max_width'] = sub(self.prop(['body_width']), self.prop(['indent_size']))
         props['break_at_word'] = True
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
@@ -3035,6 +3036,7 @@ class Document(Immutable):
             "margin": 12,
         },
         "page": {
+            "indent_size": 20,
             "line_height": 1.2,
             "text_font": {
                 "size": 10,
@@ -3111,6 +3113,7 @@ class Document(Immutable):
             "margin": 18,
         },
         "page": {
+            "indent_size": 30,
             "line_height": 1.3,
             "text_font": {
                 "size": 12,
