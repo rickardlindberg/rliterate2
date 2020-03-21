@@ -459,7 +459,7 @@ def build_title(page, page_body_width, page_theme, selection):
         "id": page["id"],
         "title": page["title"],
         "text_edit_props": {
-            "text_props": build_title_text_props(
+            "text_props": dict(build_title_text_props(
                 TextPropsBuilder(
                     **page_theme["title_font"],
                     selection_color=page_theme["selection_color"],
@@ -468,7 +468,7 @@ def build_title(page, page_body_width, page_theme, selection):
                 page["title"],
                 selection,
                 page_theme["placeholder_color"]
-            ),
+            ), break_at_word=True, line_height=1.2),
             "max_width": page_body_width,
             "selection": selection,
             "selection_color": page_theme["selection_border"],
@@ -2522,16 +2522,17 @@ class QuoteParagraph(Panel):
 
     def _create_widgets(self):
         pass
+        self._create_space(20)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['left_margin'] = 20
-        props['right_margin'] = 0
-        props['text_props'] = self.prop(['text_props'])
+        props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), 20)
+        props['break_at_word'] = True
+        props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(TextWithMargin, props, sizer, handlers, name)
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class ListParagraph(Panel):
 
@@ -2550,16 +2551,38 @@ class ListParagraph(Panel):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['left_margin'] = mul(loopvar['level'], self.prop(['indent']))
-            props['right_margin'] = 0
-            props['max_width'] = sub(self.prop(['body_width']), mul(loopvar['level'], self.prop(['indent'])))
-            props['text_props'] = loopvar['text_props']
+            props.update(loopvar)
+            props['indent'] = self.prop(['indent'])
+            props['body_width'] = self.prop(['body_width'])
             sizer["flag"] |= wx.EXPAND
-            self._create_widget(TextWithMargin, props, sizer, handlers, name)
+            self._create_widget(ListRow, props, sizer, handlers, name)
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['rows']):
                 loop_fn(loopvar)
+
+class ListRow(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(mul(self.prop(['level']), self.prop(['indent'])))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['text_props']))
+        props['max_width'] = sub(self.prop(['body_width']), mul(self.prop(['level']), self.prop(['indent'])))
+        props['break_at_word'] = True
+        props['line_height'] = 1.2
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
 
 class CodeParagraph(Panel):
 
@@ -2656,12 +2679,35 @@ class ImageParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['left_margin'] = self.prop(['indent'])
-        props['right_margin'] = self.prop(['indent'])
+        props['indent'] = self.prop(['indent'])
         props['text_props'] = self.prop(['text_props'])
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
+        props['body_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(TextWithMargin, props, sizer, handlers, name)
+        self._create_widget(ImageText, props, sizer, handlers, name)
+
+class ImageText(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(self.prop(['indent']))
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['text_props']))
+        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
+        props['break_at_word'] = True
+        props['line_height'] = 1.2
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_space(self.prop(['indent']))
 
 class UnknownParagraph(Panel):
 
@@ -2682,30 +2728,6 @@ class UnknownParagraph(Panel):
         props['max_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
-
-class TextWithMargin(Panel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-        self._create_space(self.prop(['left_margin']))
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props.update(self.prop(['text_props']))
-        props['max_width'] = self.prop(['max_width'])
-        props['break_at_word'] = True
-        props['line_height'] = 1.2
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(Text, props, sizer, handlers, name)
-        self._create_space(self.prop(['right_margin']))
 
 class TextEdit(Panel):
 
