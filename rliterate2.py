@@ -468,7 +468,7 @@ def build_title(page, page_body_width, page_theme, selection):
                 page["title"],
                 selection,
                 page_theme["placeholder_color"]
-            ), break_at_word=True, line_height=1.2),
+            ), break_at_word=True, line_height=page_theme["line_height"]),
             "max_width": page_body_width,
             "selection": selection,
             "selection_color": page_theme["selection_border"],
@@ -527,8 +527,9 @@ def build_text_paragraph(paragraph, page_theme, selection):
                 paragraph["fragments"],
                 selection=selection,
                 selection_color=page_theme["selection_color"],
-                cursor_color=page_theme["cursor_color"]
-            ), break_at_word=True, line_height=1.2),
+                cursor_color=page_theme["cursor_color"],
+                **page_theme["text_font"]
+            ), break_at_word=True, line_height=page_theme["line_height"]),
             "selection": selection,
             "selection_color": page_theme["selection_border"],
         },
@@ -538,7 +539,13 @@ def build_text_paragraph(paragraph, page_theme, selection):
 def build_quote_paragraph(paragraph, page_theme, selection):
     return {
         "widget": QuoteParagraph,
-        "text_props": text_fragments_to_props(paragraph["fragments"]),
+        "text_props": dict(
+            text_fragments_to_props(
+                paragraph["fragments"],
+                **page_theme["text_font"]
+            ),
+            line_height=page_theme["line_height"]
+        )
     }
 
 @profile_sub("build_list_paragraph")
@@ -547,27 +554,30 @@ def build_list_paragraph(paragraph, page_theme, selection):
         "widget": ListParagraph,
         "rows": build_list_item_rows(
             paragraph["children"],
-            paragraph["child_type"]
+            paragraph["child_type"],
+            page_theme
         ),
         "indent": page_theme["margin"],
     }
 
-def build_list_item_rows(children, child_type, level=0):
+def build_list_item_rows(children, child_type, page_theme, level=0):
     rows = []
     for index, child in enumerate(children):
         rows.append({
-            "text_props": text_fragments_to_props(
+            "text_props": dict(text_fragments_to_props(
                 [
                     {"text": _get_bullet_text(child_type, index)}
                 ]
                 +
-                child["fragments"]
+                child["fragments"],
+                **page_theme["text_font"]), line_height=page_theme["line_height"]
             ),
             "level": level,
         })
         rows.extend(build_list_item_rows(
             child["children"],
             child["child_type"],
+            page_theme,
             level+1
         ))
     return rows
@@ -657,7 +667,8 @@ def build_image_paragraph(paragraph, page_theme, selection):
         "widget": ImageParagraph,
         "base64_image": paragraph.get("image_base64", None),
         "text_props": dict(
-            text_fragments_to_props(paragraph["fragments"]),
+            text_fragments_to_props(paragraph["fragments"], **page_theme["text_font"]),
+            line_height=page_theme["line_height"],
             align="center"
         ),
         "indent": page_theme["margin"]*2,
@@ -2530,7 +2541,6 @@ class QuoteParagraph(Panel):
         props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), 20)
         props['break_at_word'] = True
-        props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
 
@@ -2580,7 +2590,6 @@ class ListRow(Panel):
         props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(self.prop(['level']), self.prop(['indent'])))
         props['break_at_word'] = True
-        props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
 
@@ -2704,7 +2713,6 @@ class ImageText(Panel):
         props.update(self.prop(['text_props']))
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
         props['break_at_word'] = True
-        props['line_height'] = 1.2
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
         self._create_space(self.prop(['indent']))
@@ -3027,6 +3035,10 @@ class Document(Immutable):
             "margin": 12,
         },
         "page": {
+            "line_height": 1.2,
+            "text_font": {
+                "size": 10,
+            },
             "title_font": {
                 "size": 16,
             },
@@ -3099,6 +3111,10 @@ class Document(Immutable):
             "margin": 18,
         },
         "page": {
+            "line_height": 1.3,
+            "text_font": {
+                "size": 12,
+            },
             "title_font": {
                 "size": 18,
             },
