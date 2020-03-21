@@ -236,7 +236,8 @@ def table_of_contents_scroll_area_props(document):
         document.get(["toc", "dragged_page"]),
         document.get_open_pages(),
         document.get(["theme", "toc", "foreground"]),
-        document.get(["theme", "dragdrop_invalid_color"])
+        document.get(["theme", "dragdrop_invalid_color"]),
+        document.get(["theme", "toc", "font"]),
     ))
     return props
 
@@ -278,7 +279,8 @@ def generate_rows_and_drop_points(
     dragged_page,
     open_pages,
     foreground,
-    dragdrop_invalid_color
+    dragdrop_invalid_color,
+    font
 ):
     try:
         root_page = document.get_page(hoisted_page)
@@ -291,6 +293,7 @@ def generate_rows_and_drop_points(
         open_pages,
         foreground,
         dragdrop_invalid_color,
+        font,
         0,
         False,
         0
@@ -304,6 +307,7 @@ def _generate_rows_and_drop_points_page(
     open_pages,
     foreground,
     dragdrop_invalid_color,
+    font,
     level,
     dragged,
     row_offset
@@ -315,10 +319,10 @@ def _generate_rows_and_drop_points_page(
     dragged = dragged or page["id"] == dragged_page
     rows.append({
         "id": page["id"],
-        "text_props": TextPropsBuilder(
+        "text_props": TextPropsBuilder(**dict(font,
             bold=page["id"] in open_pages,
             color=dragdrop_invalid_color if dragged else foreground
-        ).text(page["title"]).get(),
+        )).text(page["title"]).get(),
         "level": level,
         "has_children": num_children > 0,
         "collapsed": is_collapsed,
@@ -343,6 +347,7 @@ def _generate_rows_and_drop_points_page(
                 open_pages,
                 foreground,
                 dragdrop_invalid_color,
+                font,
                 level+1,
                 dragged,
                 row_offset+len(rows)
@@ -3026,6 +3031,9 @@ class Document(Immutable):
             "row_margin": 2,
             "divider_thickness": 2,
             "hover_background": "#cccccc",
+            "font": {
+                "size": 10,
+            },
         },
         "toc_divider": {
             "thickness": 3,
@@ -3103,6 +3111,9 @@ class Document(Immutable):
             "row_margin": 3,
             "divider_thickness": 3,
             "hover_background": "#d0cabb",
+            "font": {
+                "size": 12,
+            },
         },
         "toc_divider": {
             "thickness": 5,
