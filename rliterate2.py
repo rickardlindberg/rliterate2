@@ -3550,6 +3550,7 @@ class Text(wx.Panel, WxWidgetMixin):
         for character, size in line:
             max_h = max(max_h, size.Height)
         height = int(round(max_h * line_height))
+        height_offset = int(round((height - max_h) / 2))
 
         # Bla bla
         characters_by_style = []
@@ -3594,7 +3595,7 @@ class Text(wx.Panel, WxWidgetMixin):
         for style, characters, text, widths in characters_by_style_wiht_text_widths:
             texts, positions = self._draw_fragments_by_style[style]
             texts.append(text)
-            positions.append((x, y))
+            positions.append((x, y+height_offset))
 
             for index, character in enumerate(characters):
                 characters_in_line.append((
