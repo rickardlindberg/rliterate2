@@ -656,7 +656,10 @@ def build_image_paragraph(paragraph, page_theme, selection):
     return {
         "widget": ImageParagraph,
         "base64_image": paragraph.get("image_base64", None),
-        "text_props": text_fragments_to_props(paragraph["fragments"]),
+        "text_props": dict(
+            text_fragments_to_props(paragraph["fragments"]),
+            align="center"
+        ),
         "indent": page_theme["margin"]*2,
     }
 
@@ -2657,7 +2660,7 @@ class ImageParagraph(Panel):
         props['right_margin'] = self.prop(['indent'])
         props['text_props'] = self.prop(['text_props'])
         props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
-        sizer["flag"] |= wx.ALIGN_CENTER
+        sizer["flag"] |= wx.EXPAND
         self._create_widget(TextWithMargin, props, sizer, handlers, name)
 
 class UnknownParagraph(Panel):
@@ -3373,11 +3376,13 @@ class Text(wx.Panel, WxWidgetMixin):
         if (did_measure or
             self.prop_changed("max_width") or
             self.prop_changed("break_at_word") or
-            self.prop_changed("line_height")):
+            self.prop_changed("line_height") or
+            self.prop_changed("align")):
             self._reflow(
                 self.prop_with_default(["max_width"], None),
                 self.prop_with_default(["break_at_word"], False),
-                self.prop_with_default(["line_height"], 1)
+                self.prop_with_default(["line_height"], 1),
+                self.prop_with_default(["align"], "left")
             )
             did_reflow = True
         if did_reflow or self.prop_changed("cursors"):
@@ -3449,7 +3454,7 @@ class Text(wx.Panel, WxWidgetMixin):
             ))
 
     @profile_sub("text reflow")
-    def _reflow(self, max_width, break_at_word, line_height):
+    def _reflow(self, max_width, break_at_word, line_height, align):
         self._draw_fragments_by_style = defaultdict(lambda: ([], []))
         self._characters_bounding_rect = []
         self._characters_by_line = []
@@ -3465,7 +3470,7 @@ class Text(wx.Panel, WxWidgetMixin):
         max_w = 0
         while index < len(self._measured_characters):
             line = self._extract_line(index, max_width, break_at_word)
-            w, h = self._layout_line(dc, line, line_height, y)
+            w, h = self._layout_line(dc, line, line_height, y, max_width, align)
             max_w = max(max_w, w)
             y += h
             index += len(line)
@@ -3498,7 +3503,7 @@ class Text(wx.Panel, WxWidgetMixin):
             next_character = current_character
             index -= 1
 
-    def _layout_line(self, dc, line, line_height, y):
+    def _layout_line(self, dc, line, line_height, y, max_width, align):
         # Calculate total height
         max_h = 0
         for character, size in line:
@@ -3520,8 +3525,9 @@ class Text(wx.Panel, WxWidgetMixin):
         if characters:
             characters_by_style.append((style, characters))
 
-        characters_in_line = []
-        x = 0
+        # Hmm
+        total_width = 0
+        characters_by_style_wiht_text_widths = []
         for style, characters in characters_by_style:
             text = "".join(
                 character["text"]
@@ -3529,11 +3535,25 @@ class Text(wx.Panel, WxWidgetMixin):
                 in characters
             )
             self._apply_style(style, dc)
+            widths = dc.GetPartialTextExtents(text)
+            widths.insert(0, 0)
+            characters_by_style_wiht_text_widths.append((
+                style,
+                characters,
+                text,
+                widths,
+            ))
+            total_width += widths[-1]
+
+        characters_in_line = []
+        if max_width is not None and align == "center":
+            x = int((max_width - total_width) / 2)
+        else:
+            x = 0
+        for style, characters, text, widths in characters_by_style_wiht_text_widths:
             texts, positions = self._draw_fragments_by_style[style]
             texts.append(text)
             positions.append((x, y))
-            widths = dc.GetPartialTextExtents(text)
-            widths.insert(0, 0)
 
             for index, character in enumerate(characters):
                 characters_in_line.append((
