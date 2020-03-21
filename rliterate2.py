@@ -135,6 +135,7 @@ def main_frame_props(document):
         ),
     }
 
+@cache()
 def actions(document):
     return {
         "rotate_theme": document.rotate,
@@ -142,12 +143,14 @@ def actions(document):
         "set_hoisted_page": document.set_hoisted_page,
     }
 
+@cache()
 def format_title(path):
     return "{} ({}) - RLiterate 2".format(
         os.path.basename(path),
         os.path.abspath(os.path.dirname(path))
     )
 
+@cache()
 def toolbar_props(toolbar_theme, actions):
     return {
         "background": toolbar_theme["background"],
@@ -155,6 +158,7 @@ def toolbar_props(toolbar_theme, actions):
         "actions": actions,
     }
 
+@cache()
 def toolbar_divider_props(toolbar_divider_theme):
     return {
         "background": toolbar_divider_theme["color"],
@@ -356,6 +360,7 @@ def _generate_rows_and_drop_points_page(
         "drop_points": drop_points,
     }
 
+@cache()
 def toc_divider_props(toc_divider_theme):
     return {
         "background": toc_divider_theme["color"],

@@ -426,7 +426,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(toolbar_theme, actions):\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"actions\": actions,\n    }\n",
+"text":"@cache()\ndef toolbar_props(toolbar_theme, actions):\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"actions\": actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -470,7 +470,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_divider_props(toolbar_divider_theme):\n    return {\n        \"background\": toolbar_divider_theme[\"color\"],\n        \"min_size\": (\n            -1,\n            toolbar_divider_theme[\"thickness\"]\n        ),\n    }\n",
+"text":"@cache()\ndef toolbar_divider_props(toolbar_divider_theme):\n    return {\n        \"background\": toolbar_divider_theme[\"color\"],\n        \"min_size\": (\n            -1,\n            toolbar_divider_theme[\"thickness\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -999,7 +999,7 @@
 ],
 "fragments":[
 {
-"text":"def toc_divider_props(toc_divider_theme):\n    return {\n        \"background\": toc_divider_theme[\"color\"],\n        \"min_size\": (\n            toc_divider_theme[\"thickness\"],\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
+"text":"@cache()\ndef toc_divider_props(toc_divider_theme):\n    return {\n        \"background\": toc_divider_theme[\"color\"],\n        \"min_size\": (\n            toc_divider_theme[\"thickness\"],\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
 "type":"code"
 }
 ],
@@ -2231,7 +2231,7 @@
 ],
 "fragments":[
 {
-"text":"def actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
+"text":"@cache()\ndef actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
 "type":"code"
 }
 ],
@@ -2247,7 +2247,7 @@
 ],
 "fragments":[
 {
-"text":"def format_title(path):\n    return \"{} ({}) - RLiterate 2\".format(\n        os.path.basename(path),\n        os.path.abspath(os.path.dirname(path))\n    )\n",
+"text":"@cache()\ndef format_title(path):\n    return \"{} ({}) - RLiterate 2\".format(\n        os.path.basename(path),\n        os.path.abspath(os.path.dirname(path))\n    )\n",
 "type":"code"
 }
 ],
