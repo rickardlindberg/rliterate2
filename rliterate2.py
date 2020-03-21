@@ -93,8 +93,15 @@ def _cache_differ(one, two):
             return True
     return False
 
-def usage(script):
-    sys.exit(f"usage: {script} <path>")
+def main():
+    args = parse_args()
+    start_app(
+        MainFrame,
+        create_props(
+            main_frame_props,
+            Document(args["path"])
+        )
+    )
 
 def parse_args():
     args = {
@@ -107,15 +114,8 @@ def parse_args():
     args["path"] = rest[0]
     return args
 
-def main():
-    args = parse_args()
-    start_app(
-        MainFrame,
-        create_props(
-            main_frame_props,
-            Document(args["path"])
-        )
-    )
+def usage(script):
+    sys.exit(f"usage: {script} <path>")
 
 def main_frame_props(document):
     return {

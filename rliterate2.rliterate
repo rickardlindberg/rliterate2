@@ -300,6 +300,27 @@
 },
 {
 "children":[],
+"id":"0bd5a7e9be044e859bb82eef4ba1e452",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"TODO:",
+"type":"strong"
+},
+{
+"text":" Introduce GUI framework, document model, and main frame.",
+"type":"text"
+}
+],
+"id":"785279432d8a4a0191c02ae760c99138",
+"type":"text"
+}
+],
+"title":"Architecture overview"
+},
+{
+"children":[],
 "id":"48f01b615cea4ab8a229f1cb1c9b89a3",
 "paragraphs":[
 {
@@ -311,11 +332,27 @@
 ],
 "fragments":[
 {
-"text":"def usage(script):\n    sys.exit(f\"usage: {script} <path>\")\n",
+"text":"def main():\n    args = parse_args()\n    ",
+"type":"code"
+},
+{
+"id":"3331a09d862a4ee3a3e878e8641cdb8f",
+"type":"variable"
+},
+{
+"text":"(\n        MainFrame,\n        ",
+"type":"code"
+},
+{
+"id":"4dabcd9b4f634a85af8d9119a745a33c",
+"type":"variable"
+},
+{
+"text":"(\n            main_frame_props,\n            Document(args[\"path\"])\n        )\n    )\n",
 "type":"code"
 }
 ],
-"id":"665fd0f19f4f409eab4aa210dd7e61d2",
+"id":"9e71e85a89e143fe86cb4b90a5eed8a7",
 "type":"code"
 },
 {
@@ -343,11 +380,11 @@
 ],
 "fragments":[
 {
-"text":"def main():\n    args = parse_args()\n    start_app(\n        MainFrame,\n        create_props(\n            main_frame_props,\n            Document(args[\"path\"])\n        )\n    )\n",
+"text":"def usage(script):\n    sys.exit(f\"usage: {script} <path>\")\n",
 "type":"code"
 }
 ],
-"id":"9e71e85a89e143fe86cb4b90a5eed8a7",
+"id":"665fd0f19f4f409eab4aa210dd7e61d2",
 "type":"code"
 }
 ],
@@ -1883,81 +1920,6 @@
 }
 ],
 "title":"Workspace"
-}
-],
-"id":"21c17f5017644b69b2698822a4ce524e",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    ToolbarDivider(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
-"type":"code"
-}
-],
-"id":"7501efbaaca640c9aaf8e66a7309ad74",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def main_frame_props(document):\n    return {\n        \"toolbar\": toolbar_props(\n            document.get([\"theme\", \"toolbar\"]),\n            actions(document)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            document.get([\"theme\", \"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            actions(document)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
-"type":"code"
-}
-],
-"id":"817bfdde2cd042328c69a297120bdf9d",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
-"type":"code"
-}
-],
-"id":"d277c1f7e8c04947b3f2f8abc5802170",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def format_title(path):\n    return \"{} ({}) - RLiterate 2\".format(\n        os.path.basename(path),\n        os.path.abspath(os.path.dirname(path))\n    )\n",
-"type":"code"
-}
-],
-"id":"ceb410e88dd140cba3a2ec03218f2102",
-"type":"code"
-}
-],
-"title":"Main frame"
 },
 {
 "children":[
@@ -2219,6 +2181,81 @@
 "id":"3d73ed4ad24f45138951f62472c2117a",
 "paragraphs":[],
 "title":"Reusable widgets"
+}
+],
+"id":"21c17f5017644b69b2698822a4ce524e",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    ToolbarDivider(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"7501efbaaca640c9aaf8e66a7309ad74",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def main_frame_props(document):\n    return {\n        \"toolbar\": toolbar_props(\n            document.get([\"theme\", \"toolbar\"]),\n            actions(document)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            document.get([\"theme\", \"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            actions(document)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
+"type":"code"
+}
+],
+"id":"817bfdde2cd042328c69a297120bdf9d",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
+"type":"code"
+}
+],
+"id":"d277c1f7e8c04947b3f2f8abc5802170",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def format_title(path):\n    return \"{} ({}) - RLiterate 2\".format(\n        os.path.basename(path),\n        os.path.abspath(os.path.dirname(path))\n    )\n",
+"type":"code"
+}
+],
+"id":"ceb410e88dd140cba3a2ec03218f2102",
+"type":"code"
+}
+],
+"title":"Main frame"
 },
 {
 "children":[
@@ -2778,6 +2815,99 @@
 "children":[
 {
 "children":[],
+"id":"e534435a60be4278bb0f654fbd913adf",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"Widgets are written in a custom language. Here is an example frame:",
+"type":"text"
+}
+],
+"id":"e536270ef4594a46acf01b6bb88b669d",
+"type":"text"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"frame ExampleFrame %layout_rows {\n    Panel(\n        background = #color\n        %align[EXPAND]\n    )\n    Panel(\n        background = \"red\"\n        %align[EXPAND]\n    )\n}\n",
+"type":"code"
+}
+],
+"id":"04b07f5edb0747da93b2979dc4b2c16e",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"This gets compiled into the following Python class with the same name:",
+"type":"text"
+}
+],
+"id":"48b846e6c4e04066a659f6d5e9264ea5",
+"type":"text"
+},
+{
+"code_id":"04b07f5edb0747da93b2979dc4b2c16e",
+"id":"24bb8898269f40738693e29d206a6b6d",
+"type":"expanded_code"
+},
+{
+"fragments":[
+{
+"text":"All widgets get something called props. It is a Python dictionary with arbitrary values that can be used to construct the GUI. ",
+"type":"text"
+},
+{
+"text":"color",
+"type":"code"
+},
+{
+"text":" in the example is a prop.",
+"type":"text"
+}
+],
+"id":"21a8e206415248f1bfc0e2275f369935",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"A GUI application is started by calling ",
+"type":"text"
+},
+{
+"id":"3331a09d862a4ee3a3e878e8641cdb8f",
+"type":"variable"
+},
+{
+"text":" and passing a frame class and a props object. A props object is created by calling ",
+"type":"text"
+},
+{
+"id":"4dabcd9b4f634a85af8d9119a745a33c",
+"type":"variable"
+},
+{
+"text":" with a function that creates the props from a list of dependencies. As soon as one of the dependencies change, the function is invoked again to recompute the props and rebuild the GUI.",
+"type":"text"
+}
+],
+"id":"718ac57c74954510932a94079c5c50f9",
+"type":"text"
+}
+],
+"title":"Tutorial"
+},
+{
+"children":[],
 "id":"fa9c9667abb14d34b60ec36cc4188b99",
 "paragraphs":[
 {
@@ -2982,7 +3112,15 @@
 ],
 "fragments":[
 {
-"text":"def create_props(fn, *args):\n    fn = profile_sub(\"create props\")(fn)\n    immutable = Immutable(fn(*args))\n    for arg in args:\n        if isinstance(arg, Immutable):\n            arg.listen(lambda: immutable.replace([], fn(*args)))\n    return immutable\n",
+"text":"def ",
+"type":"code"
+},
+{
+"id":"4dabcd9b4f634a85af8d9119a745a33c",
+"type":"variable"
+},
+{
+"text":"(fn, *args):\n    fn = profile_sub(\"create props\")(fn)\n    immutable = Immutable(fn(*args))\n    for arg in args:\n        if isinstance(arg, Immutable):\n            arg.listen(lambda: immutable.replace([], fn(*args)))\n    return immutable\n",
 "type":"code"
 }
 ],
@@ -3017,8 +3155,6 @@
 ],
 "title":"Misc"
 },
-{
-"children":[
 {
 "children":[],
 "id":"8bfcc0594be743f483e66b0be870858e",
@@ -3216,22 +3352,6 @@
 }
 ],
 "title":"Cache"
-}
-],
-"id":"f0ec3620177047238aaecb5777a789db",
-"paragraphs":[
-{
-"fragments":[
-{
-"text":"Utilities that could have been in the Python standard library.",
-"type":"text"
-}
-],
-"id":"6d9f9932e8324969a7188486c5a07773",
-"type":"text"
-}
-],
-"title":"Utilities"
 }
 ],
 "id":"da31b318d9f2479496494b3e56985a07",
@@ -5751,7 +5871,15 @@
 ],
 "fragments":[
 {
-"text":"def start_app(frame_cls, props):\n    @profile_sub(\"render\")\n    def update(props):\n        frame.update_props(props)\n    @profile(\"show frame\")\n    @profile_sub(\"show frame\")\n    def show_frame():\n        props.listen(lambda: update(props.get()))\n        frame = frame_cls(None, None, {}, props.get())\n        frame.Show()\n        return frame\n    app = wx.App()\n    frame = show_frame()\n    if WX_DEBUG_FOCUS:\n        def onTimer(evt):\n            print(\"Focused window: {}\".format(wx.Window.FindFocus()))\n        frame.Bind(wx.EVT_TIMER, onTimer)\n        focus_timer = wx.Timer(frame)\n        focus_timer.Start(1000)\n    app.MainLoop()\n",
+"text":"def ",
+"type":"code"
+},
+{
+"id":"3331a09d862a4ee3a3e878e8641cdb8f",
+"type":"variable"
+},
+{
+"text":"(frame_cls, props):\n    @profile_sub(\"render\")\n    def update(props):\n        frame.update_props(props)\n    @profile(\"show frame\")\n    @profile_sub(\"show frame\")\n    def show_frame():\n        props.listen(lambda: update(props.get()))\n        frame = frame_cls(None, None, {}, props.get())\n        frame.Show()\n        return frame\n    app = wx.App()\n    frame = show_frame()\n    if WX_DEBUG_FOCUS:\n        def onTimer(evt):\n            print(\"Focused window: {}\".format(wx.Window.FindFocus()))\n        frame.Bind(wx.EVT_TIMER, onTimer)\n        focus_timer = wx.Timer(frame)\n        focus_timer.Start(1000)\n    app.MainLoop()\n",
 "type":"code"
 }
 ],
@@ -7036,7 +7164,9 @@
 "22bd861e7bd74b2480512d1003d55174":"_request_refresh",
 "269966a674484b8598126b56bfc28284":"take_from",
 "2ac57c86cd51471681d75d98de62f1ba":"_captured_requests",
+"3331a09d862a4ee3a3e878e8641cdb8f":"start_app",
 "3bdb899dc8ff44fc955b9ad365b56cea":"_characters_by_line",
+"4dabcd9b4f634a85af8d9119a745a33c":"create_props",
 "5f71ca24cdae4919bb3a5612fa704ac3":"_find_refresh_widget",
 "7783f19273504229bb20053bc01b7057":"widget",
 "7f02baf9597a44618c7942768716bba3":"OnDataDropped",
