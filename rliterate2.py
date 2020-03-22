@@ -2411,23 +2411,23 @@ class Title(Panel):
         handlers = {}
         props.update(self.prop(['text_edit_props']))
         props['actions'] = self.prop(['actions'])
-        props['handle_key'] = self._handle_key
+        props['input_handler'] = self._create_input_handler(self.prop(['actions', 'edit_page']), self.prop(['id']), self.prop(['title']), self.prop(['text_edit_props', 'selection']))
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
-    def _handle_key(self, key_event, selection):
+    def _create_input_handler(self, edit_page, page_id, title, selection):
         def save(new_title, new_selection):
-            self.prop(["actions", "edit_page"])(
-                self.prop(["id"]),
+            edit_page(
+                page_id,
                 {
                     "title": new_title,
                 },
                 selection.create(new_selection)
             )
-        StringDataKeyHandler(
-            self.prop(["title"]),
+        return StringInputHandler(
+            title,
             selection.get(),
             save
-        ).handle_key(key_event)
+        )
 
 class TextParagraph(Panel):
 
@@ -2447,24 +2447,24 @@ class TextParagraph(Panel):
         props.update(self.prop(['text_edit_props']))
         props['actions'] = self.prop(['actions'])
         props['max_width'] = self.prop(['body_width'])
-        props['handle_key'] = self._handle_key
+        props['input_handler'] = self._create_input_handler(self.prop(['actions', 'edit_paragraph']), self.prop(['id']), self.prop(['fragments']), self.prop(['text_edit_props', 'selection']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
-    def _handle_key(self, key_event, selection):
-        def save(self, new_text_fragments, new_selection):
-            self.prop(["actions", "edit_paragraph"])(
-                self.prop(["id"]),
+    def _create_input_handler(self, edit_paragraph, paragraph_id, fragments, selection):
+        def save(new_text_fragments, new_selection):
+            edit_paragraph(
+                paragraph_id,
                 {
                     "fragments": new_text_fragments,
                 },
                 selection.create(new_selection)
             )
-        TextFragmentsDataKeyHandler(
-            self.prop(["fragments"]),
+        return TextFragmentsInputHandler(
+            fragments,
             selection.get(),
             save
-        ).handle_key(key_event)
+        )
 
 class QuoteParagraph(Panel):
 
@@ -2785,10 +2785,7 @@ class TextEdit(Panel):
 
     def _on_key(self, event, selection):
         if selection.present():
-            self.prop(["handle_key"])(
-                event,
-                selection
-            )
+            self.prop(["input_handler"]).handle_key(event)
 
     def _get_cursor(self, selection):
         if selection.present():
@@ -2796,7 +2793,7 @@ class TextEdit(Panel):
         else:
             return None
 
-class StringDataKeyHandler(object):
+class StringInputHandler(object):
 
     def __init__(self, data, selection, save):
         self.data = data
@@ -2806,14 +2803,6 @@ class StringDataKeyHandler(object):
     @property
     def start(self):
         return self.selection["start"]
-
-    @start.setter
-    def start(self, value):
-        return self.select(
-            value,
-            self.end,
-            self.cursor_at_start
-        )
 
     @property
     def end(self):
@@ -2827,32 +2816,112 @@ class StringDataKeyHandler(object):
     def has_selection(self):
         return self.start != self.end
 
-    def select(self, start, end=None, cursor_at_start=True):
-        self.selection = {
-            "start": max(0, start),
-            "end": min(len(self.data), start if end is None else end),
-            "cursor_at_start": True if end is None else cursor_at_start,
-        }
+    def expand_selection_left(self):
+        if self.start > 0:
+            self.selection = im_modify(
+                self.selection,
+                ["start"],
+                lambda value: value - 1
+            )
+            return True
+        return False
 
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
-        self.select(self.start + len(text))
+        position = self.start + len(text)
+        self.selection = {
+            "start": position,
+            "end": position,
+            "cursor_at_start": True,
+        }
 
     def handle_key(self, key_event):
         print(key_event)
         if key_event.key == "\x08":
-            if not self.has_selection:
-                self.start -= 1
-            self.replace("")
-            self.save(self.data, self.selection)
+            if self.has_selection:
+                self.replace("")
+                self.save(self.data, self.selection)
+            elif self.expand_selection_left():
+                self.replace("")
+                self.save(self.data, self.selection)
         else:
             self.replace(key_event.key)
             self.save(self.data, self.selection)
 
-class TextFragmentsDataKeyHandler(StringDataKeyHandler):
+class TextFragmentsInputHandler(StringInputHandler):
+
+    def expand_selection_left(self):
+        if self.start[1] > 0:
+            self.selection = im_modify(
+                self.selection,
+                ["start", 1],
+                lambda value: value - 1
+            )
+            return True
+        elif self.start[0] > 0:
+            new_fragment = self.start[0] - 1
+            self.selection = im_modify(
+                self.selection,
+                ["start"],
+                lambda value: [
+                    new_fragment,
+                    min(0, len(self.data[new_fragment]["text"]) - 1 + 1),
+                ]
+            )
+            return True
+        return False
+
+    def replace(self, text):
+        before = self.data[:self.start[0]]
+        left = self.data[self.start[0]]
+        right = self.data[self.end[0]]
+        after = self.data[self.end[0]+1:]
+        if left is right:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]
+                ),
+            ]
+            position = [self.start[0], self.start[1]+len(text)]
+        elif self.cursor_at_start:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]] + text
+                ),
+                im_modify(
+                    right,
+                    ["text"],
+                    lambda value: value[self.end[1]:]
+                ),
+            ]
+            position = [self.start[0], self.start[1]+len(text)]
+        else:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]]
+                ),
+                im_modify(
+                    right,
+                    ["text"],
+                    lambda value: text + value[self.end[1]:]
+                ),
+            ]
+            position = [self.end[0], len(text)]
+        self.data = before + middle + after
+        self.selection = {
+            "start": position,
+            "end": position,
+            "cursor_at_start": True,
+        }
 
     def handle_key(self, key_event):
-        print(key_event)
+        StringInputHandler.handle_key(self, key_event)
 
 class Document(Immutable):
 
