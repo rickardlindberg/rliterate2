@@ -779,6 +779,9 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
         if fragment.get("type", None) == "strong":
             params["bold"] = True
         if value is not None:
+            builder.text("\u230A", color="pink", index_prefix=[index], index_constant=0)
+        if value is not None:
+            params["size"] = 20 # Temporary to ease debugging visually
             if value["start"][0] == index:
                 builder.selection_start(value["start"][1])
                 if value["cursor_at_start"]:
@@ -788,8 +791,17 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
                 if not value["cursor_at_start"]:
                     builder.cursor(value["end"][1])
         params["index_prefix"] = [index]
-        params["index_increment"] = 0
-        builder.text(fragment["text"], **params)
+        if fragment["text"]:
+            params["index_increment"] = 0
+            builder.text(fragment["text"], **params)
+            end_index = len(fragment["text"])
+        else:
+            params["index_constant"] = 0
+            params["color"] = "pink"
+            builder.text("text", **params)
+            end_index = 0
+        if value is not None:
+            builder.text("\u230B", color="pink", index_prefix=[index], index_constant=end_index)
     return builder.get()
 
 def profile_print_summary(text, cprofile_out):
@@ -2813,18 +2825,35 @@ class StringInputHandler(object):
         return self.selection["cursor_at_start"]
 
     @property
+    def cursor_pos(self):
+        if self.cursor_at_start:
+            return self.start
+        else:
+            return self.end
+
+    @cursor_pos.setter
+    def cursor_pos(self, pos):
+        self.selection = {
+            "start": pos,
+            "end": pos,
+            "cursor_at_start": True,
+        }
+
+    @property
     def has_selection(self):
         return self.start != self.end
 
-    def expand_selection_left(self):
-        if self.start > 0:
-            self.selection = im_modify(
-                self.selection,
-                ["start"],
-                lambda value: value - 1
-            )
-            return True
-        return False
+    def pos_left(self, pos):
+        if pos > 0:
+            return pos - 1
+        else:
+            return pos
+
+    def pos_right(self, pos):
+        if pos < len(self.data):
+            return pos + 1
+        else:
+            return pos
 
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
@@ -2837,39 +2866,69 @@ class StringInputHandler(object):
 
     def handle_key(self, key_event):
         print(key_event)
-        if key_event.key == "\x08":
+        if key_event.key == "\x08": # Backspace
             if self.has_selection:
                 self.replace("")
-                self.save(self.data, self.selection)
-            elif self.expand_selection_left():
+            else:
+                self.selection = {
+                    "start": self.pos_left(self.start),
+                    "end": self.start,
+                    "cursor_at_start": True,
+                }
                 self.replace("")
-                self.save(self.data, self.selection)
+        elif key_event.key == "\x00": # Del (and many others)
+            if self.has_selection:
+                self.replace("")
+            else:
+                self.selection = {
+                    "start": self.start,
+                    "end": self.pos_right(self.end),
+                    "cursor_at_start": False,
+                }
+                self.replace("")
+        elif key_event.key == "\x02": # Ctrl-B
+            self.cursor_pos = self.pos_left(self.cursor_pos)
+        elif key_event.key == "\x06": # Ctrl-F
+            self.cursor_pos = self.pos_right(self.cursor_pos)
         else:
             self.replace(key_event.key)
-            self.save(self.data, self.selection)
+        self.save(self.data, self.selection)
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def expand_selection_left(self):
-        if self.start[1] > 0:
-            self.selection = im_modify(
-                self.selection,
-                ["start", 1],
-                lambda value: value - 1
-            )
-            return True
-        elif self.start[0] > 0:
-            new_fragment = self.start[0] - 1
-            self.selection = im_modify(
-                self.selection,
-                ["start"],
-                lambda value: [
-                    new_fragment,
-                    min(0, len(self.data[new_fragment]["text"]) - 1 + 1),
-                ]
-            )
-            return True
-        return False
+    def pos_left(self, pos):
+        if pos[1] > 0:
+            return [pos[0], pos[1]-1]
+        elif pos[0] > 0:
+            left_fragment = pos[0] - 1
+            while (
+                not self.data[left_fragment]["text"]
+                and left_fragment > 0
+            ):
+                left_fragment -= 1
+            return [
+                left_fragment,
+                max(0, len(self.data[left_fragment]["text"])-1)
+            ]
+        else:
+            return pos
+
+    def pos_right(self, pos):
+        if pos[1] < len(self.data[pos[0]]["text"]):
+            return [pos[0], pos[1]+1]
+        elif pos[0] < (len(self.data)-1):
+            right_fragment = pos[0] + 1
+            while (
+                not self.data[right_fragment]["text"] and
+                right_fragment < len(self.data)
+            ):
+                right_fragment += 1
+            return [
+                right_fragment,
+                min(1, len(self.data[right_fragment]["text"]))
+            ]
+        else:
+            return pos
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -2898,6 +2957,8 @@ class TextFragmentsInputHandler(StringInputHandler):
                     lambda value: value[self.end[1]:]
                 ),
             ]
+            if not middle[1]["text"]:
+                middle.pop(1)
             position = [self.start[0], self.start[1]+len(text)]
         else:
             middle = [
@@ -2912,7 +2973,11 @@ class TextFragmentsInputHandler(StringInputHandler):
                     lambda value: text + value[self.end[1]:]
                 ),
             ]
-            position = [self.end[0], len(text)]
+            if not middle[0]["text"]:
+                middle.pop(0)
+                position = [self.end[0]-1, len(text)]
+            else:
+                position = [self.end[0], len(text)]
         self.data = before + middle + after
         self.selection = {
             "start": position,
