@@ -3567,6 +3567,7 @@ class Text(wx.Panel, WxWidgetMixin):
                 self.prop_with_default(["align"], "left")
             )
             did_reflow = True
+        need_refresh = did_reflow
         if did_reflow or self.prop_changed("cursors"):
             self._show_cursors = True
             self._calculate_cursor_positions(
@@ -3576,10 +3577,13 @@ class Text(wx.Panel, WxWidgetMixin):
                 self._timer.Start(400)
             else:
                 self._timer.Stop()
+            need_refresh = True
         if did_reflow or self.prop_changed("selections"):
             self._calculate_selection_rects(
                 self.prop_with_default(["selections"], [])
             )
+            need_refresh = True
+        if need_refresh:
             self._request_refresh(
                 layout=self.GetMinSize() != old_min_size,
                 immediate=(
@@ -3718,8 +3722,9 @@ class Text(wx.Panel, WxWidgetMixin):
                 in characters
             )
             self._apply_style(style, dc)
-            widths = dc.GetPartialTextExtents(text)
-            widths.insert(0, 0)
+            widths = [0]
+            while len(widths) <= len(text):
+                widths.append(dc.GetTextExtent(text[:len(widths)]).Width)
             characters_by_style_wiht_text_widths.append((
                 style,
                 characters,
