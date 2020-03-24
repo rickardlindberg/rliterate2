@@ -394,23 +394,28 @@ def workspace_props(document):
             document.get(["workspace", "columns"]),
             document.get(["workspace", "page_body_width"]),
             document.get(["theme", "page"]),
-            document.get(["selection"])
+            document.get(["selection"]),
+            workspace_actions(document)
         ),
         "page_body_width": document.get(
             ["workspace", "page_body_width"]
         ),
-        "actions": {
-            "set_page_body_width": document.set_page_body_width,
-            "edit_page": document.edit_page,
-            "edit_paragraph": document.edit_paragraph,
-            "show_selection": document.show_selection,
-            "hide_selection": document.hide_selection,
-            "set_selection": document.set_selection,
-        },
+        "actions": workspace_actions(document),
+    }
+
+@cache()
+def workspace_actions(document):
+    return {
+        "set_page_body_width": document.set_page_body_width,
+        "edit_page": document.edit_page,
+        "edit_paragraph": document.edit_paragraph,
+        "show_selection": document.show_selection,
+        "hide_selection": document.hide_selection,
+        "set_selection": document.set_selection,
     }
 
 @profile_sub("build_columns")
-def build_columns(document, columns, page_body_width, page_theme, selection):
+def build_columns(document, columns, page_body_width, page_theme, selection, actions):
     selection = selection.add("workspace")
     columns_prop = []
     for index, column in enumerate(columns):
@@ -419,11 +424,12 @@ def build_columns(document, columns, page_body_width, page_theme, selection):
             column,
             page_body_width,
             page_theme,
-            selection.add("column", index)
+            selection.add("column", index),
+            actions
         ))
     return columns_prop
 
-def build_column(document, column, page_body_width, page_theme, selection):
+def build_column(document, column, page_body_width, page_theme, selection, actions):
     column_prop = []
     index = 0
     for page_id in column:
@@ -432,37 +438,46 @@ def build_column(document, column, page_body_width, page_theme, selection):
                 document.get_page(page_id),
                 page_body_width,
                 page_theme,
-                selection.add("page", index, page_id)
+                selection.add("page", index, page_id),
+                actions
             ))
             index += 1
         except PageNotFound:
             pass
     return column_prop
 
-def build_page(page, page_body_width, page_theme, selection):
+def build_page(page, page_body_width, page_theme, selection, actions):
     return {
         "id": page["id"],
         "title": build_title(
             page,
             page_body_width,
             page_theme,
-            selection.add("title")
+            selection.add("title"),
+            actions
         ),
         "paragraphs": build_paragraphs(
             page["paragraphs"],
             page_theme,
-            selection.add("paragraphs")
+            page_body_width,
+            selection.add("paragraphs"),
+            actions
         ),
         "border": page_theme["border"],
         "background": page_theme["background"],
         "margin": page_theme["margin"],
-        "body_width": page_body_width,
     }
 
-def build_title(page, page_body_width, page_theme, selection):
+def build_title(page, page_body_width, page_theme, selection, actions):
+    def save(new_title, new_selection):
+        actions["edit_page"](
+            page["id"],
+            {
+                "title": new_title,
+            },
+            selection.create(new_selection)
+        )
     return {
-        "id": page["id"],
-        "title": page["title"],
         "text_edit_props": {
             "text_props": dict(build_title_text_props(
                 TextPropsBuilder(
@@ -477,6 +492,12 @@ def build_title(page, page_body_width, page_theme, selection):
             "max_width": page_body_width,
             "selection": selection,
             "selection_color": page_theme["selection_border"],
+            "input_handler": StringInputHandler(
+                page["title"],
+                selection.get(),
+                save
+            ),
+            "actions": actions,
         },
     }
 
@@ -497,18 +518,20 @@ def build_title_text_props(builder, title, selection, placeholder_color):
         builder.text("Enter title...", color=placeholder_color, index_constant=0)
     return builder.get()
 
-def build_paragraphs(paragraphs, page_theme, selection):
+def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):
     return [
         build_paragraph(
             paragraph,
             page_theme,
-            selection.add(index, paragraph["id"])
+            body_width,
+            selection.add(index, paragraph["id"]),
+            actions
         )
         for index, paragraph in enumerate(paragraphs)
     ]
 
 @cache(limit=1000, key_path=[0, "id"])
-def build_paragraph(paragraph, page_theme, selection):
+def build_paragraph(paragraph, page_theme, body_width, selection, actions):
     BUILDERS = {
         "text": build_text_paragraph,
         "quote": build_quote_paragraph,
@@ -519,14 +542,20 @@ def build_paragraph(paragraph, page_theme, selection):
     return BUILDERS.get(
         paragraph["type"],
         build_unknown_paragraph
-    )(paragraph, page_theme, selection)
+    )(paragraph, page_theme, body_width, selection, actions)
 
 @profile_sub("build_text_paragraph")
-def build_text_paragraph(paragraph, page_theme, selection):
+def build_text_paragraph(paragraph, page_theme, body_width, selection, actions):
+    def save(new_text_fragments, new_selection):
+        actions["edit_paragraph"](
+            paragraph["id"],
+            {
+                "fragments": new_text_fragments,
+            },
+            selection.create(new_selection)
+        )
     return {
         "widget": TextParagraph,
-        "id": paragraph["id"],
-        "fragments": paragraph["fragments"],
         "text_edit_props": {
             "text_props": dict(text_fragments_to_props(
                 paragraph["fragments"],
@@ -537,11 +566,18 @@ def build_text_paragraph(paragraph, page_theme, selection):
             ), break_at_word=True, line_height=page_theme["line_height"]),
             "selection": selection,
             "selection_color": page_theme["selection_border"],
+            "input_handler": TextFragmentsInputHandler(
+                paragraph["fragments"],
+                selection.get(),
+                save
+            ),
+            "actions": actions,
+            "max_width": body_width,
         },
     }
 
 @profile_sub("build_quote_paragraph")
-def build_quote_paragraph(paragraph, page_theme, selection):
+def build_quote_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": QuoteParagraph,
         "text_props": dict(
@@ -551,11 +587,12 @@ def build_quote_paragraph(paragraph, page_theme, selection):
             ),
             line_height=page_theme["line_height"]
         ),
+        "body_width": body_width,
         "indent_size": page_theme["indent_size"],
     }
 
 @profile_sub("build_list_paragraph")
-def build_list_paragraph(paragraph, page_theme, selection):
+def build_list_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": ListParagraph,
         "rows": build_list_item_rows(
@@ -564,6 +601,7 @@ def build_list_paragraph(paragraph, page_theme, selection):
             page_theme
         ),
         "indent": page_theme["indent_size"],
+        "body_width": body_width,
     }
 
 def build_list_item_rows(children, child_type, page_theme, level=0):
@@ -595,7 +633,7 @@ def _get_bullet_text(list_type, index):
         return u"\u2022 "
 
 @profile_sub("build_code_paragraph")
-def build_code_paragraph(paragraph, page_theme, selection):
+def build_code_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": CodeParagraph,
         "header": build_code_paragraph_header(
@@ -606,6 +644,7 @@ def build_code_paragraph(paragraph, page_theme, selection):
             paragraph,
             page_theme
         ),
+        "body_width": body_width,
     }
 
 def build_code_paragraph_header(paragraph, page_theme):
@@ -668,7 +707,7 @@ def build_code_body_fragments(fragments, pygments_lexer):
     return code_chunk.tokenize(pygments_lexer)
 
 @profile_sub("build_image_paragraph")
-def build_image_paragraph(paragraph, page_theme, selection):
+def build_image_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": ImageParagraph,
         "base64_image": paragraph.get("image_base64", None),
@@ -678,14 +717,16 @@ def build_image_paragraph(paragraph, page_theme, selection):
             align="center"
         ),
         "indent": page_theme["indent_size"],
+        "body_width": body_width,
     }
 
-def build_unknown_paragraph(paragraph, page_theme, selection):
+def build_unknown_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": UnknownParagraph,
         "text_props": TextPropsBuilder(**page_theme["code_font"]).text(
             "Unknown paragraph type '{}'.".format(paragraph["type"])
         ).get(),
+        "body_width": body_width,
     }
 
 def code_pygments_lexer(language, filename):
@@ -2256,7 +2297,6 @@ class Column(VScroll):
             name = None
             handlers = {}
             props['page'] = loopvar
-            props['actions'] = self.prop(['actions'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
             self._create_space(self.prop(['workspace_margin']))
@@ -2281,7 +2321,6 @@ class Page(Panel):
         name = None
         handlers = {}
         props['page'] = self.prop(['page'])
-        props['actions'] = self.prop(['actions'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageTopRow, props, sizer, handlers, name)
@@ -2309,7 +2348,6 @@ class PageTopRow(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['page']))
-        props['actions'] = self.prop(['actions'])
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageBody, props, sizer, handlers, name)
@@ -2337,7 +2375,6 @@ class PageBody(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['title']))
-        props['actions'] = self.prop(['actions'])
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
         sizer["flag"] |= wx.EXPAND
@@ -2349,8 +2386,6 @@ class PageBody(Panel):
             name = None
             handlers = {}
             props.update(loopvar)
-            props['body_width'] = self.prop(['body_width'])
-            props['actions'] = self.prop(['actions'])
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.LEFT
             sizer["flag"] |= wx.BOTTOM
@@ -2422,24 +2457,8 @@ class Title(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['text_edit_props']))
-        props['actions'] = self.prop(['actions'])
-        props['input_handler'] = self._create_input_handler(self.prop(['actions', 'edit_page']), self.prop(['id']), self.prop(['title']), self.prop(['text_edit_props', 'selection']))
+        sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
-
-    def _create_input_handler(self, edit_page, page_id, title, selection):
-        def save(new_title, new_selection):
-            edit_page(
-                page_id,
-                {
-                    "title": new_title,
-                },
-                selection.create(new_selection)
-            )
-        return StringInputHandler(
-            title,
-            selection.get(),
-            save
-        )
 
 class TextParagraph(Panel):
 
@@ -2457,26 +2476,8 @@ class TextParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['text_edit_props']))
-        props['actions'] = self.prop(['actions'])
-        props['max_width'] = self.prop(['body_width'])
-        props['input_handler'] = self._create_input_handler(self.prop(['actions', 'edit_paragraph']), self.prop(['id']), self.prop(['fragments']), self.prop(['text_edit_props', 'selection']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
-
-    def _create_input_handler(self, edit_paragraph, paragraph_id, fragments, selection):
-        def save(new_text_fragments, new_selection):
-            edit_paragraph(
-                paragraph_id,
-                {
-                    "fragments": new_text_fragments,
-                },
-                selection.create(new_selection)
-            )
-        return TextFragmentsInputHandler(
-            fragments,
-            selection.get(),
-            save
-        )
 
 class QuoteParagraph(Panel):
 

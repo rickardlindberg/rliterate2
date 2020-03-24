@@ -1024,7 +1024,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page    = $\n            actions = #actions\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page = $\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1045,7 +1045,7 @@
 ],
 "fragments":[
 {
-"text":"def build_column(document, column, page_body_width, page_theme, selection):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id)\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def build_column(document, column, page_body_width, page_theme, selection, actions):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id),\n                actions\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
 "type":"code"
 }
 ],
@@ -1070,7 +1070,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow(\n        page    = #page\n        actions = #actions\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow(\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1091,7 +1091,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        actions = #actions\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
@@ -1112,7 +1112,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Title(\n        #title\n        actions = #actions\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            body_width = #body_width\n            actions    = #actions\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Title(\n        #title\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1175,7 +1175,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\")\n        ),\n        \"paragraphs\": build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme,\n            selection.add(\"paragraphs\")\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n        \"body_width\": page_body_width,\n    }\n",
+"text":"def build_page(page, page_body_width, page_theme, selection, actions):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\"),\n            actions\n        ),\n        \"paragraphs\": build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme,\n            page_body_width,\n            selection.add(\"paragraphs\"),\n            actions\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1200,16 +1200,8 @@
 ],
 "fragments":[
 {
-"text":"panel Title %layout_rows {\n    TextEdit(\n        #text_edit_props\n        actions       = #actions\n        input_handler = self._create_input_handler(\n            #actions.edit_page\n            #id\n            #title\n            #text_edit_props.selection\n        )\n    )\n}\n\n",
+"text":"panel Title %layout_rows {\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
-"Title"
-],
-"prefix":"",
-"type":"chunk"
 }
 ],
 "id":"bfb66ed53d0940b1aab387dc95cefe43",
@@ -1222,33 +1214,6 @@
 },
 {
 "chunkpath":[
-"classes",
-"Title"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def _create_input_handler(self, edit_page, page_id, title, selection):\n    def save(new_title, new_selection):\n        edit_page(\n            page_id,\n            {\n                \"title\": new_title,\n            },\n            selection.create(new_selection)\n        )\n    return ",
-"type":"code"
-},
-{
-"id":"e8b2beada24e443aa229cf6e6b85e403",
-"type":"variable"
-},
-{
-"text":"(\n        title,\n        selection.get(),\n        save\n    )\n",
-"type":"code"
-}
-],
-"id":"1b7297e728c243bba51ea0eb4adc3963",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -1256,7 +1221,15 @@
 ],
 "fragments":[
 {
-"text":"def build_title(page, page_body_width, page_theme, selection):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": page[\"title\"],\n        \"text_edit_props\": {\n            \"text_props\": dict(build_title_text_props(\n                TextPropsBuilder(\n                    **page_theme[\"title_font\"],\n                    selection_color=page_theme[\"selection_color\"],\n                    cursor_color=page_theme[\"cursor_color\"]\n                ),\n                page[\"title\"],\n                selection,\n                page_theme[\"placeholder_color\"]\n            ), break_at_word=True, line_height=page_theme[\"line_height\"]),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n        },\n    }\n",
+"text":"def build_title(page, page_body_width, page_theme, selection, actions):\n    def save(new_title, new_selection):\n        actions[\"edit_page\"](\n            page[\"id\"],\n            {\n                \"title\": new_title,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"text_edit_props\": {\n            \"text_props\": dict(build_title_text_props(\n                TextPropsBuilder(\n                    **page_theme[\"title_font\"],\n                    selection_color=page_theme[\"selection_color\"],\n                    cursor_color=page_theme[\"cursor_color\"]\n                ),\n                page[\"title\"],\n                selection,\n                page_theme[\"placeholder_color\"]\n            ), break_at_word=True, line_height=page_theme[\"line_height\"]),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n            \"input_handler\": ",
+"type":"code"
+},
+{
+"id":"3ba864082a154e8c99749cffdc408b43",
+"type":"variable"
+},
+{
+"text":"(\n                page[\"title\"],\n                selection.get(),\n                save\n            ),\n            \"actions\": actions,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1301,16 +1274,8 @@
 ],
 "fragments":[
 {
-"text":"panel TextParagraph %layout_rows {\n    TextEdit(\n        #text_edit_props\n        actions       = #actions\n        max_width     = #body_width\n        input_handler = self._create_input_handler(\n            #actions.edit_paragraph\n            #id\n            #fragments\n            #text_edit_props.selection\n        )\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TextParagraph %layout_rows {\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
-"TextParagraph"
-],
-"prefix":"",
-"type":"chunk"
 }
 ],
 "id":"db554ae56d124089bceb0e11db2cb37a",
@@ -1323,33 +1288,6 @@
 },
 {
 "chunkpath":[
-"classes",
-"TextParagraph"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def _create_input_handler(self, edit_paragraph, paragraph_id, fragments, selection):\n    def save(new_text_fragments, new_selection):\n        edit_paragraph(\n            paragraph_id,\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return ",
-"type":"code"
-},
-{
-"id":"1eaa3d40e7f94d83acb420fed05432f8",
-"type":"variable"
-},
-{
-"text":"(\n        fragments,\n        selection.get(),\n        save\n    )\n",
-"type":"code"
-}
-],
-"id":"30ac05175a6c4c369776c8494afdb67c",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -1357,7 +1295,15 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": TextParagraph,\n        \"id\": paragraph[\"id\"],\n        \"fragments\": paragraph[\"fragments\"],\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection,\n                selection_color=page_theme[\"selection_color\"],\n                cursor_color=page_theme[\"cursor_color\"],\n                **page_theme[\"text_font\"]\n            ), break_at_word=True, line_height=page_theme[\"line_height\"]),\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n        },\n    }\n",
+"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": TextParagraph,\n        \"text_edit_props\": {\n            \"text_props\": dict(text_fragments_to_props(\n                paragraph[\"fragments\"],\n                selection=selection,\n                selection_color=page_theme[\"selection_color\"],\n                cursor_color=page_theme[\"cursor_color\"],\n                **page_theme[\"text_font\"]\n            ), break_at_word=True, line_height=page_theme[\"line_height\"]),\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n            \"input_handler\": ",
+"type":"code"
+},
+{
+"id":"34d69b597c814d8a9b270adabd1425d7",
+"type":"variable"
+},
+{
+"text":"(\n                paragraph[\"fragments\"],\n                selection.get(),\n                save\n            ),\n            \"actions\": actions,\n            \"max_width\": body_width,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1403,7 +1349,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_props\": dict(\n            text_fragments_to_props(\n                paragraph[\"fragments\"],\n                **page_theme[\"text_font\"]\n            ),\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n",
+"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_props\": dict(\n            text_fragments_to_props(\n                paragraph[\"fragments\"],\n                **page_theme[\"text_font\"]\n            ),\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"body_width\": body_width,\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1470,7 +1416,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"],\n            page_theme\n        ),\n        \"indent\": page_theme[\"indent_size\"],\n    }\n",
+"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph[\"children\"],\n            paragraph[\"child_type\"],\n            page_theme\n        ),\n        \"indent\": page_theme[\"indent_size\"],\n        \"body_width\": body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1663,7 +1609,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n    }\n",
+"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n        \"body_width\": body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1730,7 +1676,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": dict(\n            text_fragments_to_props(paragraph[\"fragments\"], **page_theme[\"text_font\"]),\n            line_height=page_theme[\"line_height\"],\n            align=\"center\"\n        ),\n        \"indent\": page_theme[\"indent_size\"],\n    }\n",
+"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"text_props\": dict(\n            text_fragments_to_props(paragraph[\"fragments\"], **page_theme[\"text_font\"]),\n            line_height=page_theme[\"line_height\"],\n            align=\"center\"\n        ),\n        \"indent\": page_theme[\"indent_size\"],\n        \"body_width\": body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1776,7 +1722,7 @@
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(paragraph, page_theme, selection):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n    }\n",
+"text":"def build_unknown_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n        \"body_width\": body_width,\n    }\n",
 "type":"code"
 }
 ],
@@ -1861,7 +1807,7 @@
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(paragraphs, page_theme, selection):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            selection.add(index, paragraph[\"id\"])\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
+"text":"def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            body_width,\n            selection.add(index, paragraph[\"id\"]),\n            actions\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
 "type":"code"
 }
 ],
@@ -1879,7 +1825,7 @@
 ],
 "fragments":[
 {
-"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef build_paragraph(paragraph, page_theme, selection):\n    BUILDERS = {\n        \"text\": build_text_paragraph,\n        \"quote\": build_quote_paragraph,\n        \"list\": build_list_paragraph,\n        \"code\": build_code_paragraph,\n        \"image\": build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        build_unknown_paragraph\n    )(paragraph, page_theme, selection)\n",
+"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef build_paragraph(paragraph, page_theme, body_width, selection, actions):\n    BUILDERS = {\n        \"text\": build_text_paragraph,\n        \"quote\": build_quote_paragraph,\n        \"list\": build_list_paragraph,\n        \"code\": build_code_paragraph,\n        \"image\": build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        build_unknown_paragraph\n    )(paragraph, page_theme, body_width, selection, actions)\n",
 "type":"code"
 }
 ],
@@ -1951,7 +1897,7 @@
 ],
 "fragments":[
 {
-"text":"def workspace_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"workspace\", \"background\"]\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            document.get([\"workspace\", \"page_body_width\"]) +\n            2*document.get([\"theme\", \"page\", \"margin\"]) +\n            document.get([\"theme\", \"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            document.get([\"workspace\", \"columns\"]),\n            document.get([\"workspace\", \"page_body_width\"]),\n            document.get([\"theme\", \"page\"]),\n            document.get([\"selection\"])\n        ),\n        \"page_body_width\": document.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": {\n            \"set_page_body_width\": document.set_page_body_width,\n            \"edit_page\": document.edit_page,\n            \"edit_paragraph\": document.edit_paragraph,\n            \"show_selection\": document.show_selection,\n            \"hide_selection\": document.hide_selection,\n            \"set_selection\": document.set_selection,\n        },\n    }\n",
+"text":"def workspace_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"workspace\", \"background\"]\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            document.get([\"workspace\", \"page_body_width\"]) +\n            2*document.get([\"theme\", \"page\", \"margin\"]) +\n            document.get([\"theme\", \"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            document.get([\"workspace\", \"columns\"]),\n            document.get([\"workspace\", \"page_body_width\"]),\n            document.get([\"theme\", \"page\"]),\n            document.get([\"selection\"]),\n            workspace_actions(document)\n        ),\n        \"page_body_width\": document.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": workspace_actions(document),\n    }\n",
 "type":"code"
 }
 ],
@@ -1967,7 +1913,23 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_columns\")\ndef build_columns(document, columns, page_body_width, page_theme, selection):\n    selection = selection.add(\"workspace\")\n    columns_prop = []\n    for index, column in enumerate(columns):\n        columns_prop.append(build_column(\n            document,\n            column,\n            page_body_width,\n            page_theme,\n            selection.add(\"column\", index)\n        ))\n    return columns_prop\n",
+"text":"@cache()\ndef workspace_actions(document):\n    return {\n        \"set_page_body_width\": document.set_page_body_width,\n        \"edit_page\": document.edit_page,\n        \"edit_paragraph\": document.edit_paragraph,\n        \"show_selection\": document.show_selection,\n        \"hide_selection\": document.hide_selection,\n        \"set_selection\": document.set_selection,\n    }\n",
+"type":"code"
+}
+],
+"id":"04f20822e98b49eebe085e3cf2fe6bae",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"build_columns\")\ndef build_columns(document, columns, page_body_width, page_theme, selection, actions):\n    selection = selection.add(\"workspace\")\n    columns_prop = []\n    for index, column in enumerate(columns):\n        columns_prop.append(build_column(\n            document,\n            column,\n            page_body_width,\n            page_theme,\n            selection.add(\"column\", index),\n            actions\n        ))\n    return columns_prop\n",
 "type":"code"
 }
 ],
@@ -7615,6 +7577,8 @@
 "269966a674484b8598126b56bfc28284":"take_from",
 "2ac57c86cd51471681d75d98de62f1ba":"_captured_requests",
 "3331a09d862a4ee3a3e878e8641cdb8f":"start_app",
+"34d69b597c814d8a9b270adabd1425d7":"TextFragmentsInputHandler",
+"3ba864082a154e8c99749cffdc408b43":"StringInputHandler",
 "3bdb899dc8ff44fc955b9ad365b56cea":"_characters_by_line",
 "4dabcd9b4f634a85af8d9119a745a33c":"create_props",
 "5f71ca24cdae4919bb3a5612fa704ac3":"_find_refresh_widget",
