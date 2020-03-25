@@ -556,75 +556,113 @@ def build_text_paragraph(paragraph, page_theme, body_width, selection, actions):
         )
     return {
         "widget": TextParagraph,
-        "text_edit_props": {
-            "text_props": dict(text_fragments_to_props(
-                paragraph["fragments"],
-                selection=selection,
-                selection_color=page_theme["selection_color"],
-                cursor_color=page_theme["cursor_color"],
-                **page_theme["text_font"]
-            ), break_at_word=True, line_height=page_theme["line_height"]),
-            "selection": selection,
-            "selection_color": page_theme["selection_border"],
-            "input_handler": TextFragmentsInputHandler(
-                paragraph["fragments"],
-                selection.get(),
-                save
-            ),
-            "actions": actions,
-            "max_width": body_width,
-        },
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["fragments"],
+            selection,
+            page_theme,
+            actions,
+            save,
+            max_width=body_width,
+        ),
     }
 
 @profile_sub("build_quote_paragraph")
 def build_quote_paragraph(paragraph, page_theme, body_width, selection, actions):
+    def save(new_text_fragments, new_selection):
+        actions["edit_paragraph"](
+            paragraph["id"],
+            {
+                "fragments": new_text_fragments,
+            },
+            selection.create(new_selection)
+        )
     return {
         "widget": QuoteParagraph,
-        "text_props": dict(
-            text_fragments_to_props(
-                paragraph["fragments"],
-                **page_theme["text_font"]
-            ),
-            line_height=page_theme["line_height"]
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["fragments"],
+            selection,
+            page_theme,
+            actions,
+            save,
+            max_width=body_width-page_theme["indent_size"],
         ),
-        "body_width": body_width,
         "indent_size": page_theme["indent_size"],
     }
+
 
 @profile_sub("build_list_paragraph")
 def build_list_paragraph(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": ListParagraph,
         "rows": build_list_item_rows(
+            paragraph,
             paragraph["children"],
             paragraph["child_type"],
-            page_theme
+            page_theme,
+            body_width,
+            actions,
+            selection
         ),
         "indent": page_theme["indent_size"],
         "body_width": body_width,
     }
 
-def build_list_item_rows(children, child_type, page_theme, level=0):
+def build_list_item_rows(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):
     rows = []
     for index, child in enumerate(children):
-        rows.append({
-            "text_props": dict(text_fragments_to_props(
-                [
-                    {"text": _get_bullet_text(child_type, index)}
-                ]
-                +
-                child["fragments"],
-                **page_theme["text_font"]), line_height=page_theme["line_height"]
-            ),
-            "level": level,
-        })
+        rows.append(build_list_item_row(
+            paragraph,
+            child_type,
+            index,
+            child,
+            page_theme,
+            body_width,
+            actions,
+            selection.add(index, "fragments"),
+            path+[index],
+            level
+        ))
         rows.extend(build_list_item_rows(
+            paragraph,
             child["children"],
             child["child_type"],
             page_theme,
+            body_width,
+            actions,
+            selection.add(index),
+            path+[index, "children"],
             level+1
         ))
     return rows
+
+def build_list_item_row(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
+    def save(new_text_fragments, new_selection):
+        actions["edit_paragraph"](
+            paragraph["id"],
+            {
+                "children": im_modify(
+                    paragraph["children"],
+                    path+["fragments"],
+                    lambda value: new_text_fragments
+                ),
+            },
+            selection.create(new_selection)
+        )
+    return {
+        "text_edit_props": text_fragments_to_text_edit_props(
+            child["fragments"],
+            selection,
+            page_theme,
+            actions,
+            save,
+            max_width=body_width-(level+1)*page_theme["indent_size"],
+        ),
+        "bullet_props": dict(text_fragments_to_props(
+            [{"text": _get_bullet_text(child_type, index)}],
+            **page_theme["text_font"]
+        ), max_width=page_theme["indent_size"], line_height=page_theme["line_height"]),
+        "level": level,
+    }
 
 def _get_bullet_text(list_type, index):
     if list_type == "ordered":
@@ -708,16 +746,28 @@ def build_code_body_fragments(fragments, pygments_lexer):
 
 @profile_sub("build_image_paragraph")
 def build_image_paragraph(paragraph, page_theme, body_width, selection, actions):
+    def save(new_text_fragments, new_selection):
+        actions["edit_paragraph"](
+            paragraph["id"],
+            {
+                "fragments": new_text_fragments,
+            },
+            selection.create(new_selection)
+        )
     return {
         "widget": ImageParagraph,
         "base64_image": paragraph.get("image_base64", None),
-        "text_props": dict(
-            text_fragments_to_props(paragraph["fragments"], **page_theme["text_font"]),
-            line_height=page_theme["line_height"],
-            align="center"
-        ),
-        "indent": page_theme["indent_size"],
         "body_width": body_width,
+        "indent": page_theme["indent_size"],
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["fragments"],
+            selection,
+            page_theme,
+            actions,
+            save,
+            align="center",
+            max_width=body_width-2*page_theme["indent_size"],
+        ),
     }
 
 def build_unknown_paragraph(paragraph, page_theme, body_width, selection, actions):
@@ -807,6 +857,26 @@ def create_props(fn, *args):
 def makeTuple(*args):
     return tuple(args)
 
+def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
+    return {
+        "text_props": dict(text_fragments_to_props(
+            fragments,
+            selection=selection,
+            selection_color=page_theme["selection_color"],
+            cursor_color=page_theme["cursor_color"],
+            **page_theme["text_font"]
+        ), break_at_word=True, line_height=page_theme["line_height"], align=align),
+        "selection": selection,
+        "selection_color": page_theme["selection_border"],
+        "input_handler": TextFragmentsInputHandler(
+            fragments,
+            selection.get(),
+            save
+        ),
+        "actions": actions,
+        **kwargs,
+    }
+
 def text_fragments_to_props(fragments, selection=None, **kwargs):
     builder = TextPropsBuilder(**kwargs)
     if selection is not None:
@@ -822,7 +892,6 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
         if value is not None:
             builder.text("\u230A", color="pink", index_prefix=[index], index_constant=0)
         if value is not None:
-            params["size"] = 20 # Temporary to ease debugging visually
             if value["start"][0] == index:
                 builder.selection_start(value["start"][1])
                 if value["cursor_at_start"]:
@@ -2495,11 +2564,9 @@ class QuoteParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), self.prop(['indent_size']))
-        props['break_at_word'] = True
+        props.update(self.prop(['text_edit_props']))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_widget(TextEdit, props, sizer, handlers, name)
 
 class ListParagraph(Panel):
 
@@ -2544,11 +2611,16 @@ class ListRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(self.prop(['level']), self.prop(['indent'])))
-        props['break_at_word'] = True
-        sizer["flag"] |= wx.EXPAND
+        props.update(self.prop(['bullet_props']))
+        props['foo'] = 1
         self._create_widget(Text, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['text_edit_props']))
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(TextEdit, props, sizer, handlers, name)
 
 class CodeParagraph(Panel):
 
@@ -2646,8 +2718,7 @@ class ImageParagraph(Panel):
         name = None
         handlers = {}
         props['indent'] = self.prop(['indent'])
-        props['text_props'] = self.prop(['text_props'])
-        props['body_width'] = self.prop(['body_width'])
+        props['text_edit_props'] = self.prop(['text_edit_props'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(ImageText, props, sizer, handlers, name)
 
@@ -2667,11 +2738,9 @@ class ImageText(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['indent'])))
-        props['break_at_word'] = True
+        props.update(self.prop(['text_edit_props']))
         sizer["flag"] |= wx.EXPAND
-        self._create_widget(Text, props, sizer, handlers, name)
+        self._create_widget(TextEdit, props, sizer, handlers, name)
         self._create_space(self.prop(['indent']))
 
 class UnknownParagraph(Panel):
