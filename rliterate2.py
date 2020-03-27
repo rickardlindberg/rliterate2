@@ -477,24 +477,30 @@ def build_title(page, page_body_width, page_theme, selection, actions):
             },
             selection.create(new_selection)
         )
+    text_props = build_title_text_props(
+        TextPropsBuilder(
+            **page_theme["title_font"],
+            selection_color=page_theme["selection_color"],
+            cursor_color=page_theme["cursor_color"]
+        ),
+        page["title"],
+        selection,
+        page_theme["placeholder_color"]
+    )
     return {
         "text_edit_props": {
-            "text_props": dict(build_title_text_props(
-                TextPropsBuilder(
-                    **page_theme["title_font"],
-                    selection_color=page_theme["selection_color"],
-                    cursor_color=page_theme["cursor_color"]
-                ),
-                page["title"],
-                selection,
-                page_theme["placeholder_color"]
-            ), break_at_word=True, line_height=page_theme["line_height"]),
+            "text_props": dict(
+                text_props,
+                break_at_word=True,
+                line_height=page_theme["line_height"]
+            ),
             "max_width": page_body_width,
             "selection": selection,
             "selection_color": page_theme["selection_border"],
             "input_handler": StringInputHandler(
                 page["title"],
                 selection.get(),
+                text_props["cursors"][0][0] if text_props["cursors"] else None,
                 save
             ),
             "actions": actions,
@@ -858,19 +864,26 @@ def makeTuple(*args):
     return tuple(args)
 
 def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
+    text_props = text_fragments_to_props(
+        fragments,
+        selection=selection,
+        selection_color=page_theme["selection_color"],
+        cursor_color=page_theme["cursor_color"],
+        **page_theme["text_font"]
+    )
     return {
-        "text_props": dict(text_fragments_to_props(
-            fragments,
-            selection=selection,
-            selection_color=page_theme["selection_color"],
-            cursor_color=page_theme["cursor_color"],
-            **page_theme["text_font"]
-        ), break_at_word=True, line_height=page_theme["line_height"], align=align),
+        "text_props": dict(
+            text_props,
+            break_at_word=True,
+            line_height=page_theme["line_height"],
+            align=align
+        ),
         "selection": selection,
         "selection_color": page_theme["selection_border"],
         "input_handler": TextFragmentsInputHandler(
             fragments,
             selection.get(),
+            text_props["cursors"][0][0] if text_props["cursors"] else None,
             save
         ),
         "actions": actions,
@@ -889,8 +902,8 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
             params["color"] = fragment["color"]
         if fragment.get("type", None) == "strong":
             params["bold"] = True
-        if value is not None:
-            builder.text("\u230A", color="pink", index_prefix=[index], index_constant=0)
+        if value is not None and fragment.get("type", None) == "strong":
+            builder.text("**", color="pink", index_prefix=[index], index_constant=0)
         if value is not None:
             if value["start"][0] == index:
                 builder.selection_start(value["start"][1])
@@ -910,8 +923,8 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
             params["color"] = "pink"
             builder.text("text", **params)
             end_index = 0
-        if value is not None:
-            builder.text("\u230B", color="pink", index_prefix=[index], index_constant=end_index)
+        if value is not None and fragment.get("type", None) == "strong":
+            builder.text("**", color="pink", index_prefix=[index], index_constant=end_index)
     return builder.get()
 
 def profile_print_summary(text, cprofile_out):
@@ -2867,7 +2880,10 @@ class TextEdit(Panel):
 
     def _on_key(self, event, selection):
         if selection.present():
-            self.prop(["input_handler"]).handle_key(event)
+            self.prop(["input_handler"]).handle_key(
+                event,
+                self.get_widget("text")
+            )
 
     def _get_cursor(self, selection):
         if selection.present():
@@ -2877,9 +2893,10 @@ class TextEdit(Panel):
 
 class StringInputHandler(object):
 
-    def __init__(self, data, selection, save):
+    def __init__(self, data, selection, cursor_index, save):
         self.data = data
         self.selection = selection
+        self.cursor_index = cursor_index
         self.save = save
 
     @property
@@ -2913,18 +2930,6 @@ class StringInputHandler(object):
     def has_selection(self):
         return self.start != self.end
 
-    def pos_left(self, pos):
-        if pos > 0:
-            return pos - 1
-        else:
-            return pos
-
-    def pos_right(self, pos):
-        if pos < len(self.data):
-            return pos + 1
-        else:
-            return pos
-
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
         position = self.start + len(text)
@@ -2934,14 +2939,14 @@ class StringInputHandler(object):
             "cursor_at_start": True,
         }
 
-    def handle_key(self, key_event):
+    def handle_key(self, key_event, text):
         print(key_event)
         if key_event.key == "\x08": # Backspace
             if self.has_selection:
                 self.replace("")
             else:
                 self.selection = {
-                    "start": self.pos_left(self.start),
+                    "start": text.index_left(self.cursor_index, self.cursor_pos),
                     "end": self.start,
                     "cursor_at_start": True,
                 }
@@ -2952,53 +2957,19 @@ class StringInputHandler(object):
             else:
                 self.selection = {
                     "start": self.start,
-                    "end": self.pos_right(self.end),
+                    "end": text.index_right(self.cursor_index, self.cursor_pos),
                     "cursor_at_start": False,
                 }
                 self.replace("")
         elif key_event.key == "\x02": # Ctrl-B
-            self.cursor_pos = self.pos_left(self.cursor_pos)
+            self.cursor_pos = text.index_left(self.cursor_index, self.cursor_pos)
         elif key_event.key == "\x06": # Ctrl-F
-            self.cursor_pos = self.pos_right(self.cursor_pos)
+            self.cursor_pos = text.index_right(self.cursor_index, self.cursor_pos)
         else:
             self.replace(key_event.key)
         self.save(self.data, self.selection)
 
 class TextFragmentsInputHandler(StringInputHandler):
-
-    def pos_left(self, pos):
-        if pos[1] > 0:
-            return [pos[0], pos[1]-1]
-        elif pos[0] > 0:
-            left_fragment = pos[0] - 1
-            while (
-                not self.data[left_fragment]["text"]
-                and left_fragment > 0
-            ):
-                left_fragment -= 1
-            return [
-                left_fragment,
-                max(0, len(self.data[left_fragment]["text"])-1)
-            ]
-        else:
-            return pos
-
-    def pos_right(self, pos):
-        if pos[1] < len(self.data[pos[0]]["text"]):
-            return [pos[0], pos[1]+1]
-        elif pos[0] < (len(self.data)-1):
-            right_fragment = pos[0] + 1
-            while (
-                not self.data[right_fragment]["text"] and
-                right_fragment < len(self.data)
-            ):
-                right_fragment += 1
-            return [
-                right_fragment,
-                min(1, len(self.data[right_fragment]["text"]))
-            ]
-        else:
-            return pos
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -3055,8 +3026,8 @@ class TextFragmentsInputHandler(StringInputHandler):
             "cursor_at_start": True,
         }
 
-    def handle_key(self, key_event):
-        StringInputHandler.handle_key(self, key_event)
+    def handle_key(self, key_event, text):
+        StringInputHandler.handle_key(self, key_event, text)
 
 class Document(Immutable):
 
@@ -3911,6 +3882,33 @@ class Text(wx.Panel, WxWidgetMixin):
             if x < rect.Left or (x >= rect.Left and x <= rect.Right):
                 return (character, x > (rect.Left+rect.Width/2))
         return (character, True)
+
+    def index_left(self, char_index, current_index):
+        char_index -= 1
+        while char_index >= 0:
+            char = self._characters_bounding_rect[char_index][0]
+            for index in [
+                char.get("index_right", None),
+                char.get("index_left", None),
+                char.get("index", None),
+            ]:
+                if index is not None and index != current_index:
+                    return index
+            char_index -= 1
+        return current_index
+
+    def index_right(self, char_index, current_index):
+        while char_index < len(self._characters_bounding_rect):
+            char = self._characters_bounding_rect[char_index][0]
+            for index in [
+                char.get("index_left", None),
+                char.get("index_right", None),
+                char.get("index", None),
+            ]:
+                if index is not None and index != current_index:
+                    return index
+            char_index += 1
+        return current_index
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
 
