@@ -386,6 +386,34 @@
 ],
 "id":"665fd0f19f4f409eab4aa210dd7e61d2",
 "type":"code"
+},
+{
+"fragments":[
+{
+"text":"For reference: ",
+"type":"text"
+},
+{
+"page_id":"c93f45e47daa41b99164916b4092ec13",
+"text":"start_app",
+"type":"reference"
+},
+{
+"text":", ",
+"type":"text"
+},
+{
+"page_id":"08bc729869634744b018f65f4d968a49",
+"text":"create_props",
+"type":"reference"
+},
+{
+"text":".",
+"type":"text"
+}
+],
+"id":"2e033e0ffe3e46ee8bde3e64c06a6ee4",
+"type":"text"
 }
 ],
 "title":"Main function"
