@@ -914,7 +914,7 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
                 if not value["cursor_at_start"]:
                     builder.cursor(value["end"][1])
         params["index_prefix"] = [index]
-        if fragment["text"]:
+        if fragment.get("text", ""):
             params["index_increment"] = 0
             builder.text(fragment["text"], **params)
             end_index = len(fragment["text"])
