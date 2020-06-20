@@ -3883,29 +3883,39 @@ class Text(wx.Panel, WxWidgetMixin):
         return (character, True)
 
     def index_left(self, char_index, current_index):
-        char_index -= 1
-        while char_index >= 0:
-            char = self._characters_bounding_rect[char_index][0]
-            for index in [
-                char.get("index_right", None),
-                char.get("index_left", None),
-            ]:
-                if index is not None and index != current_index:
-                    return index
-            char_index -= 1
-        return current_index
+        return self._next_index(self._left_indices, char_index, current_index)
 
     def index_right(self, char_index, current_index):
+        return self._next_index(self._right_indices, char_index, current_index)
+
+    def _next_index(self, generate_indices, char_index, current_index):
+        for index in generate_indices(char_index):
+            if index is not None and index != current_index:
+                return index
+        return current_index
+
+    def _left_indices(self, char_index):
+        char_index -= 1
+        if char_index >= 0:
+            char = self._characters_bounding_rect[char_index][0]
+            yield char.get("index_left")
+            char_index -= 1
+        while char_index >= 0:
+            char = self._characters_bounding_rect[char_index][0]
+            yield char.get("index_right")
+            yield char.get("index_left")
+            char_index -= 1
+
+    def _right_indices(self, char_index):
+        if char_index < len(self._characters_bounding_rect):
+            char = self._characters_bounding_rect[char_index][0]
+            yield char.get("index_right")
+            char_index += 1
         while char_index < len(self._characters_bounding_rect):
             char = self._characters_bounding_rect[char_index][0]
-            for index in [
-                char.get("index_left", None),
-                char.get("index_right", None),
-            ]:
-                if index is not None and index != current_index:
-                    return index
+            yield char.get("index_left")
+            yield char.get("index_right")
             char_index += 1
-        return current_index
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
 

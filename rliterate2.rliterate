@@ -5048,7 +5048,7 @@
 ],
 "fragments":[
 {
-"text":"def index_left(self, char_index, current_index):\n    char_index -= 1\n    while char_index >= 0:\n        char = self.",
+"text":"def index_left(self, char_index, current_index):\n    return self._next_index(self._left_indices, char_index, current_index)\n\ndef index_right(self, char_index, current_index):\n    return self._next_index(self._right_indices, char_index, current_index)\n\ndef _next_index(self, generate_indices, char_index, current_index):\n    for index in generate_indices(char_index):\n        if index is not None and index != current_index:\n            return index\n    return current_index\n\ndef _left_indices(self, char_index):\n    char_index -= 1\n    if char_index >= 0:\n        char = self.",
 "type":"code"
 },
 {
@@ -5056,26 +5056,15 @@
 "type":"variable"
 },
 {
-"text":"[char_index][0]\n        for index in [\n            char.get(\"index_right\", None),\n            char.get(\"index_left\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index -= 1\n    return current_index\n",
-"type":"code"
-}
-],
-"id":"90f2b56a5b744be2950058cebf2a69d6",
-"language":"",
-"post_process":[],
+"text":"[char_index][0]\n        yield char.get(\"index_left\")\n        char_index -= 1\n    while char_index >= 0:\n        char = self.",
 "type":"code"
 },
 {
-"chunkpath":[
-"classes",
-"Text"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
+"id":"1fc209a79645474fa733e046abf50cc8",
+"type":"variable"
+},
 {
-"text":"def index_right(self, char_index, current_index):\n    while char_index < len(self.",
+"text":"[char_index][0]\n        yield char.get(\"index_right\")\n        yield char.get(\"index_left\")\n        char_index -= 1\n\ndef _right_indices(self, char_index):\n    if char_index < len(self.",
 "type":"code"
 },
 {
@@ -5091,11 +5080,27 @@
 "type":"variable"
 },
 {
-"text":"[char_index][0]\n        for index in [\n            char.get(\"index_left\", None),\n            char.get(\"index_right\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index += 1\n    return current_index\n",
+"text":"[char_index][0]\n        yield char.get(\"index_right\")\n        char_index += 1\n    while char_index < len(self.",
+"type":"code"
+},
+{
+"id":"1fc209a79645474fa733e046abf50cc8",
+"type":"variable"
+},
+{
+"text":"):\n        char = self.",
+"type":"code"
+},
+{
+"id":"1fc209a79645474fa733e046abf50cc8",
+"type":"variable"
+},
+{
+"text":"[char_index][0]\n        yield char.get(\"index_left\")\n        yield char.get(\"index_right\")\n        char_index += 1\n",
 "type":"code"
 }
 ],
-"id":"f479a667ce5a414c8cdc445544b8e1f5",
+"id":"90f2b56a5b744be2950058cebf2a69d6",
 "language":"",
 "post_process":[],
 "type":"code"
