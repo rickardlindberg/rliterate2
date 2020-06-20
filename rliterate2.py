@@ -825,44 +825,6 @@ def build_style_dict(theme_style):
         styles[string_to_tokentype(name)] = value
     return styles
 
-def load_document_from_file(path):
-    if os.path.exists(path):
-        return load_json_from_file(path)
-    else:
-        return create_new_document()
-
-def load_json_from_file(path):
-    with open(path) as f:
-        return json.load(f)
-
-def create_new_document():
-    return {
-        "root_page": create_new_page(),
-        "variables": {},
-    }
-
-def create_new_page():
-    return {
-        "id": genid(),
-        "title": "New page...",
-        "children": [],
-        "paragraphs": [],
-    }
-
-def genid():
-    return uuid.uuid4().hex
-
-def create_props(fn, *args):
-    fn = profile_sub("create props")(fn)
-    immutable = Immutable(fn(*args))
-    for arg in args:
-        if isinstance(arg, Immutable):
-            arg.listen(lambda: immutable.replace([], fn(*args)))
-    return immutable
-
-def makeTuple(*args):
-    return tuple(args)
-
 def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
     text_props = text_fragments_to_props(
         fragments,
@@ -926,6 +888,44 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
         if value is not None and fragment.get("type", None) == "strong":
             builder.text("**", color="pink", index_prefix=[index], index_constant=end_index)
     return builder.get()
+
+def load_document_from_file(path):
+    if os.path.exists(path):
+        return load_json_from_file(path)
+    else:
+        return create_new_document()
+
+def load_json_from_file(path):
+    with open(path) as f:
+        return json.load(f)
+
+def create_new_document():
+    return {
+        "root_page": create_new_page(),
+        "variables": {},
+    }
+
+def create_new_page():
+    return {
+        "id": genid(),
+        "title": "New page...",
+        "children": [],
+        "paragraphs": [],
+    }
+
+def genid():
+    return uuid.uuid4().hex
+
+def create_props(fn, *args):
+    fn = profile_sub("create props")(fn)
+    immutable = Immutable(fn(*args))
+    for arg in args:
+        if isinstance(arg, Immutable):
+            arg.listen(lambda: immutable.replace([], fn(*args)))
+    return immutable
+
+def makeTuple(*args):
+    return tuple(args)
 
 def profile_print_summary(text, cprofile_out):
     text_width = 0
@@ -2891,6 +2891,71 @@ class TextEdit(Panel):
         else:
             return None
 
+class TextPropsBuilder(object):
+
+    def __init__(self, **styles):
+        self._characters = []
+        self._cursors = []
+        self._selections = []
+        self._base_style = dict(styles)
+
+    def get(self):
+        return {
+            "characters": self._characters,
+            "cursors": self._cursors,
+            "selections": self._selections,
+            "base_style": self._base_style,
+        }
+
+    def text(self, text, **kwargs):
+        fragment = {}
+        for field in TextStyle._fields:
+            if field in kwargs:
+                fragment[field] = kwargs[field]
+        index_prefix = kwargs.get("index_prefix", None)
+        if index_prefix is None:
+            create_index = lambda x: x
+        else:
+            create_index = lambda x: index_prefix + [x]
+        index_increment = kwargs.get("index_increment", None)
+        index_constant = kwargs.get("index_constant", None)
+        for index, character in enumerate(text):
+            x = dict(fragment, text=character)
+            if index_increment is not None:
+                x["index_left"] = create_index(
+                    index_increment + index
+                )
+                x["index_right"] = create_index(
+                    index_increment + index + 1
+                )
+            if index_constant is not None:
+                x["index"] = create_index(
+                    index_constant
+                )
+            self._characters.append(x)
+        return self
+
+    def selection_start(self, offset=0, color=None):
+        self._selections.append((
+            self._index(offset),
+            self._index(offset),
+            color
+        ))
+
+    def selection_end(self, offset=0):
+        last_selection = self._selections[-1]
+        self._selections[-1] = (
+            last_selection[0],
+            self._index(offset),
+            last_selection[2]
+        )
+
+    def cursor(self, offset=0, color=None):
+        self._cursors.append((self._index(offset), color))
+
+    def _index(self, offset):
+        return len(self._characters) + offset
+
 class StringInputHandler(object):
 
     def __init__(self, data, selection, cursor_index, save):
@@ -3501,71 +3566,6 @@ HoverEvent = namedtuple("HoverEvent", "mouse_inside")
 MouseEvent = namedtuple("MouseEvent", "x,y,show_context_menu")
 
 KeyEvent = namedtuple("KeyEvent", "key")
-
-class TextPropsBuilder(object):
-
-    def __init__(self, **styles):
-        self._characters = []
-        self._cursors = []
-        self._selections = []
-        self._base_style = dict(styles)
-
-    def get(self):
-        return {
-            "characters": self._characters,
-            "cursors": self._cursors,
-            "selections": self._selections,
-            "base_style": self._base_style,
-        }
-
-    def text(self, text, **kwargs):
-        fragment = {}
-        for field in TextStyle._fields:
-            if field in kwargs:
-                fragment[field] = kwargs[field]
-        index_prefix = kwargs.get("index_prefix", None)
-        if index_prefix is None:
-            create_index = lambda x: x
-        else:
-            create_index = lambda x: index_prefix + [x]
-        index_increment = kwargs.get("index_increment", None)
-        index_constant = kwargs.get("index_constant", None)
-        for index, character in enumerate(text):
-            x = dict(fragment, text=character)
-            if index_increment is not None:
-                x["index_left"] = create_index(
-                    index_increment + index
-                )
-                x["index_right"] = create_index(
-                    index_increment + index + 1
-                )
-            if index_constant is not None:
-                x["index"] = create_index(
-                    index_constant
-                )
-            self._characters.append(x)
-        return self
-
-    def selection_start(self, offset=0, color=None):
-        self._selections.append((
-            self._index(offset),
-            self._index(offset),
-            color
-        ))
-
-    def selection_end(self, offset=0):
-        last_selection = self._selections[-1]
-        self._selections[-1] = (
-            last_selection[0],
-            self._index(offset),
-            last_selection[2]
-        )
-
-    def cursor(self, offset=0, color=None):
-        self._cursors.append((self._index(offset), color))
-
-    def _index(self, offset):
-        return len(self._characters) + offset
 
 class ValuesEqualError(Exception):
     pass
