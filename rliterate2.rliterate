@@ -2010,7 +2010,7 @@
 ],
 "fragments":[
 {
-"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        index_prefix = kwargs.get(\"index_prefix\", None)\n        if index_prefix is None:\n            create_index = lambda x: x\n        else:\n            create_index = lambda x: index_prefix + [x]\n        index_increment = kwargs.get(\"index_increment\", None)\n        index_constant = kwargs.get(\"index_constant\", None)\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if index_increment is not None:\n                x[\"index_left\"] = create_index(\n                    index_increment + index\n                )\n                x[\"index_right\"] = create_index(\n                    index_increment + index + 1\n                )\n            if index_constant is not None:\n                x[\"index\"] = create_index(\n                    index_constant\n                )\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0, color=None):\n        self._selections.append((\n            self._index(offset),\n            self._index(offset),\n            color\n        ))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (\n            last_selection[0],\n            self._index(offset),\n            last_selection[2]\n        )\n\n    def cursor(self, offset=0, color=None):\n        self._cursors.append((self._index(offset), color))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
+"text":"class TextPropsBuilder(object):\n\n    def __init__(self, **styles):\n        self._characters = []\n        self._cursors = []\n        self._selections = []\n        self._base_style = dict(styles)\n\n    def get(self):\n        return {\n            \"characters\": self._characters,\n            \"cursors\": self._cursors,\n            \"selections\": self._selections,\n            \"base_style\": self._base_style,\n        }\n\n    def text(self, text, **kwargs):\n        fragment = {}\n        for field in TextStyle._fields:\n            if field in kwargs:\n                fragment[field] = kwargs[field]\n        index_prefix = kwargs.get(\"index_prefix\", None)\n        if index_prefix is None:\n            create_index = lambda x: x\n        else:\n            create_index = lambda x: index_prefix + [x]\n        index_increment = kwargs.get(\"index_increment\", None)\n        index_constant = kwargs.get(\"index_constant\", None)\n        for index, character in enumerate(text):\n            x = dict(fragment, text=character)\n            if index_increment is not None:\n                x[\"index_left\"] = create_index(\n                    index_increment + index\n                )\n                x[\"index_right\"] = create_index(\n                    index_increment + index + 1\n                )\n            if index_constant is not None:\n                x[\"index_left\"] = x[\"index_right\"] = create_index(\n                    index_constant\n                )\n            self._characters.append(x)\n        return self\n\n    def selection_start(self, offset=0, color=None):\n        self._selections.append((\n            self._index(offset),\n            self._index(offset),\n            color\n        ))\n\n    def selection_end(self, offset=0):\n        last_selection = self._selections[-1]\n        self._selections[-1] = (\n            last_selection[0],\n            self._index(offset),\n            last_selection[2]\n        )\n\n    def cursor(self, offset=0, color=None):\n        self._cursors.append((self._index(offset), color))\n\n    def _index(self, offset):\n        return len(self._characters) + offset\n",
 "type":"code"
 }
 ],
@@ -2472,7 +2472,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_index(self, x, y):\n    character, right_side = self.get_widget(\"text\").get_closest_character_with_side(\n        x,\n        y\n    )\n    if character is not None:\n        index = character.get(\"index\", None)\n        if right_side:\n            return character.get(\"index_right\", index)\n        else:\n            return character.get(\"index_left\", index)\n",
+"text":"def _get_index(self, x, y):\n    character, right_side = self.get_widget(\"text\").get_closest_character_with_side(\n        x,\n        y\n    )\n    if character is not None:\n        if right_side:\n            return character.get(\"index_right\", None)\n        else:\n            return character.get(\"index_left\", None)\n",
 "type":"code"
 }
 ],
@@ -5056,7 +5056,7 @@
 "type":"variable"
 },
 {
-"text":"[char_index][0]\n        for index in [\n            char.get(\"index_right\", None),\n            char.get(\"index_left\", None),\n            char.get(\"index\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index -= 1\n    return current_index\n",
+"text":"[char_index][0]\n        for index in [\n            char.get(\"index_right\", None),\n            char.get(\"index_left\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index -= 1\n    return current_index\n",
 "type":"code"
 }
 ],
@@ -5091,7 +5091,7 @@
 "type":"variable"
 },
 {
-"text":"[char_index][0]\n        for index in [\n            char.get(\"index_left\", None),\n            char.get(\"index_right\", None),\n            char.get(\"index\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index += 1\n    return current_index\n",
+"text":"[char_index][0]\n        for index in [\n            char.get(\"index_left\", None),\n            char.get(\"index_right\", None),\n        ]:\n            if index is not None and index != current_index:\n                return index\n        char_index += 1\n    return current_index\n",
 "type":"code"
 }
 ],

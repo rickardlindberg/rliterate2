@@ -2872,11 +2872,10 @@ class TextEdit(Panel):
             y
         )
         if character is not None:
-            index = character.get("index", None)
             if right_side:
-                return character.get("index_right", index)
+                return character.get("index_right", None)
             else:
-                return character.get("index_left", index)
+                return character.get("index_left", None)
 
     def _on_key(self, event, selection):
         if selection.present():
@@ -2929,7 +2928,7 @@ class TextPropsBuilder(object):
                     index_increment + index + 1
                 )
             if index_constant is not None:
-                x["index"] = create_index(
+                x["index_left"] = x["index_right"] = create_index(
                     index_constant
                 )
             self._characters.append(x)
@@ -3890,7 +3889,6 @@ class Text(wx.Panel, WxWidgetMixin):
             for index in [
                 char.get("index_right", None),
                 char.get("index_left", None),
-                char.get("index", None),
             ]:
                 if index is not None and index != current_index:
                     return index
@@ -3903,7 +3901,6 @@ class Text(wx.Panel, WxWidgetMixin):
             for index in [
                 char.get("index_left", None),
                 char.get("index_right", None),
-                char.get("index", None),
             ]:
                 if index is not None and index != current_index:
                     return index
