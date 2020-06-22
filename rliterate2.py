@@ -848,7 +848,8 @@ def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions,
             fragments,
             selection.get(),
             builder.get_main_cursor_char_index(),
-            save
+            save,
+            build_text_fragments
         ),
         "actions": actions,
         **kwargs,
@@ -861,23 +862,27 @@ def text_fragments_to_props(fragments, selection=None, builder=None, **kwargs):
         value = selection.get()
     else:
         value = None
+    build_text_fragments(builder, fragments, value)
+    return builder.get()
+
+def build_text_fragments(builder, fragments, selection):
     for index, fragment in enumerate(fragments):
         params = {}
         if "color" in fragment:
             params["color"] = fragment["color"]
         if fragment.get("type", None) == "strong":
             params["bold"] = True
-        if value is not None and fragment.get("type", None) == "strong":
+        if selection is not None and fragment.get("type", None) == "strong":
             builder.text("**", color="pink", index_prefix=[index], index_constant=0)
-        if value is not None:
-            if value["start"][0] == index:
-                builder.selection_start(value["start"][1])
-                if value["cursor_at_start"]:
-                    builder.cursor(value["start"][1], main=True)
-            if value["end"][0] == index:
-                builder.selection_end(value["end"][1])
-                if not value["cursor_at_start"]:
-                    builder.cursor(value["end"][1], main=True)
+        if selection is not None:
+            if selection["start"][0] == index:
+                builder.selection_start(selection["start"][1])
+                if selection["cursor_at_start"]:
+                    builder.cursor(selection["start"][1], main=True)
+            if selection["end"][0] == index:
+                builder.selection_end(selection["end"][1])
+                if not selection["cursor_at_start"]:
+                    builder.cursor(selection["end"][1], main=True)
         params["index_prefix"] = [index]
         if fragment.get("text", ""):
             params["index_increment"] = 0
@@ -888,9 +893,8 @@ def text_fragments_to_props(fragments, selection=None, builder=None, **kwargs):
             params["color"] = "pink"
             builder.text("text", **params)
             end_index = 0
-        if value is not None and fragment.get("type", None) == "strong":
+        if selection is not None and fragment.get("type", None) == "strong":
             builder.text("**", color="pink", index_prefix=[index], index_constant=end_index)
-    return builder.get()
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -3020,7 +3024,7 @@ class StringInputHandler(object):
                 self.replace("")
             else:
                 self.selection = dict(self.selection, **{
-                    "start": text.index_left(self.cursor_char_index, self.cursor),
+                    "start": self._next_cursor(self._cursors_left(text)),
                     "end": self.start,
                     "cursor_at_start": True,
                 })
@@ -3031,19 +3035,42 @@ class StringInputHandler(object):
             else:
                 self.selection = dict(self.selection, **{
                     "start": self.start,
-                    "end": text.index_right(self.cursor_char_index, self.cursor),
+                    "end": self._next_cursor(self._cursors_right(text)),
                     "cursor_at_start": False,
                 })
                 self.replace("")
         elif key_event.key == "\x02": # Ctrl-B
-            self.cursor = text.index_left(self.cursor_char_index, self.cursor)
+            self.cursor = self._next_cursor(self._cursors_left(text))
         elif key_event.key == "\x06": # Ctrl-F
-            self.cursor = text.index_right(self.cursor_char_index, self.cursor)
+            self.cursor = self._next_cursor(self._cursors_right(text))
         else:
             self.replace(key_event.key)
         self.save(self.data, self.selection)
 
+    def _next_cursor(self, cursors):
+        for cursor in cursors:
+            if self._cursor_differs(cursor):
+                return cursor
+        return self.cursor
+
+    def _cursor_differs(self, cursor):
+        return cursor != self.cursor
+
+    def _cursors_left(self, text):
+        for char in text.char_iterator(self.cursor_char_index-1, -1):
+            yield char.get("index_right")
+            yield char.get("index_left")
+
+    def _cursors_right(self, text):
+        for char in text.char_iterator(self.cursor_char_index, 1):
+            yield char.get("index_left")
+            yield char.get("index_right")
+
 class TextFragmentsInputHandler(StringInputHandler):
+
+    def __init__(self, data, selection, cursor_char_index, save, build_text_fragments):
+        StringInputHandler.__init__(self, data, selection, cursor_char_index, save)
+        self.build_text_fragments = build_text_fragments
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -3102,6 +3129,15 @@ class TextFragmentsInputHandler(StringInputHandler):
 
     def handle_key(self, key_event, text):
         StringInputHandler.handle_key(self, key_event, text)
+
+    def _cursor_differs(self, cursor):
+        builder = TextPropsBuilder()
+        self.build_text_fragments(builder, self.data, {
+            "start": cursor,
+            "end": cursor,
+            "cursor_at_start": True,
+        })
+        return builder.get_main_cursor_char_index() != self.cursor_char_index
 
 class Document(Immutable):
 
@@ -3892,40 +3928,10 @@ class Text(wx.Panel, WxWidgetMixin):
                 return (character, x > (rect.Left+rect.Width/2))
         return (character, True)
 
-    def index_left(self, char_index, current_index):
-        return self._next_index(self._left_indices, char_index, current_index)
-
-    def index_right(self, char_index, current_index):
-        return self._next_index(self._right_indices, char_index, current_index)
-
-    def _next_index(self, generate_indices, char_index, current_index):
-        for index in generate_indices(char_index):
-            if index is not None and index != current_index:
-                return index
-        return current_index
-
-    def _left_indices(self, char_index):
-        char_index -= 1
-        if char_index >= 0:
-            char = self._characters_bounding_rect[char_index][0]
-            yield char.get("index_left")
-            char_index -= 1
-        while char_index >= 0:
-            char = self._characters_bounding_rect[char_index][0]
-            yield char.get("index_right")
-            yield char.get("index_left")
-            char_index -= 1
-
-    def _right_indices(self, char_index):
-        if char_index < len(self._characters_bounding_rect):
-            char = self._characters_bounding_rect[char_index][0]
-            yield char.get("index_right")
-            char_index += 1
-        while char_index < len(self._characters_bounding_rect):
-            char = self._characters_bounding_rect[char_index][0]
-            yield char.get("index_left")
-            yield char.get("index_right")
-            char_index += 1
+    def char_iterator(self, index, offset):
+        while index >= 0 and index < len(self._characters_bounding_rect):
+            yield self._characters_bounding_rect[index][0]
+            index += offset
 
 TextStyle = namedtuple("TextStyle", "size,family,color,bold")
 
