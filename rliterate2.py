@@ -469,60 +469,21 @@ def build_page(page, page_body_width, page_theme, selection, actions):
     }
 
 def build_title(page, page_body_width, page_theme, selection, actions):
-    def save(new_title, new_selection):
-        actions["edit_page"](
-            page["id"],
-            {
-                "title": new_title,
-            },
-            selection.create(new_selection)
-        )
-    builder = TextPropsBuilder(
-        **page_theme["title_font"],
-        selection_color=page_theme["selection_color"],
-        cursor_color=page_theme["cursor_color"]
-    )
+    input_handler = TitleInputHandler(page, page_theme, selection, actions)
     return {
         "text_edit_props": {
             "text_props": dict(
-                build_title_text_props(
-                    builder,
-                    page["title"],
-                    selection,
-                    page_theme["placeholder_color"]
-                ),
+                input_handler.text_props,
                 break_at_word=True,
                 line_height=page_theme["line_height"]
             ),
             "max_width": page_body_width,
             "selection": selection,
             "selection_color": page_theme["selection_border"],
-            "input_handler": StringInputHandler(
-                page["title"],
-                selection.get(),
-                builder.get_main_cursor_char_index(),
-                save
-            ),
+            "input_handler": input_handler,
             "actions": actions,
         },
     }
-
-def build_title_text_props(builder, title, selection, placeholder_color):
-    if title:
-        if selection.present():
-            value = selection.get()
-            builder.selection_start(value["start"])
-            builder.selection_end(value["end"])
-            if value["cursor_at_start"]:
-                builder.cursor(value["start"], main=True)
-            else:
-                builder.cursor(value["end"], main=True)
-        builder.text(title, index_increment=0)
-    else:
-        if selection.present():
-            builder.cursor(main=True)
-        builder.text("Enter title...", color=placeholder_color, index_constant=0)
-    return builder.get()
 
 def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):
     return [
@@ -826,31 +787,22 @@ def build_style_dict(theme_style):
     return styles
 
 def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
-    builder = TextPropsBuilder(
-        selection_color=page_theme["selection_color"],
-        cursor_color=page_theme["cursor_color"],
-        **page_theme["text_font"]
+    input_handler = TextFragmentsInputHandler(
+        fragments,
+        selection,
+        save,
+        page_theme
     )
     return {
         "text_props": dict(
-            text_fragments_to_props(
-                fragments,
-                selection=selection,
-                builder=builder
-            ),
+            input_handler.text_props,
             break_at_word=True,
             line_height=page_theme["line_height"],
             align=align
         ),
         "selection": selection,
         "selection_color": page_theme["selection_border"],
-        "input_handler": TextFragmentsInputHandler(
-            fragments,
-            selection.get(),
-            builder.get_main_cursor_char_index(),
-            save,
-            build_text_fragments
-        ),
+        "input_handler": input_handler,
         "actions": actions,
         **kwargs,
     }
@@ -1089,11 +1041,10 @@ class Immutable(object):
 
 class StringInputHandler(object):
 
-    def __init__(self, data, selection, cursor_char_index, save):
+    def __init__(self, data, selection, cursor_char_index):
         self.data = data
         self.selection = selection
         self.cursor_char_index = cursor_char_index
-        self.save = save
 
     @property
     def start(self):
@@ -1172,7 +1123,15 @@ class StringInputHandler(object):
         return self.cursor
 
     def _cursor_differs(self, cursor):
-        return cursor != self.cursor
+        if cursor == self.cursor:
+            return False
+        builder = TextPropsBuilder()
+        self.build(builder, {
+            "start": cursor,
+            "end": cursor,
+            "cursor_at_start": True,
+        })
+        return builder.get_main_cursor_char_index() != self.cursor_char_index
 
     def _cursors_left(self, text):
         for char in text.char_iterator(self.cursor_char_index-1, -1):
@@ -2646,6 +2605,56 @@ class Title(Panel):
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
+class TitleInputHandler(StringInputHandler):
+
+    def __init__(self, page, page_theme, selection, actions):
+        self.page = page
+        self.page_theme = page_theme
+        self.selection_trail = selection
+        self.actions = actions
+        self.create_text_props()
+        StringInputHandler.__init__(
+            self,
+            page["title"],
+            self.selection_trail.get(),
+            self.main_cursor_char_index,
+        )
+
+    def create_text_props(self):
+        builder = TextPropsBuilder(
+            **self.page_theme["title_font"],
+            selection_color=self.page_theme["selection_color"],
+            cursor_color=self.page_theme["cursor_color"]
+        )
+        self.build(builder, self.selection_trail.get())
+        self.text_props = builder.get()
+        self.main_cursor_char_index = builder.get_main_cursor_char_index()
+
+    def build(self, builder, selection):
+        if self.page["title"]:
+            if selection is not None:
+                builder.selection_start(selection["start"])
+                builder.selection_end(selection["end"])
+                if selection["cursor_at_start"]:
+                    builder.cursor(selection["start"], main=True)
+                else:
+                    builder.cursor(selection["end"], main=True)
+            builder.text(self.page["title"], index_increment=0)
+        else:
+            if selection is not None:
+                builder.cursor(main=True)
+            builder.text("Enter title...", color=self.page_theme["placeholder_color"], index_constant=0)
+        return builder.get()
+
+    def save(self, new_title, new_selection):
+        self.actions["edit_page"](
+            self.page["id"],
+            {
+                "title": new_title,
+            },
+            self.selection_trail.create(new_selection)
+        )
+
 class TextParagraph(Panel):
 
     def _get_local_props(self):
@@ -3068,9 +3077,31 @@ class TextPropsBuilder(object):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, data, selection, cursor_char_index, save, build_text_fragments):
-        StringInputHandler.__init__(self, data, selection, cursor_char_index, save)
-        self.build_text_fragments = build_text_fragments
+    def __init__(self, data, selection, save, page_theme):
+        self.selection_trail = selection
+        self.fragments = data
+        self.save = save
+        self.page_theme = page_theme
+        self.create_text_props()
+        StringInputHandler.__init__(
+            self,
+            data,
+            self.selection_trail.get(),
+            self.main_cursor_char_index
+        )
+
+    def create_text_props(self):
+        builder = TextPropsBuilder(
+            selection_color=self.page_theme["selection_color"],
+            cursor_color=self.page_theme["cursor_color"],
+            **self.page_theme["text_font"]
+        )
+        self.build(builder, self.selection_trail.get())
+        self.text_props = builder.get()
+        self.main_cursor_char_index = builder.get_main_cursor_char_index()
+
+    def build(self, builder, selection):
+        return build_text_fragments(builder, self.fragments, selection)
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -3129,15 +3160,6 @@ class TextFragmentsInputHandler(StringInputHandler):
 
     def handle_key(self, key_event, text):
         StringInputHandler.handle_key(self, key_event, text)
-
-    def _cursor_differs(self, cursor):
-        builder = TextPropsBuilder()
-        self.build_text_fragments(builder, self.data, {
-            "start": cursor,
-            "end": cursor,
-            "cursor_at_start": True,
-        })
-        return builder.get_main_cursor_char_index() != self.cursor_char_index
 
 class Document(Immutable):
 
