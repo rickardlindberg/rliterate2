@@ -1126,7 +1126,7 @@ class StringInputHandler(object):
         if cursor == self.cursor:
             return False
         builder = TextPropsBuilder()
-        self.project(builder, {
+        self.build_with_selection(builder, {
             "start": cursor,
             "end": cursor,
             "cursor_at_start": True,
@@ -2612,7 +2612,7 @@ class TitleInputHandler(StringInputHandler):
         self.page_theme = page_theme
         self.selection_trail = selection
         self.actions = actions
-        self.create_text_props()
+        self.build()
         StringInputHandler.__init__(
             self,
             page["title"],
@@ -2620,17 +2620,17 @@ class TitleInputHandler(StringInputHandler):
             self.main_cursor_char_index,
         )
 
-    def create_text_props(self):
+    def build(self):
         builder = TextPropsBuilder(
             **self.page_theme["title_font"],
             selection_color=self.page_theme["selection_color"],
             cursor_color=self.page_theme["cursor_color"]
         )
-        self.project(builder, self.selection_trail.get())
+        self.build_with_selection(builder, self.selection_trail.get())
         self.text_props = builder.get()
         self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
-    def project(self, builder, selection):
+    def build_with_selection(self, builder, selection):
         if self.page["title"]:
             if selection is not None:
                 builder.selection_start(selection["start"])
@@ -3082,7 +3082,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         self.fragments = data
         self.save = save
         self.page_theme = page_theme
-        self.create_text_props()
+        self.build()
         StringInputHandler.__init__(
             self,
             data,
@@ -3090,17 +3090,17 @@ class TextFragmentsInputHandler(StringInputHandler):
             self.main_cursor_char_index
         )
 
-    def create_text_props(self):
+    def build(self):
         builder = TextPropsBuilder(
             selection_color=self.page_theme["selection_color"],
             cursor_color=self.page_theme["cursor_color"],
             **self.page_theme["text_font"]
         )
-        self.project(builder, self.selection_trail.get())
+        self.build_with_selection(builder, self.selection_trail.get())
         self.text_props = builder.get()
         self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
-    def project(self, builder, selection):
+    def build_with_selection(self, builder, selection):
         return build_text_fragments(builder, self.fragments, selection)
 
     def replace(self, text):

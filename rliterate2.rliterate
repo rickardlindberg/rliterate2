@@ -1267,7 +1267,23 @@
 ],
 "fragments":[
 {
-"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        self.create_text_props()\n        StringInputHandler.__init__(\n            self,\n            page[\"title\"],\n            self.selection_trail.get(),\n            self.main_cursor_char_index,\n        )\n\n    def create_text_props(self):\n        builder = TextPropsBuilder(\n            **self.page_theme[\"title_font\"],\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"]\n        )\n        self.",
+"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        self.",
+"type":"code"
+},
+{
+"id":"5591f6bb68d24320aee6f91d489b5513",
+"type":"variable"
+},
+{
+"text":"()\n        StringInputHandler.__init__(\n            self,\n            page[\"title\"],\n            self.selection_trail.get(),\n            self.main_cursor_char_index,\n        )\n\n    def ",
+"type":"code"
+},
+{
+"id":"5591f6bb68d24320aee6f91d489b5513",
+"type":"variable"
+},
+{
+"text":"(self):\n        builder = TextPropsBuilder(\n            **self.page_theme[\"title_font\"],\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"]\n        )\n        self.",
 "type":"code"
 },
 {
@@ -2091,7 +2107,15 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, data, selection, save, page_theme):\n        self.selection_trail = selection\n        self.fragments = data\n        self.save = save\n        self.page_theme = page_theme\n        self.create_text_props()\n        ",
+"text":"):\n\n    def __init__(self, data, selection, save, page_theme):\n        self.selection_trail = selection\n        self.fragments = data\n        self.save = save\n        self.page_theme = page_theme\n        self.",
+"type":"code"
+},
+{
+"id":"5591f6bb68d24320aee6f91d489b5513",
+"type":"variable"
+},
+{
+"text":"()\n        ",
 "type":"code"
 },
 {
@@ -2099,7 +2123,15 @@
 "type":"variable"
 },
 {
-"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get(),\n            self.main_cursor_char_index\n        )\n\n    def create_text_props(self):\n        builder = TextPropsBuilder(\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"],\n            **self.page_theme[\"text_font\"]\n        )\n        self.",
+"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get(),\n            self.main_cursor_char_index\n        )\n\n    def ",
+"type":"code"
+},
+{
+"id":"5591f6bb68d24320aee6f91d489b5513",
+"type":"variable"
+},
+{
+"text":"(self):\n        builder = TextPropsBuilder(\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"],\n            **self.page_theme[\"text_font\"]\n        )\n        self.",
 "type":"code"
 },
 {
@@ -7779,6 +7811,7 @@
 "3bdb899dc8ff44fc955b9ad365b56cea":"_characters_by_line",
 "3f6837e94b454b4e86ef9445b41aa7ad":"text_fragments_to_text_edit_props",
 "4dabcd9b4f634a85af8d9119a745a33c":"create_props",
+"5591f6bb68d24320aee6f91d489b5513":"build",
 "5f71ca24cdae4919bb3a5612fa704ac3":"_find_refresh_widget",
 "6e0d0c9950204b6a8b9eebccb0974f72":"TextFragmentKeyHandler",
 "7783f19273504229bb20053bc01b7057":"widget",
@@ -7796,7 +7829,7 @@
 "d1d29eb0717a4a31932fd140365de7f5":"_draw_fragments_by_style",
 "d2aa737fb7224d9a8e3903670cddc46b":"target_index",
 "de67e0ffd0c347cca785c1fa0c4e9560":"handle_refresh_requests",
-"e1b3ee458cb04895bc45979c8bed6f3b":"project",
+"e1b3ee458cb04895bc45979c8bed6f3b":"build_with_selection",
 "e8b2beada24e443aa229cf6e6b85e403":"StringInputHandler",
 "ead9d70512b04e6aac36796c76954814":"_handle_immediate_refresh_request",
 "f9aa655efb5b47b8ac4bcd3a78394fd2":"RefreshRequests",
