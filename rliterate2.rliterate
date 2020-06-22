@@ -1267,15 +1267,7 @@
 ],
 "fragments":[
 {
-"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        self.",
-"type":"code"
-},
-{
-"id":"5591f6bb68d24320aee6f91d489b5513",
-"type":"variable"
-},
-{
-"text":"()\n        StringInputHandler.__init__(\n            self,\n            page[\"title\"],\n            self.selection_trail.get(),\n            self.main_cursor_char_index,\n        )\n\n    def ",
+"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        StringInputHandler.__init__(\n            self,\n            self.page[\"title\"],\n            self.selection_trail.get()\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -1291,7 +1283,7 @@
 "type":"variable"
 },
 {
-"text":"(builder, self.selection_trail.get())\n        self.text_props = builder.get()\n        self.main_cursor_char_index = builder.get_main_cursor_char_index()\n\n    def ",
+"text":"(builder, self.selection)\n        return builder\n\n    def ",
 "type":"code"
 },
 {
@@ -1299,7 +1291,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        if self.page[\"title\"]:\n            if selection is not None:\n                builder.selection_start(selection[\"start\"])\n                builder.selection_end(selection[\"end\"])\n                if selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"start\"], main=True)\n                else:\n                    builder.cursor(selection[\"end\"], main=True)\n            builder.text(self.page[\"title\"], index_increment=0)\n        else:\n            if selection is not None:\n                builder.cursor(main=True)\n            builder.text(\"Enter title...\", color=self.page_theme[\"placeholder_color\"], index_constant=0)\n        return builder.get()\n\n    def save(self, new_title, new_selection):\n        self.actions[\"edit_page\"](\n            self.page[\"id\"],\n            {\n                \"title\": new_title,\n            },\n            self.selection_trail.create(new_selection)\n        )\n",
+"text":"(self, builder, selection):\n        if self.data:\n            if selection is not None:\n                builder.selection_start(selection[\"start\"])\n                builder.selection_end(selection[\"end\"])\n                if selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"start\"], main=True)\n                else:\n                    builder.cursor(selection[\"end\"], main=True)\n            builder.text(self.data, index_increment=0)\n        else:\n            if selection is not None:\n                builder.cursor(main=True)\n            builder.text(\"Enter title...\", color=self.page_theme[\"placeholder_color\"], index_constant=0)\n        return builder.get()\n\n    def save(self, new_title, new_selection):\n        self.actions[\"edit_page\"](\n            self.page[\"id\"],\n            {\n                \"title\": new_title,\n            },\n            self.selection_trail.create(new_selection)\n        )\n",
 "type":"code"
 }
 ],
@@ -2107,15 +2099,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, data, selection, save, page_theme):\n        self.selection_trail = selection\n        self.fragments = data\n        self.save = save\n        self.page_theme = page_theme\n        self.",
-"type":"code"
-},
-{
-"id":"5591f6bb68d24320aee6f91d489b5513",
-"type":"variable"
-},
-{
-"text":"()\n        ",
+"text":"):\n\n    def __init__(self, data, selection, save, page_theme):\n        self.selection_trail = selection\n        self.save = save\n        self.page_theme = page_theme\n        ",
 "type":"code"
 },
 {
@@ -2123,7 +2107,7 @@
 "type":"variable"
 },
 {
-"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get(),\n            self.main_cursor_char_index\n        )\n\n    def ",
+"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -2139,7 +2123,7 @@
 "type":"variable"
 },
 {
-"text":"(builder, self.selection_trail.get())\n        self.text_props = builder.get()\n        self.main_cursor_char_index = builder.get_main_cursor_char_index()\n\n    def ",
+"text":"(builder, self.selection)\n        return builder\n\n    def ",
 "type":"code"
 },
 {
@@ -2147,7 +2131,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        return build_text_fragments(builder, self.fragments, selection)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
+"text":"(self, builder, selection):\n        return build_text_fragments(builder, self.data, selection)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
 "type":"code"
 },
 {
@@ -2204,7 +2188,15 @@
 "type":"variable"
 },
 {
-"text":"(object):\n\n    def __init__(self, data, selection, cursor_char_index):\n        self.data = data\n        self.selection = selection\n        self.cursor_char_index = cursor_char_index\n\n    @property\n    def start(self):\n        return self.selection[\"start\"]\n\n    @property\n    def end(self):\n        return self.selection[\"end\"]\n\n    @property\n    def cursor_at_start(self):\n        return self.selection[\"cursor_at_start\"]\n\n    @property\n    def cursor(self):\n        if self.cursor_at_start:\n            return self.start\n        else:\n            return self.end\n\n    @cursor.setter\n    def cursor(self, position):\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    @property\n    def has_selection(self):\n        return self.start != self.end\n\n    def replace(self, text):\n        self.data = self.data[:self.start] + text + self.data[self.end:]\n        position = self.start + len(text)\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        print(key_event)\n        if key_event.key == \"\\x08\": # Backspace\n            if self.has_selection:\n                self.replace(\"\")\n            else:\n                self.selection = dict(self.selection, **{\n                    \"start\": self._next_cursor(self._cursors_left(text)),\n                    \"end\": self.start,\n                    \"cursor_at_start\": True,\n                })\n                self.replace(\"\")\n        elif key_event.key == \"\\x00\": # Del (and many others)\n            if self.has_selection:\n                self.replace(\"\")\n            else:\n                self.selection = dict(self.selection, **{\n                    \"start\": self.start,\n                    \"end\": self._next_cursor(self._cursors_right(text)),\n                    \"cursor_at_start\": False,\n                })\n                self.replace(\"\")\n        elif key_event.key == \"\\x02\": # Ctrl-B\n            self.cursor = self._next_cursor(self._cursors_left(text))\n        elif key_event.key == \"\\x06\": # Ctrl-F\n            self.cursor = self._next_cursor(self._cursors_right(text))\n        else:\n            self.replace(key_event.key)\n        self.save(self.data, self.selection)\n\n    def _next_cursor(self, cursors):\n        for cursor in cursors:\n            if self._cursor_differs(cursor):\n                return cursor\n        return self.cursor\n\n    def _cursor_differs(self, cursor):\n        if cursor == self.cursor:\n            return False\n        builder = TextPropsBuilder()\n        self.",
+"text":"(object):\n\n    def __init__(self, data, selection):\n        self.data = data\n        self.selection = selection\n        builder = self.",
+"type":"code"
+},
+{
+"id":"5591f6bb68d24320aee6f91d489b5513",
+"type":"variable"
+},
+{
+"text":"()\n        self.text_props = builder.get()\n        self.main_cursor_char_index = builder.get_main_cursor_char_index()\n\n    @property\n    def start(self):\n        return self.selection[\"start\"]\n\n    @property\n    def end(self):\n        return self.selection[\"end\"]\n\n    @property\n    def cursor_at_start(self):\n        return self.selection[\"cursor_at_start\"]\n\n    @property\n    def cursor(self):\n        if self.cursor_at_start:\n            return self.start\n        else:\n            return self.end\n\n    @cursor.setter\n    def cursor(self, position):\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    @property\n    def has_selection(self):\n        return self.start != self.end\n\n    def replace(self, text):\n        self.data = self.data[:self.start] + text + self.data[self.end:]\n        position = self.start + len(text)\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        print(key_event)\n        if key_event.key == \"\\x08\": # Backspace\n            if self.has_selection:\n                self.replace(\"\")\n            else:\n                self.selection = dict(self.selection, **{\n                    \"start\": self._next_cursor(self._cursors_left(text)),\n                    \"end\": self.start,\n                    \"cursor_at_start\": True,\n                })\n                self.replace(\"\")\n        elif key_event.key == \"\\x00\": # Del (and many others)\n            if self.has_selection:\n                self.replace(\"\")\n            else:\n                self.selection = dict(self.selection, **{\n                    \"start\": self.start,\n                    \"end\": self._next_cursor(self._cursors_right(text)),\n                    \"cursor_at_start\": False,\n                })\n                self.replace(\"\")\n        elif key_event.key == \"\\x02\": # Ctrl-B\n            self.cursor = self._next_cursor(self._cursors_left(text))\n        elif key_event.key == \"\\x06\": # Ctrl-F\n            self.cursor = self._next_cursor(self._cursors_right(text))\n        else:\n            self.replace(key_event.key)\n        self.save(self.data, self.selection)\n\n    def _next_cursor(self, cursors):\n        for cursor in cursors:\n            if self._cursor_differs(cursor):\n                return cursor\n        return self.cursor\n\n    def _cursor_differs(self, cursor):\n        if cursor == self.cursor:\n            return False\n        builder = TextPropsBuilder()\n        self.",
 "type":"code"
 },
 {
@@ -2212,7 +2204,7 @@
 "type":"variable"
 },
 {
-"text":"(builder, {\n            \"start\": cursor,\n            \"end\": cursor,\n            \"cursor_at_start\": True,\n        })\n        return builder.get_main_cursor_char_index() != self.cursor_char_index\n\n    def _cursors_left(self, text):\n        for char in text.char_iterator(self.cursor_char_index-1, -1):\n            yield char.get(\"index_right\")\n            yield char.get(\"index_left\")\n\n    def _cursors_right(self, text):\n        for char in text.char_iterator(self.cursor_char_index, 1):\n            yield char.get(\"index_left\")\n            yield char.get(\"index_right\")\n",
+"text":"(builder, {\n            \"start\": cursor,\n            \"end\": cursor,\n            \"cursor_at_start\": True,\n        })\n        return builder.get_main_cursor_char_index() != self.main_cursor_char_index\n\n    def _cursors_left(self, text):\n        for char in text.char_iterator(self.main_cursor_char_index-1, -1):\n            yield char.get(\"index_right\")\n            yield char.get(\"index_left\")\n\n    def _cursors_right(self, text):\n        for char in text.char_iterator(self.main_cursor_char_index, 1):\n            yield char.get(\"index_left\")\n            yield char.get(\"index_right\")\n",
 "type":"code"
 }
 ],

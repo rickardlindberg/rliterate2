@@ -1041,10 +1041,12 @@ class Immutable(object):
 
 class StringInputHandler(object):
 
-    def __init__(self, data, selection, cursor_char_index):
+    def __init__(self, data, selection):
         self.data = data
         self.selection = selection
-        self.cursor_char_index = cursor_char_index
+        builder = self.build()
+        self.text_props = builder.get()
+        self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
     @property
     def start(self):
@@ -1131,15 +1133,15 @@ class StringInputHandler(object):
             "end": cursor,
             "cursor_at_start": True,
         })
-        return builder.get_main_cursor_char_index() != self.cursor_char_index
+        return builder.get_main_cursor_char_index() != self.main_cursor_char_index
 
     def _cursors_left(self, text):
-        for char in text.char_iterator(self.cursor_char_index-1, -1):
+        for char in text.char_iterator(self.main_cursor_char_index-1, -1):
             yield char.get("index_right")
             yield char.get("index_left")
 
     def _cursors_right(self, text):
-        for char in text.char_iterator(self.cursor_char_index, 1):
+        for char in text.char_iterator(self.main_cursor_char_index, 1):
             yield char.get("index_left")
             yield char.get("index_right")
 
@@ -2612,12 +2614,10 @@ class TitleInputHandler(StringInputHandler):
         self.page_theme = page_theme
         self.selection_trail = selection
         self.actions = actions
-        self.build()
         StringInputHandler.__init__(
             self,
-            page["title"],
-            self.selection_trail.get(),
-            self.main_cursor_char_index,
+            self.page["title"],
+            self.selection_trail.get()
         )
 
     def build(self):
@@ -2626,12 +2626,11 @@ class TitleInputHandler(StringInputHandler):
             selection_color=self.page_theme["selection_color"],
             cursor_color=self.page_theme["cursor_color"]
         )
-        self.build_with_selection(builder, self.selection_trail.get())
-        self.text_props = builder.get()
-        self.main_cursor_char_index = builder.get_main_cursor_char_index()
+        self.build_with_selection(builder, self.selection)
+        return builder
 
     def build_with_selection(self, builder, selection):
-        if self.page["title"]:
+        if self.data:
             if selection is not None:
                 builder.selection_start(selection["start"])
                 builder.selection_end(selection["end"])
@@ -2639,7 +2638,7 @@ class TitleInputHandler(StringInputHandler):
                     builder.cursor(selection["start"], main=True)
                 else:
                     builder.cursor(selection["end"], main=True)
-            builder.text(self.page["title"], index_increment=0)
+            builder.text(self.data, index_increment=0)
         else:
             if selection is not None:
                 builder.cursor(main=True)
@@ -3079,15 +3078,12 @@ class TextFragmentsInputHandler(StringInputHandler):
 
     def __init__(self, data, selection, save, page_theme):
         self.selection_trail = selection
-        self.fragments = data
         self.save = save
         self.page_theme = page_theme
-        self.build()
         StringInputHandler.__init__(
             self,
             data,
-            self.selection_trail.get(),
-            self.main_cursor_char_index
+            self.selection_trail.get()
         )
 
     def build(self):
@@ -3096,12 +3092,11 @@ class TextFragmentsInputHandler(StringInputHandler):
             cursor_color=self.page_theme["cursor_color"],
             **self.page_theme["text_font"]
         )
-        self.build_with_selection(builder, self.selection_trail.get())
-        self.text_props = builder.get()
-        self.main_cursor_char_index = builder.get_main_cursor_char_index()
+        self.build_with_selection(builder, self.selection)
+        return builder
 
     def build_with_selection(self, builder, selection):
-        return build_text_fragments(builder, self.fragments, selection)
+        return build_text_fragments(builder, self.data, selection)
 
     def replace(self, text):
         before = self.data[:self.start[0]]
