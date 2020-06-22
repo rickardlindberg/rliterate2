@@ -2957,10 +2957,10 @@ class TextPropsBuilder(object):
 
 class StringInputHandler(object):
 
-    def __init__(self, data, selection, cursor_index, save):
+    def __init__(self, data, selection, cursor_char_index, save):
         self.data = data
         self.selection = selection
-        self.cursor_index = cursor_index
+        self.cursor_char_index = cursor_char_index
         self.save = save
 
     @property
@@ -2976,19 +2976,19 @@ class StringInputHandler(object):
         return self.selection["cursor_at_start"]
 
     @property
-    def cursor_pos(self):
+    def cursor(self):
         if self.cursor_at_start:
             return self.start
         else:
             return self.end
 
-    @cursor_pos.setter
-    def cursor_pos(self, pos):
-        self.selection = {
-            "start": pos,
-            "end": pos,
+    @cursor.setter
+    def cursor(self, position):
+        self.selection = dict(self.selection, **{
+            "start": position,
+            "end": position,
             "cursor_at_start": True,
-        }
+        })
 
     @property
     def has_selection(self):
@@ -2997,11 +2997,11 @@ class StringInputHandler(object):
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
         position = self.start + len(text)
-        self.selection = {
+        self.selection = dict(self.selection, **{
             "start": position,
             "end": position,
             "cursor_at_start": True,
-        }
+        })
 
     def handle_key(self, key_event, text):
         print(key_event)
@@ -3009,26 +3009,26 @@ class StringInputHandler(object):
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = {
-                    "start": text.index_left(self.cursor_index, self.cursor_pos),
+                self.selection = dict(self.selection, **{
+                    "start": text.index_left(self.cursor_char_index, self.cursor),
                     "end": self.start,
                     "cursor_at_start": True,
-                }
+                })
                 self.replace("")
         elif key_event.key == "\x00": # Del (and many others)
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = {
+                self.selection = dict(self.selection, **{
                     "start": self.start,
-                    "end": text.index_right(self.cursor_index, self.cursor_pos),
+                    "end": text.index_right(self.cursor_char_index, self.cursor),
                     "cursor_at_start": False,
-                }
+                })
                 self.replace("")
         elif key_event.key == "\x02": # Ctrl-B
-            self.cursor_pos = text.index_left(self.cursor_index, self.cursor_pos)
+            self.cursor = text.index_left(self.cursor_char_index, self.cursor)
         elif key_event.key == "\x06": # Ctrl-F
-            self.cursor_pos = text.index_right(self.cursor_index, self.cursor_pos)
+            self.cursor = text.index_right(self.cursor_char_index, self.cursor)
         else:
             self.replace(key_event.key)
         self.save(self.data, self.selection)
@@ -3084,11 +3084,11 @@ class TextFragmentsInputHandler(StringInputHandler):
             else:
                 position = [self.end[0], len(text)]
         self.data = before + middle + after
-        self.selection = {
+        self.selection = dict(self.selection, **{
             "start": position,
             "end": position,
             "cursor_at_start": True,
-        }
+        })
 
     def handle_key(self, key_event, text):
         StringInputHandler.handle_key(self, key_event, text)
