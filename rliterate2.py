@@ -1126,7 +1126,7 @@ class StringInputHandler(object):
         if cursor == self.cursor:
             return False
         builder = TextPropsBuilder()
-        self.build(builder, {
+        self.project(builder, {
             "start": cursor,
             "end": cursor,
             "cursor_at_start": True,
@@ -2626,11 +2626,11 @@ class TitleInputHandler(StringInputHandler):
             selection_color=self.page_theme["selection_color"],
             cursor_color=self.page_theme["cursor_color"]
         )
-        self.build(builder, self.selection_trail.get())
+        self.project(builder, self.selection_trail.get())
         self.text_props = builder.get()
         self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
-    def build(self, builder, selection):
+    def project(self, builder, selection):
         if self.page["title"]:
             if selection is not None:
                 builder.selection_start(selection["start"])
@@ -3096,11 +3096,11 @@ class TextFragmentsInputHandler(StringInputHandler):
             cursor_color=self.page_theme["cursor_color"],
             **self.page_theme["text_font"]
         )
-        self.build(builder, self.selection_trail.get())
+        self.project(builder, self.selection_trail.get())
         self.text_props = builder.get()
         self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
-    def build(self, builder, selection):
+    def project(self, builder, selection):
         return build_text_fragments(builder, self.fragments, selection)
 
     def replace(self, text):
