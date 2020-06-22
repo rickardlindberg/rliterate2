@@ -477,20 +477,20 @@ def build_title(page, page_body_width, page_theme, selection, actions):
             },
             selection.create(new_selection)
         )
-    text_props = build_title_text_props(
-        TextPropsBuilder(
-            **page_theme["title_font"],
-            selection_color=page_theme["selection_color"],
-            cursor_color=page_theme["cursor_color"]
-        ),
-        page["title"],
-        selection,
-        page_theme["placeholder_color"]
+    builder = TextPropsBuilder(
+        **page_theme["title_font"],
+        selection_color=page_theme["selection_color"],
+        cursor_color=page_theme["cursor_color"]
     )
     return {
         "text_edit_props": {
             "text_props": dict(
-                text_props,
+                build_title_text_props(
+                    builder,
+                    page["title"],
+                    selection,
+                    page_theme["placeholder_color"]
+                ),
                 break_at_word=True,
                 line_height=page_theme["line_height"]
             ),
@@ -500,7 +500,7 @@ def build_title(page, page_body_width, page_theme, selection, actions):
             "input_handler": StringInputHandler(
                 page["title"],
                 selection.get(),
-                text_props["cursors"][0][0] if text_props["cursors"] else None,
+                builder.get_main_cursor_char_index(),
                 save
             ),
             "actions": actions,
@@ -514,13 +514,13 @@ def build_title_text_props(builder, title, selection, placeholder_color):
             builder.selection_start(value["start"])
             builder.selection_end(value["end"])
             if value["cursor_at_start"]:
-                builder.cursor(value["start"])
+                builder.cursor(value["start"], main=True)
             else:
-                builder.cursor(value["end"])
+                builder.cursor(value["end"], main=True)
         builder.text(title, index_increment=0)
     else:
         if selection.present():
-            builder.cursor()
+            builder.cursor(main=True)
         builder.text("Enter title...", color=placeholder_color, index_constant=0)
     return builder.get()
 
@@ -826,16 +826,18 @@ def build_style_dict(theme_style):
     return styles
 
 def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
-    text_props = text_fragments_to_props(
-        fragments,
-        selection=selection,
+    builder = TextPropsBuilder(
         selection_color=page_theme["selection_color"],
         cursor_color=page_theme["cursor_color"],
         **page_theme["text_font"]
     )
     return {
         "text_props": dict(
-            text_props,
+            text_fragments_to_props(
+                fragments,
+                selection=selection,
+                builder=builder
+            ),
             break_at_word=True,
             line_height=page_theme["line_height"],
             align=align
@@ -845,15 +847,16 @@ def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions,
         "input_handler": TextFragmentsInputHandler(
             fragments,
             selection.get(),
-            text_props["cursors"][0][0] if text_props["cursors"] else None,
+            builder.get_main_cursor_char_index(),
             save
         ),
         "actions": actions,
         **kwargs,
     }
 
-def text_fragments_to_props(fragments, selection=None, **kwargs):
-    builder = TextPropsBuilder(**kwargs)
+def text_fragments_to_props(fragments, selection=None, builder=None, **kwargs):
+    if builder is None:
+        builder = TextPropsBuilder(**kwargs)
     if selection is not None:
         value = selection.get()
     else:
@@ -870,11 +873,11 @@ def text_fragments_to_props(fragments, selection=None, **kwargs):
             if value["start"][0] == index:
                 builder.selection_start(value["start"][1])
                 if value["cursor_at_start"]:
-                    builder.cursor(value["start"][1])
+                    builder.cursor(value["start"][1], main=True)
             if value["end"][0] == index:
                 builder.selection_end(value["end"][1])
                 if not value["cursor_at_start"]:
-                    builder.cursor(value["end"][1])
+                    builder.cursor(value["end"][1], main=True)
         params["index_prefix"] = [index]
         if fragment.get("text", ""):
             params["index_increment"] = 0
@@ -2897,6 +2900,7 @@ class TextPropsBuilder(object):
         self._cursors = []
         self._selections = []
         self._base_style = dict(styles)
+        self._main_cursor_char_index = None
 
     def get(self):
         return {
@@ -2905,6 +2909,9 @@ class TextPropsBuilder(object):
             "selections": self._selections,
             "base_style": self._base_style,
         }
+
+    def get_main_cursor_char_index(self):
+        return self._main_cursor_char_index
 
     def text(self, text, **kwargs):
         fragment = {}
@@ -2949,8 +2956,11 @@ class TextPropsBuilder(object):
             last_selection[2]
         )
 
-    def cursor(self, offset=0, color=None):
-        self._cursors.append((self._index(offset), color))
+    def cursor(self, offset=0, color=None, main=False):
+        index = self._index(offset)
+        self._cursors.append((index, color))
+        if main:
+            self._main_cursor_char_index = index
 
     def _index(self, offset):
         return len(self._characters) + offset
