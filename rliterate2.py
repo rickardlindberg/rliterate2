@@ -1087,6 +1087,103 @@ class Immutable(object):
         else:
             self._notify_pending = True
 
+class StringInputHandler(object):
+
+    def __init__(self, data, selection, cursor_char_index, save):
+        self.data = data
+        self.selection = selection
+        self.cursor_char_index = cursor_char_index
+        self.save = save
+
+    @property
+    def start(self):
+        return self.selection["start"]
+
+    @property
+    def end(self):
+        return self.selection["end"]
+
+    @property
+    def cursor_at_start(self):
+        return self.selection["cursor_at_start"]
+
+    @property
+    def cursor(self):
+        if self.cursor_at_start:
+            return self.start
+        else:
+            return self.end
+
+    @cursor.setter
+    def cursor(self, position):
+        self.selection = dict(self.selection, **{
+            "start": position,
+            "end": position,
+            "cursor_at_start": True,
+        })
+
+    @property
+    def has_selection(self):
+        return self.start != self.end
+
+    def replace(self, text):
+        self.data = self.data[:self.start] + text + self.data[self.end:]
+        position = self.start + len(text)
+        self.selection = dict(self.selection, **{
+            "start": position,
+            "end": position,
+            "cursor_at_start": True,
+        })
+
+    def handle_key(self, key_event, text):
+        print(key_event)
+        if key_event.key == "\x08": # Backspace
+            if self.has_selection:
+                self.replace("")
+            else:
+                self.selection = dict(self.selection, **{
+                    "start": self._next_cursor(self._cursors_left(text)),
+                    "end": self.start,
+                    "cursor_at_start": True,
+                })
+                self.replace("")
+        elif key_event.key == "\x00": # Del (and many others)
+            if self.has_selection:
+                self.replace("")
+            else:
+                self.selection = dict(self.selection, **{
+                    "start": self.start,
+                    "end": self._next_cursor(self._cursors_right(text)),
+                    "cursor_at_start": False,
+                })
+                self.replace("")
+        elif key_event.key == "\x02": # Ctrl-B
+            self.cursor = self._next_cursor(self._cursors_left(text))
+        elif key_event.key == "\x06": # Ctrl-F
+            self.cursor = self._next_cursor(self._cursors_right(text))
+        else:
+            self.replace(key_event.key)
+        self.save(self.data, self.selection)
+
+    def _next_cursor(self, cursors):
+        for cursor in cursors:
+            if self._cursor_differs(cursor):
+                return cursor
+        return self.cursor
+
+    def _cursor_differs(self, cursor):
+        return cursor != self.cursor
+
+    def _cursors_left(self, text):
+        for char in text.char_iterator(self.cursor_char_index-1, -1):
+            yield char.get("index_right")
+            yield char.get("index_left")
+
+    def _cursors_right(self, text):
+        for char in text.char_iterator(self.cursor_char_index, 1):
+            yield char.get("index_left")
+            yield char.get("index_right")
+
 class WidgetMixin(object):
 
     def __init__(self, parent, handlers, props):
@@ -2968,103 +3065,6 @@ class TextPropsBuilder(object):
 
     def _index(self, offset):
         return len(self._characters) + offset
-
-class StringInputHandler(object):
-
-    def __init__(self, data, selection, cursor_char_index, save):
-        self.data = data
-        self.selection = selection
-        self.cursor_char_index = cursor_char_index
-        self.save = save
-
-    @property
-    def start(self):
-        return self.selection["start"]
-
-    @property
-    def end(self):
-        return self.selection["end"]
-
-    @property
-    def cursor_at_start(self):
-        return self.selection["cursor_at_start"]
-
-    @property
-    def cursor(self):
-        if self.cursor_at_start:
-            return self.start
-        else:
-            return self.end
-
-    @cursor.setter
-    def cursor(self, position):
-        self.selection = dict(self.selection, **{
-            "start": position,
-            "end": position,
-            "cursor_at_start": True,
-        })
-
-    @property
-    def has_selection(self):
-        return self.start != self.end
-
-    def replace(self, text):
-        self.data = self.data[:self.start] + text + self.data[self.end:]
-        position = self.start + len(text)
-        self.selection = dict(self.selection, **{
-            "start": position,
-            "end": position,
-            "cursor_at_start": True,
-        })
-
-    def handle_key(self, key_event, text):
-        print(key_event)
-        if key_event.key == "\x08": # Backspace
-            if self.has_selection:
-                self.replace("")
-            else:
-                self.selection = dict(self.selection, **{
-                    "start": self._next_cursor(self._cursors_left(text)),
-                    "end": self.start,
-                    "cursor_at_start": True,
-                })
-                self.replace("")
-        elif key_event.key == "\x00": # Del (and many others)
-            if self.has_selection:
-                self.replace("")
-            else:
-                self.selection = dict(self.selection, **{
-                    "start": self.start,
-                    "end": self._next_cursor(self._cursors_right(text)),
-                    "cursor_at_start": False,
-                })
-                self.replace("")
-        elif key_event.key == "\x02": # Ctrl-B
-            self.cursor = self._next_cursor(self._cursors_left(text))
-        elif key_event.key == "\x06": # Ctrl-F
-            self.cursor = self._next_cursor(self._cursors_right(text))
-        else:
-            self.replace(key_event.key)
-        self.save(self.data, self.selection)
-
-    def _next_cursor(self, cursors):
-        for cursor in cursors:
-            if self._cursor_differs(cursor):
-                return cursor
-        return self.cursor
-
-    def _cursor_differs(self, cursor):
-        return cursor != self.cursor
-
-    def _cursors_left(self, text):
-        for char in text.char_iterator(self.cursor_char_index-1, -1):
-            yield char.get("index_right")
-            yield char.get("index_left")
-
-    def _cursors_right(self, text):
-        for char in text.char_iterator(self.cursor_char_index, 1):
-            yield char.get("index_left")
-            yield char.get("index_right")
 
 class TextFragmentsInputHandler(StringInputHandler):
 
