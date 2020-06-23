@@ -103,6 +103,21 @@
 ]
 },
 {
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"With a page link to itself: ",
+"type":"text"
+},
+{
+"page_id":"2c5e170cc0f34e9787d74d319b5bb4f2",
+"text":null,
+"type":"reference"
+}
+]
+},
+{
 "child_type":"unordered",
 "children":[
 {
