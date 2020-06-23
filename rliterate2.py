@@ -626,6 +626,7 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
         ),
         "bullet_props": dict(text_fragments_to_props(
             [{"text": _get_bullet_text(child_type, index)}],
+            page_theme,
             **page_theme["text_font"]
         ), max_width=page_theme["indent_size"], line_height=page_theme["line_height"]),
         "level": level,
@@ -692,6 +693,7 @@ def build_code_paragraph_body(paragraph, page_theme):
                 ),
                 page_theme["token_styles"]
             ),
+            page_theme,
             **page_theme["code_font"]
         ),
     }
@@ -807,36 +809,36 @@ def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions,
         **kwargs,
     }
 
-def text_fragments_to_props(fragments, selection=None, builder=None, **kwargs):
+def text_fragments_to_props(fragments, page_theme, selection=None, builder=None, **kwargs):
     if builder is None:
         builder = TextPropsBuilder(**kwargs)
     if selection is not None:
         value = selection.get()
     else:
         value = None
-    build_text_fragments(builder, fragments, value)
+    build_text_fragments(builder, fragments, value, page_theme)
     return builder.get()
 
-def build_text_fragments(builder, fragments, selection):
+FRAGMENT_TYPE_TO_TOKEN_STYLE = {
+    "strong":    "RLiterate.Strong",
+    "emphasis":  "RLiterate.Emphasis",
+    "code":      "RLiterate.Code",
+    "variable":  "RLiterate.Variable",
+    "reference": "RLiterate.Reference",
+    "link":      "RLiterate.Link",
+}
+
+def build_text_fragments(builder, fragments, selection, page_theme):
     for index, fragment in enumerate(fragments):
         params = {}
         if "color" in fragment:
             params["color"] = fragment["color"]
-        if fragment.get("type", None) == "strong":
-            params["bold"] = True
-        elif fragment.get("type", None) == "emphasis":
-            params["italic"] = True
-        elif fragment.get("type", None) == "code":
-            params["family"] = "Monospace"
-        elif fragment.get("type", None) == "variable":
-            params["family"] = "Monospace"
-            params["italic"] = "True"
-        elif fragment.get("type", None) == "reference":
-            params["italic"] = "True"
-            params["color"] = "blue"
-        elif fragment.get("type", None) == "link":
-            params["underlined"] = "True"
-            params["color"] = "blue"
+        params.update(
+            page_theme["token_styles"][FRAGMENT_TYPE_TO_TOKEN_STYLE.get(
+                fragment.get("type", None),
+                "RLiterate.Text"
+            )]
+        )
         if selection is not None:
             if selection["start"][0] == index:
                 builder.selection_start(selection["start"][1])
@@ -3105,7 +3107,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         return builder
 
     def build_with_selection(self, builder, selection):
-        return build_text_fragments(builder, self.data, selection)
+        return build_text_fragments(builder, self.data, selection, self.page_theme)
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -3396,6 +3398,13 @@ class Document(Immutable):
                 "Operator.Word":       {"color": green},
                 "Comment":             {"color": base1},
                 "Comment.Preproc":     {"color": magenta},
+                "RLiterate.Text":      {},
+                "RLiterate.Strong":    {"bold": True},
+                "RLiterate.Emphasis":  {"italic": True},
+                "RLiterate.Code":      {"family": "Monospace"},
+                "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
+                "RLiterate.Reference": {"italic": True, "color": blue},
+                "RLiterate.Link":      {"underlined": True, "color": blue},
             },
         },
         "dragdrop_color": "#ff6400",
@@ -3476,6 +3485,13 @@ class Document(Immutable):
                 "Operator.Word":       {"color": green},
                 "Comment":             {"color": base1},
                 "Comment.Preproc":     {"color": magenta},
+                "RLiterate.Text":      {},
+                "RLiterate.Strong":    {"bold": True},
+                "RLiterate.Emphasis":  {"italic": True},
+                "RLiterate.Code":      {"family": "Monospace"},
+                "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
+                "RLiterate.Reference": {"italic": True, "color": blue},
+                "RLiterate.Link":      {"underlined": True, "color": blue},
            },
         },
         "dragdrop_color": "#dc322f",
