@@ -616,6 +616,13 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
             selection.create(new_selection)
         )
     return {
+        "bullet_props": dict(
+            TextPropsBuilder(
+                **page_theme["text_font"]
+            ).text(_get_bullet_text(child_type, index)).get(),
+            max_width=page_theme["indent_size"],
+            line_height=page_theme["line_height"]
+        ),
         "text_edit_props": text_fragments_to_text_edit_props(
             child["fragments"],
             selection,
@@ -623,12 +630,6 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
             actions,
             save,
             max_width=body_width-(level+1)*page_theme["indent_size"],
-        ),
-        "bullet_props": dict(
-            TextPropsBuilder(
-                **page_theme["text_font"]
-            ).text(_get_bullet_text(child_type, index)).get(),
-            max_width=page_theme["indent_size"],
             line_height=page_theme["line_height"]
         ),
         "level": level,
@@ -2896,7 +2897,11 @@ class TextEdit(Panel):
         return selection.present()
 
     def _margin(self):
-        return self.prop(["selection_box", "width"]) + 1
+        width = self.prop(["selection_box", "width"])
+        if width > 0:
+            return width + 2
+        else:
+            return 0
 
     def _on_click(self, event, selection):
         if selection.present():
