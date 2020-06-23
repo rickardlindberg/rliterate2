@@ -824,8 +824,19 @@ def build_text_fragments(builder, fragments, selection):
             params["color"] = fragment["color"]
         if fragment.get("type", None) == "strong":
             params["bold"] = True
-        if selection is not None and fragment.get("type", None) == "strong":
-            builder.text("**", color="pink", index_prefix=[index], index_constant=0)
+        elif fragment.get("type", None) == "emphasis":
+            params["italic"] = True
+        elif fragment.get("type", None) == "code":
+            params["family"] = "Monospace"
+        elif fragment.get("type", None) == "variable":
+            params["family"] = "Monospace"
+            params["italic"] = "True"
+        elif fragment.get("type", None) == "reference":
+            params["italic"] = "True"
+            params["color"] = "blue"
+        elif fragment.get("type", None) == "link":
+            params["underlined"] = "True"
+            params["color"] = "blue"
         if selection is not None:
             if selection["start"][0] == index:
                 builder.selection_start(selection["start"][1])
@@ -843,10 +854,8 @@ def build_text_fragments(builder, fragments, selection):
         else:
             params["index_constant"] = 0
             params["color"] = "pink"
-            builder.text("text", **params)
+            builder.text(str(fragment), **params)
             end_index = 0
-        if selection is not None and fragment.get("type", None) == "strong":
-            builder.text("**", color="pink", index_prefix=[index], index_constant=end_index)
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -3701,6 +3710,8 @@ class Text(wx.Panel, WxWidgetMixin):
             "family": None,
             "color": "#000000",
             "bold": False,
+            "italic": False,
+            "underlined": False,
         }
         base_style = self.prop_with_default(["base_style"], {})
         for field in TextStyle._fields:
@@ -3718,6 +3729,10 @@ class Text(wx.Panel, WxWidgetMixin):
             font_info.Family(wx.FONTFAMILY_TELETYPE)
         if style.bold:
             font_info = font_info.Bold()
+        if style.italic:
+            font_info = font_info.Italic()
+        if style.underlined:
+            font_info = font_info.Underlined()
         dc.SetFont(wx.Font(font_info))
 
     size_map_cache = {}
@@ -3950,7 +3965,7 @@ class Text(wx.Panel, WxWidgetMixin):
             yield self._characters_bounding_rect[index][0]
             index += offset
 
-TextStyle = namedtuple("TextStyle", "size,family,color,bold")
+TextStyle = namedtuple("TextStyle", "size,family,color,bold,italic,underlined")
 
 class RefreshRequests(object):
 
