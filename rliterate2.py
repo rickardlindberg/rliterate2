@@ -3139,7 +3139,9 @@ class TextFragmentsInputHandler(StringInputHandler):
                 builder.text(fragment["text"], **params)
             else:
                 params["index_constant"] = 0
-                params["color"] = "pink"
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Markup"]
+                )
                 builder.text("Enter text", **params)
 
     def replace(self, text):
@@ -3440,6 +3442,7 @@ class Document(Immutable):
                 "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
                 "RLiterate.Reference": {"italic": True, "color": blue},
                 "RLiterate.Link":      {"underlined": True, "color": blue},
+                "RLiterate.Markup":    {"color": orange},
             },
         },
         "dragdrop_color": "#ff6400",
@@ -3527,6 +3530,7 @@ class Document(Immutable):
                 "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
                 "RLiterate.Reference": {"italic": True, "color": blue},
                 "RLiterate.Link":      {"underlined": True, "color": blue},
+                "RLiterate.Markup":    {"color": orange},
            },
         },
         "dragdrop_color": "#dc322f",
