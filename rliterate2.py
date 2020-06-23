@@ -679,24 +679,48 @@ def build_code_path_props(filepath, chunkpath, font):
     return builder.get()
 
 def build_code_paragraph_body(paragraph, page_theme):
+    builder = TextPropsBuilder(**page_theme["code_font"])
+    for fragment in apply_token_styles(
+        build_code_body_fragments(
+            paragraph["fragments"],
+            code_pygments_lexer(
+                paragraph.get("language", ""),
+                paragraph["filepath"][-1] if paragraph["filepath"] else "",
+            )
+        ),
+        page_theme["token_styles"]
+    ):
+        builder.text(**fragment)
     return {
         "background": page_theme["code"]["body_background"],
         "margin": page_theme["code"]["margin"],
-        "text_props": text_fragments_to_props(
-            apply_token_styles(
-                build_code_body_fragments(
-                    paragraph["fragments"],
-                    code_pygments_lexer(
-                        paragraph.get("language", ""),
-                        paragraph["filepath"][-1] if paragraph["filepath"] else "",
-                    )
-                ),
-                page_theme["token_styles"]
-            ),
-            page_theme,
-            **page_theme["code_font"]
-        ),
+        "text_props": builder.get(),
     }
+
+@profile_sub("apply_token_styles")
+def apply_token_styles(fragments, token_styles):
+    styles = build_style_dict(token_styles)
+    def style_fragment(fragment):
+        if "token_type" in fragment:
+            token_type = fragment["token_type"]
+            while token_type not in styles:
+                token_type = token_type.parent
+            style = styles[token_type]
+            new_fragment = dict(fragment)
+            new_fragment.update(style)
+            return new_fragment
+        else:
+            return fragment
+    return [
+        style_fragment(fragment)
+        for fragment in fragments
+    ]
+
+def build_style_dict(theme_style):
+    styles = {}
+    for name, value in theme_style.items():
+        styles[string_to_tokentype(name)] = value
+    return styles
 
 def build_code_body_fragments(fragments, pygments_lexer):
     code_chunk = CodeChunk()
@@ -712,6 +736,21 @@ def build_code_body_fragments(fragments, pygments_lexer):
                 {"token_type": TokenType.Comment.Preproc}
             )
     return code_chunk.tokenize(pygments_lexer)
+
+def code_pygments_lexer(language, filename):
+    try:
+        if language:
+            return pygments.lexers.get_lexer_by_name(
+                language,
+                stripnl=False
+            )
+        else:
+            return pygments.lexers.get_lexer_for_filename(
+                filename,
+                stripnl=False
+            )
+    except:
+        return pygments.lexers.TextLexer(stripnl=False)
 
 @profile_sub("build_image_paragraph")
 def build_image_paragraph(paragraph, page_theme, body_width, selection, actions):
@@ -747,46 +786,6 @@ def build_unknown_paragraph(paragraph, page_theme, body_width, selection, action
         ).get(),
         "body_width": body_width,
     }
-
-def code_pygments_lexer(language, filename):
-    try:
-        if language:
-            return pygments.lexers.get_lexer_by_name(
-                language,
-                stripnl=False
-            )
-        else:
-            return pygments.lexers.get_lexer_for_filename(
-                filename,
-                stripnl=False
-            )
-    except:
-        return pygments.lexers.TextLexer(stripnl=False)
-
-@profile_sub("apply_token_styles")
-def apply_token_styles(fragments, token_styles):
-    styles = build_style_dict(token_styles)
-    def style_fragment(fragment):
-        if "token_type" in fragment:
-            token_type = fragment["token_type"]
-            while token_type not in styles:
-                token_type = token_type.parent
-            style = styles[token_type]
-            new_fragment = dict(fragment)
-            new_fragment.update(style)
-            return new_fragment
-        else:
-            return fragment
-    return [
-        style_fragment(fragment)
-        for fragment in fragments
-    ]
-
-def build_style_dict(theme_style):
-    styles = {}
-    for name, value in theme_style.items():
-        styles[string_to_tokentype(name)] = value
-    return styles
 
 def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
@@ -831,8 +830,6 @@ FRAGMENT_TYPE_TO_TOKEN_STYLE = {
 def build_text_fragments(builder, fragments, selection, page_theme):
     for index, fragment in enumerate(fragments):
         params = {}
-        if "color" in fragment:
-            params["color"] = fragment["color"]
         params.update(
             page_theme["token_styles"][FRAGMENT_TYPE_TO_TOKEN_STYLE.get(
                 fragment.get("type", None),

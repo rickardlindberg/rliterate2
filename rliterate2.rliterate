@@ -1606,11 +1606,47 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_body(paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": text_fragments_to_props(\n            apply_token_styles(\n                build_code_body_fragments(\n                    paragraph[\"fragments\"],\n                    code_pygments_lexer(\n                        paragraph.get(\"language\", \"\"),\n                        paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n                    )\n                ),\n                page_theme[\"token_styles\"]\n            ),\n            page_theme,\n            **page_theme[\"code_font\"]\n        ),\n    }\n",
+"text":"def build_code_paragraph_body(paragraph, page_theme):\n    builder = TextPropsBuilder(**page_theme[\"code_font\"])\n    for fragment in apply_token_styles(\n        build_code_body_fragments(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(\n                paragraph.get(\"language\", \"\"),\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n            )\n        ),\n        page_theme[\"token_styles\"]\n    ):\n        builder.text(**fragment)\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": builder.get(),\n    }\n",
 "type":"code"
 }
 ],
 "id":"3487e5683a9f4a3bbe70c16313722dc8",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@profile_sub(\"apply_token_styles\")\ndef apply_token_styles(fragments, token_styles):\n    styles = build_style_dict(token_styles)\n    def style_fragment(fragment):\n        if \"token_type\" in fragment:\n            token_type = fragment[\"token_type\"]\n            while token_type not in styles:\n                token_type = token_type.parent\n            style = styles[token_type]\n            new_fragment = dict(fragment)\n            new_fragment.update(style)\n            return new_fragment\n        else:\n            return fragment\n    return [\n        style_fragment(fragment)\n        for fragment in fragments\n    ]\n",
+"type":"code"
+}
+],
+"id":"0d3b25e79dc044d4bcb344de82287574",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_style_dict(theme_style):\n    styles = {}\n    for name, value in theme_style.items():\n        styles[string_to_tokentype(name)] = value\n    return styles\n",
+"type":"code"
+}
+],
+"id":"615b0bb9c0c847649c08d06940c904ae",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -1629,6 +1665,24 @@
 }
 ],
 "id":"d3402ff19e7e4284b44e3ff7d0ca4f8f",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def code_pygments_lexer(language, filename):\n    try:\n        if language:\n            return pygments.lexers.get_lexer_by_name(\n                language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
+"type":"code"
+}
+],
+"id":"0ca12bad04b74488a5e4190e255d75ac",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -1801,67 +1855,6 @@
 }
 ],
 "title":"Unknown paragraph"
-},
-{
-"children":[],
-"id":"b6d0f6d9038d47038f76c77c837e0a81",
-"paragraphs":[
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def code_pygments_lexer(language, filename):\n    try:\n        if language:\n            return pygments.lexers.get_lexer_by_name(\n                language,\n                stripnl=False\n            )\n        else:\n            return pygments.lexers.get_lexer_for_filename(\n                filename,\n                stripnl=False\n            )\n    except:\n        return pygments.lexers.TextLexer(stripnl=False)\n",
-"type":"code"
-}
-],
-"id":"0ca12bad04b74488a5e4190e255d75ac",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"@profile_sub(\"apply_token_styles\")\ndef apply_token_styles(fragments, token_styles):\n    styles = build_style_dict(token_styles)\n    def style_fragment(fragment):\n        if \"token_type\" in fragment:\n            token_type = fragment[\"token_type\"]\n            while token_type not in styles:\n                token_type = token_type.parent\n            style = styles[token_type]\n            new_fragment = dict(fragment)\n            new_fragment.update(style)\n            return new_fragment\n        else:\n            return fragment\n    return [\n        style_fragment(fragment)\n        for fragment in fragments\n    ]\n",
-"type":"code"
-}
-],
-"id":"0d3b25e79dc044d4bcb344de82287574",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def build_style_dict(theme_style):\n    styles = {}\n    for name, value in theme_style.items():\n        styles[string_to_tokentype(name)] = value\n    return styles\n",
-"type":"code"
-}
-],
-"id":"615b0bb9c0c847649c08d06940c904ae",
-"language":"",
-"post_process":[],
-"type":"code"
-}
-],
-"title":"Utilities"
 }
 ],
 "id":"46857302627c4bd78edc4bbfc07fb2ea",
@@ -2569,7 +2562,7 @@
 ],
 "fragments":[
 {
-"text":"def text_fragments_to_props(fragments, page_theme, selection=None, builder=None, **kwargs):\n    if builder is None:\n        builder = TextPropsBuilder(**kwargs)\n    if selection is not None:\n        value = selection.get()\n    else:\n        value = None\n    build_text_fragments(builder, fragments, value, page_theme)\n    return builder.get()\n\nFRAGMENT_TYPE_TO_TOKEN_STYLE = {\n    \"strong\":    \"RLiterate.Strong\",\n    \"emphasis\":  \"RLiterate.Emphasis\",\n    \"code\":      \"RLiterate.Code\",\n    \"variable\":  \"RLiterate.Variable\",\n    \"reference\": \"RLiterate.Reference\",\n    \"link\":      \"RLiterate.Link\",\n}\n\ndef build_text_fragments(builder, fragments, selection, page_theme):\n    for index, fragment in enumerate(fragments):\n        params = {}\n        if \"color\" in fragment:\n            params[\"color\"] = fragment[\"color\"]\n        params.update(\n            page_theme[\"token_styles\"][FRAGMENT_TYPE_TO_TOKEN_STYLE.get(\n                fragment.get(\"type\", None),\n                \"RLiterate.Text\"\n            )]\n        )\n        if selection is not None:\n            if selection[\"start\"][0] == index:\n                builder.selection_start(selection[\"start\"][1])\n                if selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"start\"][1], main=True)\n            if selection[\"end\"][0] == index:\n                builder.selection_end(selection[\"end\"][1])\n                if not selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"end\"][1], main=True)\n        params[\"index_prefix\"] = [index]\n        if fragment.get(\"text\", \"\"):\n            params[\"index_increment\"] = 0\n            builder.text(fragment[\"text\"], **params)\n            end_index = len(fragment[\"text\"])\n        else:\n            params[\"index_constant\"] = 0\n            params[\"color\"] = \"pink\"\n            builder.text(str(fragment), **params)\n            end_index = 0\n",
+"text":"def text_fragments_to_props(fragments, page_theme, selection=None, builder=None, **kwargs):\n    if builder is None:\n        builder = TextPropsBuilder(**kwargs)\n    if selection is not None:\n        value = selection.get()\n    else:\n        value = None\n    build_text_fragments(builder, fragments, value, page_theme)\n    return builder.get()\n\nFRAGMENT_TYPE_TO_TOKEN_STYLE = {\n    \"strong\":    \"RLiterate.Strong\",\n    \"emphasis\":  \"RLiterate.Emphasis\",\n    \"code\":      \"RLiterate.Code\",\n    \"variable\":  \"RLiterate.Variable\",\n    \"reference\": \"RLiterate.Reference\",\n    \"link\":      \"RLiterate.Link\",\n}\n\ndef build_text_fragments(builder, fragments, selection, page_theme):\n    for index, fragment in enumerate(fragments):\n        params = {}\n        params.update(\n            page_theme[\"token_styles\"][FRAGMENT_TYPE_TO_TOKEN_STYLE.get(\n                fragment.get(\"type\", None),\n                \"RLiterate.Text\"\n            )]\n        )\n        if selection is not None:\n            if selection[\"start\"][0] == index:\n                builder.selection_start(selection[\"start\"][1])\n                if selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"start\"][1], main=True)\n            if selection[\"end\"][0] == index:\n                builder.selection_end(selection[\"end\"][1])\n                if not selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"end\"][1], main=True)\n        params[\"index_prefix\"] = [index]\n        if fragment.get(\"text\", \"\"):\n            params[\"index_increment\"] = 0\n            builder.text(fragment[\"text\"], **params)\n            end_index = len(fragment[\"text\"])\n        else:\n            params[\"index_constant\"] = 0\n            params[\"color\"] = \"pink\"\n            builder.text(str(fragment), **params)\n            end_index = 0\n",
 "type":"code"
 }
 ],
