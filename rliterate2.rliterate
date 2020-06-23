@@ -1447,7 +1447,7 @@
 ],
 "fragments":[
 {
-"text":"panel ListRow %layout_columns {\n    %space[mul(#level #indent)]\n    Text(\n        #bullet_props\n        foo = 1\n    )\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel ListRow %layout_columns {\n    %space[mul(#level #indent)]\n    Text(\n        #bullet_props\n        property_here_to_distiguish_this_from_a_call = 1\n    )\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
 "type":"code"
 }
 ],
