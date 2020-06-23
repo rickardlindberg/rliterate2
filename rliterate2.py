@@ -624,11 +624,13 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
             save,
             max_width=body_width-(level+1)*page_theme["indent_size"],
         ),
-        "bullet_props": dict(text_fragments_to_props(
-            [{"text": _get_bullet_text(child_type, index)}],
-            page_theme,
-            **page_theme["text_font"]
-        ), max_width=page_theme["indent_size"], line_height=page_theme["line_height"]),
+        "bullet_props": dict(
+            TextPropsBuilder(
+                **page_theme["text_font"]
+            ).text(_get_bullet_text(child_type, index)).get(),
+            max_width=page_theme["indent_size"],
+            line_height=page_theme["line_height"]
+        ),
         "level": level,
     }
 
@@ -807,54 +809,6 @@ def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions,
         "actions": actions,
         **kwargs,
     }
-
-def text_fragments_to_props(fragments, page_theme, selection=None, builder=None, **kwargs):
-    if builder is None:
-        builder = TextPropsBuilder(**kwargs)
-    if selection is not None:
-        value = selection.get()
-    else:
-        value = None
-    build_text_fragments(builder, fragments, value, page_theme)
-    return builder.get()
-
-FRAGMENT_TYPE_TO_TOKEN_STYLE = {
-    "strong":    "RLiterate.Strong",
-    "emphasis":  "RLiterate.Emphasis",
-    "code":      "RLiterate.Code",
-    "variable":  "RLiterate.Variable",
-    "reference": "RLiterate.Reference",
-    "link":      "RLiterate.Link",
-}
-
-def build_text_fragments(builder, fragments, selection, page_theme):
-    for index, fragment in enumerate(fragments):
-        params = {}
-        params.update(
-            page_theme["token_styles"][FRAGMENT_TYPE_TO_TOKEN_STYLE.get(
-                fragment.get("type", None),
-                "RLiterate.Text"
-            )]
-        )
-        if selection is not None:
-            if selection["start"][0] == index:
-                builder.selection_start(selection["start"][1])
-                if selection["cursor_at_start"]:
-                    builder.cursor(selection["start"][1], main=True)
-            if selection["end"][0] == index:
-                builder.selection_end(selection["end"][1])
-                if not selection["cursor_at_start"]:
-                    builder.cursor(selection["end"][1], main=True)
-        params["index_prefix"] = [index]
-        if fragment.get("text", ""):
-            params["index_increment"] = 0
-            builder.text(fragment["text"], **params)
-            end_index = len(fragment["text"])
-        else:
-            params["index_constant"] = 0
-            params["color"] = "pink"
-            builder.text(str(fragment), **params)
-            end_index = 0
 
 def load_document_from_file(path):
     if os.path.exists(path):
@@ -3084,6 +3038,15 @@ class TextPropsBuilder(object):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
+    FRAGMENT_TYPE_TO_TOKEN_STYLE = {
+        "strong":    "RLiterate.Strong",
+        "emphasis":  "RLiterate.Emphasis",
+        "code":      "RLiterate.Code",
+        "variable":  "RLiterate.Variable",
+        "reference": "RLiterate.Reference",
+        "link":      "RLiterate.Link",
+    }
+
     def __init__(self, data, selection, save, page_theme):
         self.selection_trail = selection
         self.save = save
@@ -3104,7 +3067,33 @@ class TextFragmentsInputHandler(StringInputHandler):
         return builder
 
     def build_with_selection(self, builder, selection):
-        return build_text_fragments(builder, self.data, selection, self.page_theme)
+        for index, fragment in enumerate(self.data):
+            params = {}
+            params.update(
+                self.page_theme["token_styles"][self.FRAGMENT_TYPE_TO_TOKEN_STYLE.get(
+                    fragment.get("type", None),
+                    "RLiterate.Text"
+                )]
+            )
+            if selection is not None:
+                if selection["start"][0] == index:
+                    builder.selection_start(selection["start"][1])
+                    if selection["cursor_at_start"]:
+                        builder.cursor(selection["start"][1], main=True)
+                if selection["end"][0] == index:
+                    builder.selection_end(selection["end"][1])
+                    if not selection["cursor_at_start"]:
+                        builder.cursor(selection["end"][1], main=True)
+            params["index_prefix"] = [index]
+            if fragment.get("text", ""):
+                params["index_increment"] = 0
+                builder.text(fragment["text"], **params)
+                end_index = len(fragment["text"])
+            else:
+                params["index_constant"] = 0
+                params["color"] = "pink"
+                builder.text(str(fragment), **params)
+                end_index = 0
 
     def replace(self, text):
         before = self.data[:self.start[0]]
