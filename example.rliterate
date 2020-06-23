@@ -147,6 +147,24 @@
 "type":"text"
 }
 ]
+},
+{
+"child_type":null,
+"children":[],
+"fragments":[
+{
+"text":"And a var reference: ",
+"type":"text"
+},
+{
+"id":"1cad9e86b7d047b49dc576820bae3438",
+"type":"variable"
+},
+{
+"text":".",
+"type":"text"
+}
+]
 }
 ],
 "fragments":[
