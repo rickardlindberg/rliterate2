@@ -435,6 +435,7 @@ def build_column(document, column, page_body_width, page_theme, selection, actio
     for page_id in column:
         try:
             column_prop.append(build_page(
+                document,
                 document.get_page(page_id),
                 page_body_width,
                 page_theme,
@@ -446,7 +447,7 @@ def build_column(document, column, page_body_width, page_theme, selection, actio
             pass
     return column_prop
 
-def build_page(page, page_body_width, page_theme, selection, actions):
+def build_page(document, page, page_body_width, page_theme, selection, actions):
     return {
         "id": page["id"],
         "title": build_title(
@@ -457,6 +458,7 @@ def build_page(page, page_body_width, page_theme, selection, actions):
             actions
         ),
         "paragraphs": build_paragraphs(
+            document,
             page["paragraphs"],
             page_theme,
             page_body_width,
@@ -485,10 +487,13 @@ def build_title(page, page_body_width, page_theme, selection, actions):
         },
     }
 
-def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):
+def build_paragraphs(document, paragraphs, page_theme, body_width, selection, actions):
     return [
         build_paragraph(
-            paragraph,
+            dict(
+                paragraph,
+                meta=build_paragraph_meta(document, paragraph)
+            ),
             page_theme,
             body_width,
             selection.add(index, paragraph["id"]),
@@ -496,6 +501,29 @@ def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):
         )
         for index, paragraph in enumerate(paragraphs)
     ]
+
+def build_paragraph_meta(document, paragraph):
+    meta = {
+        "variables": {},
+        "page_titles": {},
+    }
+    if paragraph["type"] in ["text", "quote", "image"]:
+        build_text_fragments_meta(meta, document, paragraph["fragments"])
+    if paragraph["type"] == "list":
+        build_list_meta(meta, document, paragraph["children"])
+    return meta
+
+def build_list_meta(meta, document, children):
+    for child in children:
+        build_text_fragments_meta(meta, document, child["fragments"])
+        build_list_meta(meta, document, child["children"])
+
+def build_text_fragments_meta(meta, document, fragments):
+    for fragment in fragments:
+        if fragment["type"] == "variable":
+            meta["variables"][fragment["id"]] = document.get_variable(fragment["id"])
+        elif fragment["type"] == "reference":
+            meta["page_titles"][fragment["page_id"]] = document.get_page(fragment["page_id"])["title"]
 
 @cache(limit=1000, key_path=[0, "id"])
 def build_paragraph(paragraph, page_theme, body_width, selection, actions):
@@ -525,6 +553,7 @@ def build_text_paragraph(paragraph, page_theme, body_width, selection, actions):
         "widget": TextParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph["fragments"],
+            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -547,6 +576,7 @@ def build_quote_paragraph(paragraph, page_theme, body_width, selection, actions)
         "widget": QuoteParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph["fragments"],
+            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -625,6 +655,7 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
         ),
         "text_edit_props": text_fragments_to_text_edit_props(
             child["fragments"],
+            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -772,6 +803,7 @@ def build_image_paragraph(paragraph, page_theme, body_width, selection, actions)
         "indent": page_theme["indent_size"],
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph["fragments"],
+            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -790,9 +822,10 @@ def build_unknown_paragraph(paragraph, page_theme, body_width, selection, action
         "body_width": body_width,
     }
 
-def text_fragments_to_text_edit_props(fragments, selection, page_theme, actions, save, align="left", **kwargs):
+def text_fragments_to_text_edit_props(fragments, meta, selection, page_theme, actions, save, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
         fragments,
+        meta,
         selection,
         save,
         page_theme
@@ -3052,7 +3085,8 @@ class TextFragmentsInputHandler(StringInputHandler):
         "link":      "RLiterate.Link",
     }
 
-    def __init__(self, data, selection, save, page_theme):
+    def __init__(self, data, meta, selection, save, page_theme):
+        self.meta = meta
         self.selection_trail = selection
         self.save = save
         self.page_theme = page_theme
@@ -3090,15 +3124,23 @@ class TextFragmentsInputHandler(StringInputHandler):
                     if not selection["cursor_at_start"]:
                         builder.cursor(selection["end"][1], main=True)
             params["index_prefix"] = [index]
-            if fragment.get("text", ""):
+            if fragment["type"] == "variable":
+                params["index_constant"] = 0
+                builder.text(self.meta["variables"][fragment["id"]], **params)
+            elif fragment["type"] == "reference":
+                if fragment["text"]:
+                    params["index_increment"] = 0
+                    builder.text(fragment["text"], **params)
+                else:
+                    params["index_constant"] = 0
+                    builder.text(self.meta["page_titles"][fragment["page_id"]], **params)
+            elif fragment.get("text", ""):
                 params["index_increment"] = 0
                 builder.text(fragment["text"], **params)
-                end_index = len(fragment["text"])
             else:
                 params["index_constant"] = 0
                 params["color"] = "pink"
-                builder.text(str(fragment), **params)
-                end_index = 0
+                builder.text("Enter text", **params)
 
     def replace(self, text):
         before = self.data[:self.start[0]]
@@ -3304,6 +3346,8 @@ class Document(Immutable):
                     pass
             raise ParagraphNotFound()
         return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)
+    def get_variable(self, variable_id):
+        return self.get(["doc", "variables", variable_id])
     base00  = "#657b83"
     base1   = "#93a1a1"
     yellow  = "#b58900"

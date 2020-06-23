@@ -1073,7 +1073,7 @@
 ],
 "fragments":[
 {
-"text":"def build_column(document, column, page_body_width, page_theme, selection, actions):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id),\n                actions\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def build_column(document, column, page_body_width, page_theme, selection, actions):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document,\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id),\n                actions\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
 "type":"code"
 }
 ],
@@ -1203,7 +1203,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(page, page_body_width, page_theme, selection, actions):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\"),\n            actions\n        ),\n        \"paragraphs\": build_paragraphs(\n            page[\"paragraphs\"],\n            page_theme,\n            page_body_width,\n            selection.add(\"paragraphs\"),\n            actions\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n    }\n",
+"text":"def build_page(document, page, page_body_width, page_theme, selection, actions):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\"),\n            actions\n        ),\n        \"paragraphs\": build_paragraphs(\n            document,\n            page[\"paragraphs\"],\n            page_theme,\n            page_body_width,\n            selection.add(\"paragraphs\"),\n            actions\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1347,7 +1347,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width,\n        ),\n    }\n",
+"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width,\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1401,7 +1401,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-page_theme[\"indent_size\"],\n        ),\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n\n",
+"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-page_theme[\"indent_size\"],\n        ),\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n\n",
 "type":"code"
 }
 ],
@@ -1494,7 +1494,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            child[\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"level\": level,\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
+"text":"(\n            child[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"level\": level,\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
 "type":"code"
 }
 ],
@@ -1798,7 +1798,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            align=\"center\",\n            max_width=body_width-2*page_theme[\"indent_size\"],\n        ),\n    }\n",
+"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            align=\"center\",\n            max_width=body_width-2*page_theme[\"indent_size\"],\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1868,11 +1868,29 @@
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(paragraphs, page_theme, body_width, selection, actions):\n    return [\n        build_paragraph(\n            paragraph,\n            page_theme,\n            body_width,\n            selection.add(index, paragraph[\"id\"]),\n            actions\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
+"text":"def build_paragraphs(document, paragraphs, page_theme, body_width, selection, actions):\n    return [\n        build_paragraph(\n            dict(\n                paragraph,\n                meta=build_paragraph_meta(document, paragraph)\n            ),\n            page_theme,\n            body_width,\n            selection.add(index, paragraph[\"id\"]),\n            actions\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
 "type":"code"
 }
 ],
 "id":"54eda3b0bd174c19b156169bfbe13268",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def build_paragraph_meta(document, paragraph):\n    meta = {\n        \"variables\": {},\n        \"page_titles\": {},\n    }\n    if paragraph[\"type\"] in [\"text\", \"quote\", \"image\"]:\n        build_text_fragments_meta(meta, document, paragraph[\"fragments\"])\n    if paragraph[\"type\"] == \"list\":\n        build_list_meta(meta, document, paragraph[\"children\"])\n    return meta\n\ndef build_list_meta(meta, document, children):\n    for child in children:\n        build_text_fragments_meta(meta, document, child[\"fragments\"])\n        build_list_meta(meta, document, child[\"children\"])\n\ndef build_text_fragments_meta(meta, document, fragments):\n    for fragment in fragments:\n        if fragment[\"type\"] == \"variable\":\n            meta[\"variables\"][fragment[\"id\"]] = document.get_variable(fragment[\"id\"])\n        elif fragment[\"type\"] == \"reference\":\n            meta[\"page_titles\"][fragment[\"page_id\"]] = document.get_page(fragment[\"page_id\"])[\"title\"]\n",
+"type":"code"
+}
+],
+"id":"a2c8d21865af45048b32d506ecb627bd",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -2462,7 +2480,7 @@
 "type":"variable"
 },
 {
-"text":"(fragments, selection, page_theme, actions, save, align=\"left\", **kwargs):\n    input_handler = ",
+"text":"(fragments, meta, selection, page_theme, actions, save, align=\"left\", **kwargs):\n    input_handler = ",
 "type":"code"
 },
 {
@@ -2470,7 +2488,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        fragments,\n        selection,\n        save,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
+"text":"(\n        fragments,\n        meta,\n        selection,\n        save,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -2504,7 +2522,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    FRAGMENT_TYPE_TO_TOKEN_STYLE = {\n        \"strong\":    \"RLiterate.Strong\",\n        \"emphasis\":  \"RLiterate.Emphasis\",\n        \"code\":      \"RLiterate.Code\",\n        \"variable\":  \"RLiterate.Variable\",\n        \"reference\": \"RLiterate.Reference\",\n        \"link\":      \"RLiterate.Link\",\n    }\n\n    def __init__(self, data, selection, save, page_theme):\n        self.selection_trail = selection\n        self.save = save\n        self.page_theme = page_theme\n        ",
+"text":"):\n\n    FRAGMENT_TYPE_TO_TOKEN_STYLE = {\n        \"strong\":    \"RLiterate.Strong\",\n        \"emphasis\":  \"RLiterate.Emphasis\",\n        \"code\":      \"RLiterate.Code\",\n        \"variable\":  \"RLiterate.Variable\",\n        \"reference\": \"RLiterate.Reference\",\n        \"link\":      \"RLiterate.Link\",\n    }\n\n    def __init__(self, data, meta, selection, save, page_theme):\n        self.meta = meta\n        self.selection_trail = selection\n        self.save = save\n        self.page_theme = page_theme\n        ",
 "type":"code"
 },
 {
@@ -2536,7 +2554,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params.update(\n                self.page_theme[\"token_styles\"][self.FRAGMENT_TYPE_TO_TOKEN_STYLE.get(\n                    fragment.get(\"type\", None),\n                    \"RLiterate.Text\"\n                )]\n            )\n            if selection is not None:\n                if selection[\"start\"][0] == index:\n                    builder.selection_start(selection[\"start\"][1])\n                    if selection[\"cursor_at_start\"]:\n                        builder.cursor(selection[\"start\"][1], main=True)\n                if selection[\"end\"][0] == index:\n                    builder.selection_end(selection[\"end\"][1])\n                    if not selection[\"cursor_at_start\"]:\n                        builder.cursor(selection[\"end\"][1], main=True)\n            params[\"index_prefix\"] = [index]\n            if fragment.get(\"text\", \"\"):\n                params[\"index_increment\"] = 0\n                builder.text(fragment[\"text\"], **params)\n                end_index = len(fragment[\"text\"])\n            else:\n                params[\"index_constant\"] = 0\n                params[\"color\"] = \"pink\"\n                builder.text(str(fragment), **params)\n                end_index = 0\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
+"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params.update(\n                self.page_theme[\"token_styles\"][self.FRAGMENT_TYPE_TO_TOKEN_STYLE.get(\n                    fragment.get(\"type\", None),\n                    \"RLiterate.Text\"\n                )]\n            )\n            if selection is not None:\n                if selection[\"start\"][0] == index:\n                    builder.selection_start(selection[\"start\"][1])\n                    if selection[\"cursor_at_start\"]:\n                        builder.cursor(selection[\"start\"][1], main=True)\n                if selection[\"end\"][0] == index:\n                    builder.selection_end(selection[\"end\"][1])\n                    if not selection[\"cursor_at_start\"]:\n                        builder.cursor(selection[\"end\"][1], main=True)\n            params[\"index_prefix\"] = [index]\n            if fragment[\"type\"] == \"variable\":\n                params[\"index_constant\"] = 0\n                builder.text(self.meta[\"variables\"][fragment[\"id\"]], **params)\n            elif fragment[\"type\"] == \"reference\":\n                if fragment[\"text\"]:\n                    params[\"index_increment\"] = 0\n                    builder.text(fragment[\"text\"], **params)\n                else:\n                    params[\"index_constant\"] = 0\n                    builder.text(self.meta[\"page_titles\"][fragment[\"page_id\"]], **params)\n            elif fragment.get(\"text\", \"\"):\n                params[\"index_increment\"] = 0\n                builder.text(fragment[\"text\"], **params)\n            else:\n                params[\"index_constant\"] = 0\n                params[\"color\"] = \"pink\"\n                builder.text(\"Enter text\", **params)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
 "type":"code"
 },
 {
@@ -2909,6 +2927,30 @@
 }
 ],
 "title":"Paragraphs"
+},
+{
+"children":[],
+"id":"8f546282b9f6400e9046892c3f303384",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def get_variable(self, variable_id):\n    return self.get([\"doc\", \"variables\", variable_id])\n",
+"type":"code"
+}
+],
+"id":"0526dbf51fa541d7a88d5a6747468a0b",
+"type":"code"
+}
+],
+"title":"Variables"
 },
 {
 "children":[],
