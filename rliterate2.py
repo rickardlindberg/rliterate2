@@ -237,6 +237,7 @@ def table_of_contents_scroll_area_props(document):
         document.get_open_pages(),
         document.get(["theme", "toc", "foreground"]),
         document.get(["theme", "dragdrop_invalid_color"]),
+        document.get(["theme", "toc", "placeholder_color"]),
         document.get(["theme", "toc", "font"]),
     ))
     return props
@@ -280,6 +281,7 @@ def generate_rows_and_drop_points(
     open_pages,
     foreground,
     dragdrop_invalid_color,
+    placeholder_color,
     font
 ):
     try:
@@ -293,6 +295,7 @@ def generate_rows_and_drop_points(
         open_pages,
         foreground,
         dragdrop_invalid_color,
+        placeholder_color,
         font,
         0,
         False,
@@ -307,6 +310,7 @@ def _generate_rows_and_drop_points_page(
     open_pages,
     foreground,
     dragdrop_invalid_color,
+    placeholder_color,
     font,
     level,
     dragged,
@@ -317,12 +321,18 @@ def _generate_rows_and_drop_points_page(
     is_collapsed = page["id"] in collapsed
     num_children = len(page["children"])
     dragged = dragged or page["id"] == dragged_page
+    if page["title"]:
+        text = page["title"]
+        color = dragdrop_invalid_color if dragged else foreground
+    else:
+        text = "Enter title..."
+        color = placeholder_color
     rows.append({
         "id": page["id"],
         "text_props": TextPropsBuilder(**dict(font,
             bold=page["id"] in open_pages,
-            color=dragdrop_invalid_color if dragged else foreground
-        )).text(page["title"]).get(),
+            color=color
+        )).text(text).get(),
         "level": level,
         "has_children": num_children > 0,
         "collapsed": is_collapsed,
@@ -347,6 +357,7 @@ def _generate_rows_and_drop_points_page(
                 open_pages,
                 foreground,
                 dragdrop_invalid_color,
+                placeholder_color,
                 font,
                 level+1,
                 dragged,
@@ -3220,9 +3231,11 @@ class TextFragmentsInputHandler(StringInputHandler):
         if text:
             if placeholder and self.selection is not None:
                 text = "<{}>".format(text)
+                params["color"] = self.page_theme["placeholder_color"]
         else:
             placeholder = True
             text = "<enter text>"
+            params["color"] = self.page_theme["placeholder_color"]
         if placeholder:
             params["index_constant"] = 0
         else:
@@ -3476,6 +3489,7 @@ class Document(Immutable):
         "toc": {
             "background": "#ffffff",
             "foreground": "#000000",
+            "placeholder_color": "gray",
             "indent_size": 20,
             "row_margin": 2,
             "divider_thickness": 2,
@@ -3545,7 +3559,6 @@ class Document(Immutable):
                 "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
                 "RLiterate.Reference": {"italic": True, "color": blue},
                 "RLiterate.Link":      {"underlined": True, "color": blue},
-                "RLiterate.Markup":    {"color": orange},
             },
         },
         "dragdrop_color": "#ff6400",
@@ -3564,6 +3577,7 @@ class Document(Immutable):
         "toc": {
             "background": "#fdf6e3",
             "foreground": "#657b83",
+            "placeholder_color": "gray",
             "indent_size": 22,
             "row_margin": 3,
             "divider_thickness": 3,
@@ -3633,7 +3647,6 @@ class Document(Immutable):
                 "RLiterate.Variable":  {"italic": True, "family": "Monospace"},
                 "RLiterate.Reference": {"italic": True, "color": blue},
                 "RLiterate.Link":      {"underlined": True, "color": blue},
-                "RLiterate.Markup":    {"color": orange},
            },
         },
         "dragdrop_color": "#dc322f",
