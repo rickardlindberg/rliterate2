@@ -3076,15 +3076,6 @@ class TextPropsBuilder(object):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    FRAGMENT_TYPE_TO_TOKEN_STYLE = {
-        "strong":    "RLiterate.Strong",
-        "emphasis":  "RLiterate.Emphasis",
-        "code":      "RLiterate.Code",
-        "variable":  "RLiterate.Variable",
-        "reference": "RLiterate.Reference",
-        "link":      "RLiterate.Link",
-    }
-
     def __init__(self, data, meta, selection, save, page_theme):
         self.meta = meta
         self.selection_trail = selection
@@ -3108,41 +3099,102 @@ class TextFragmentsInputHandler(StringInputHandler):
     def build_with_selection(self, builder, selection):
         for index, fragment in enumerate(self.data):
             params = {}
-            params.update(
-                self.page_theme["token_styles"][self.FRAGMENT_TYPE_TO_TOKEN_STYLE.get(
-                    fragment.get("type", None),
-                    "RLiterate.Text"
-                )]
-            )
-            if selection is not None:
-                if selection["start"][0] == index:
-                    builder.selection_start(selection["start"][1])
-                    if selection["cursor_at_start"]:
-                        builder.cursor(selection["start"][1], main=True)
-                if selection["end"][0] == index:
-                    builder.selection_end(selection["end"][1])
-                    if not selection["cursor_at_start"]:
-                        builder.cursor(selection["end"][1], main=True)
             params["index_prefix"] = [index]
-            if fragment["type"] == "variable":
-                params["index_constant"] = 0
-                builder.text(self.meta["variables"][fragment["id"]], **params)
-            elif fragment["type"] == "reference":
-                if fragment["text"]:
-                    params["index_increment"] = 0
-                    builder.text(fragment["text"], **params)
-                else:
-                    params["index_constant"] = 0
-                    builder.text(self.meta["page_titles"][fragment["page_id"]], **params)
-            elif fragment.get("text", ""):
-                params["index_increment"] = 0
-                builder.text(fragment["text"], **params)
-            else:
-                params["index_constant"] = 0
+            start = None
+            end = None
+            cursor_at_start = True
+            placeholder = False
+            if selection is not None:
+                cursor_at_start = selection["cursor_at_start"]
+                if selection["start"][0] == index:
+                    start = selection["start"][1]
+                if selection["end"][0] == index:
+                    end = selection["end"][1]
+            if fragment["type"] == "text":
                 params.update(
-                    self.page_theme["token_styles"]["RLiterate.Markup"]
+                    self.page_theme["token_styles"]["RLiterate.Text"]
                 )
-                builder.text("Enter text", **params)
+                text = fragment["text"]
+            elif fragment["type"] == "strong":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Strong"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "emphasis":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Emphasis"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "code":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Code"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "variable":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Variable"]
+                )
+                text = self.meta["variables"][fragment["id"]]
+            elif fragment["type"] == "reference":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Reference"]
+                )
+                if fragment["text"]:
+                    text = fragment["text"]
+                    placeholder = False
+                else:
+                    text = self.meta["page_titles"][fragment["page_id"]]
+                    placeholder = True
+            elif fragment["type"] == "link":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Link"]
+                )
+                if fragment["text"]:
+                    text = fragment["text"]
+                    placeholder = False
+                else:
+                    text = fragment["url"]
+                    placeholder = True
+            self.build_text(
+                text,
+                start,
+                end,
+                cursor_at_start,
+                params,
+                builder,
+                placeholder
+            )
+
+    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):
+        if text:
+            if placeholder and self.selection is not None:
+                text = "<{}>".format(text)
+        else:
+            placeholder = True
+            text = "<enter text>"
+        if placeholder:
+            params["index_constant"] = 0
+        else:
+            params["index_increment"] = 0
+        if start is not None:
+            if placeholder:
+                builder.selection_start(0)
+                if cursor_at_start:
+                    builder.cursor(1, main=True)
+            else:
+                builder.selection_start(start)
+                if cursor_at_start:
+                    builder.cursor(start, main=True)
+        if end is not None:
+            if placeholder:
+                builder.selection_end(len(text))
+                if not cursor_at_start:
+                    builder.cursor(1, main=True)
+            else:
+                builder.selection_end(end)
+                if not cursor_at_start:
+                    builder.cursor(end, main=True)
+        builder.text(text, **params)
 
     def replace(self, text):
         before = self.data[:self.start[0]]
