@@ -22,6 +22,15 @@
 "url":"http://svt.se"
 },
 {
+"text":" another without text ",
+"type":"text"
+},
+{
+"text":"",
+"type":"link",
+"url":"http://svt.se"
+},
+{
 "text":", ",
 "type":"text"
 },
