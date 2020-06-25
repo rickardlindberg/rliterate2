@@ -2936,7 +2936,7 @@ class TextEdit(Panel):
             name = None
             handlers = {}
             props.update(self.prop(['toolbar', 'props']))
-            props['max_width'] = self.prop(['max_width'])
+            props['max_width'] = sub(self.prop(['max_width']), mul(2, self.prop(['selection_box', 'width'])))
             sizer["flag"] |= wx.EXPAND
             sizer["border"] = self.prop(['selection_box', 'width'])
             sizer["flag"] |= wx.ALL
