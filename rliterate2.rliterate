@@ -8098,6 +8098,21 @@
 ],
 "id":"4a00d927ee114cb9b1d9655ede514694",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Elastic tabstops",
+"type":"link",
+"url":"http://nickgravgaard.com/elastic-tabstops/"
+},
+{
+"text":"?",
+"type":"text"
+}
+],
+"id":"62672754a4e344bdbf267eff16e63ba6",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
