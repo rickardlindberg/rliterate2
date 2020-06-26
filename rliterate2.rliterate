@@ -5101,7 +5101,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"text reflow\")\ndef _reflow(self, max_width, break_at_word, line_height, align):\n    self.",
+"text":"pair_size_map_cache = {}\n\n@profile_sub(\"text reflow\")\ndef _reflow(self, max_width, break_at_word, line_height, align):\n    self.",
 "type":"code"
 },
 {
@@ -5149,7 +5149,7 @@
 "type":"variable"
 },
 {
-"text":"[index]\n        if max_width is not None and x + size.Width > max_width and line:\n            if break_at_word:\n                index = self._find_word_break_point(line, character[\"text\"])\n                if index is not None:\n                    return line[:index+1]\n            return line\n        line.append((character, size))\n        if character[\"text\"] == \"\\n\":\n            return line\n        x += size.Width\n        index += 1\n    return line\n\ndef _find_word_break_point(self, line, next_character):\n    index = len(line) - 1\n    while index >= 0:\n        current_character = line[index][0][\"text\"]\n        if current_character == \" \" and next_character != \" \":\n            return index\n        next_character = current_character\n        index -= 1\n\ndef _layout_line(self, dc, line, line_height, y, max_width, align):\n    # Calculate total height\n    max_h = 0\n    for character, size in line:\n        max_h = max(max_h, size.Height)\n    height = int(round(max_h * line_height))\n    height_offset = int(round((height - max_h) / 2))\n\n    # Bla bla\n    characters_by_style = []\n    characters = []\n    style = None\n    for character, size in line:\n        this_style = self._get_style(character)\n        if not characters or this_style == style:\n            characters.append(character)\n        else:\n            characters_by_style.append((style, characters))\n            characters = [character]\n        style = this_style\n    if characters:\n        characters_by_style.append((style, characters))\n\n    # Hmm\n    total_width = 0\n    characters_by_style_wiht_text_widths = []\n    for style, characters in characters_by_style:\n        text = \"\".join(\n            character[\"text\"]\n            for character\n            in characters\n        )\n        self._apply_style(style, dc)\n        widths = [0]\n        while len(widths) <= len(text):\n            widths.append(dc.GetTextExtent(text[:len(widths)]).Width)\n        characters_by_style_wiht_text_widths.append((\n            style,\n            characters,\n            text,\n            widths,\n        ))\n        total_width += widths[-1]\n\n    characters_in_line = []\n    if max_width is not None and align == \"center\":\n        x = int((max_width - total_width) / 2)\n    else:\n        x = 0\n    for style, characters, text, widths in characters_by_style_wiht_text_widths:\n        texts, positions = self.",
+"text":"[index]\n        if max_width is not None and x + size.Width > max_width and line:\n            if break_at_word:\n                index = self._find_word_break_point(line, character[\"text\"])\n                if index is not None:\n                    return line[:index+1]\n            return line\n        line.append((character, size))\n        if character[\"text\"] == \"\\n\":\n            return line\n        x += size.Width\n        index += 1\n    return line\n\ndef _find_word_break_point(self, line, next_character):\n    index = len(line) - 1\n    while index >= 0:\n        current_character = line[index][0][\"text\"]\n        if current_character == \" \" and next_character != \" \":\n            return index\n        next_character = current_character\n        index -= 1\n\ndef _layout_line(self, dc, line, line_height, y, max_width, align):\n    # Calculate total height\n    max_h = 0\n    for character, size in line:\n        max_h = max(max_h, size.Height)\n    height = int(round(max_h * line_height))\n    height_offset = int(round((height - max_h) / 2))\n\n    # Bla bla\n    characters_by_style = []\n    characters = []\n    style = None\n    for character, size in line:\n        this_style = self._get_style(character)\n        if not characters or this_style == style:\n            characters.append(character)\n        else:\n            characters_by_style.append((style, characters))\n            characters = [character]\n        style = this_style\n    if characters:\n        characters_by_style.append((style, characters))\n\n    # Hmm\n    total_width = 0\n    characters_by_style_wiht_text_widths = []\n    for style, characters in characters_by_style:\n        text = \"\".join(\n            character[\"text\"]\n            for character\n            in characters\n        )\n        widths = [0, self.size_map_cache[(style, text[0])].Width]\n        index = 0\n        while len(widths) <= len(text):\n            first_width = self.size_map_cache[(style, text[index])].Width\n            pair = text[index:index+2]\n            key = (style, pair)\n            if key in self.pair_size_map_cache:\n                pair_width = self.pair_size_map_cache[key]\n            else:\n                self._apply_style(style, dc)\n                pair_width = dc.GetTextExtent(pair).Width\n                self.pair_size_map_cache[key] = pair_width\n            widths.append(widths[-1]+pair_width-first_width)\n            index += 1\n        characters_by_style_wiht_text_widths.append((\n            style,\n            characters,\n            text,\n            widths,\n        ))\n        total_width += widths[-1]\n\n    characters_in_line = []\n    if max_width is not None and align == \"center\":\n        x = int((max_width - total_width) / 2)\n    else:\n        x = 0\n    for style, characters, text, widths in characters_by_style_wiht_text_widths:\n        texts, positions = self.",
 "type":"code"
 },
 {
@@ -5285,11 +5285,27 @@
 "type":"variable"
 },
 {
-"text":".items():\n        self._apply_style(style, dc)\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        for x, y, height, color in self._cursor_positions:\n            dc.SetPen(wx.Pen(color, width=2))\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    dc.DrawRectangleList(\n        self._selection_rects,\n        self._selection_pens,\n        self._selection_brushes\n    )\n",
+"text":".items():\n        self._apply_style(style, dc)\n        dc.DrawTextList(*items)\n    if self._show_cursors:\n        for x, y, height, color in self._cursor_positions:\n            dc.SetPen(wx.Pen(color, width=2))\n            dc.DrawLines([\n                (x, y),\n                (x, y+height),\n            ])\n    dc.DrawRectangleList(\n        self._selection_rects,\n        self._selection_pens,\n        self._selection_brushes\n    )\n    if WX_DEBUG_TEXT:\n        dc.DrawRectangleList(\n            [x[1] for x in self._characters_bounding_rect],\n            [wx.Pen(\"blue\", 1) for x in self._characters_bounding_rect],\n            [wx.Brush() for x in self._characters_bounding_rect],\n        )\n",
 "type":"code"
 }
 ],
 "id":"f4ba37c7c3514182b106c3f6239f45bd",
+"type":"code"
+},
+{
+"chunkpath":[
+"globals"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"WX_DEBUG_TEXT = os.environ.get(\"WX_DEBUG_TEXT\", \"\") != \"\"\n",
+"type":"code"
+}
+],
+"id":"236963c3b1e8462fa9c4baff1e12fbe4",
 "type":"code"
 }
 ],

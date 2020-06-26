@@ -24,6 +24,8 @@ import wx
 PROFILING_TIMES = defaultdict(list)
 PROFILING_ENABLED = os.environ.get("RLITERATE_PROFILE", "") != ""
 
+WX_DEBUG_TEXT = os.environ.get("WX_DEBUG_TEXT", "") != ""
+
 WX_DEBUG_REFRESH = os.environ.get("WX_DEBUG_REFRESH", "") != ""
 
 WX_DEBUG_FOCUS = os.environ.get("WX_DEBUG_FOCUS", "") != ""
@@ -3937,6 +3939,8 @@ class Text(wx.Panel, WxWidgetMixin):
                 self.size_map_cache[entry]
             ))
 
+    pair_size_map_cache = {}
+
     @profile_sub("text reflow")
     def _reflow(self, max_width, break_at_word, line_height, align):
         self._draw_fragments_by_style = defaultdict(lambda: ([], []))
@@ -4019,10 +4023,20 @@ class Text(wx.Panel, WxWidgetMixin):
                 for character
                 in characters
             )
-            self._apply_style(style, dc)
-            widths = [0]
+            widths = [0, self.size_map_cache[(style, text[0])].Width]
+            index = 0
             while len(widths) <= len(text):
-                widths.append(dc.GetTextExtent(text[:len(widths)]).Width)
+                first_width = self.size_map_cache[(style, text[index])].Width
+                pair = text[index:index+2]
+                key = (style, pair)
+                if key in self.pair_size_map_cache:
+                    pair_width = self.pair_size_map_cache[key]
+                else:
+                    self._apply_style(style, dc)
+                    pair_width = dc.GetTextExtent(pair).Width
+                    self.pair_size_map_cache[key] = pair_width
+                widths.append(widths[-1]+pair_width-first_width)
+                index += 1
             characters_by_style_wiht_text_widths.append((
                 style,
                 characters,
@@ -4111,6 +4125,12 @@ class Text(wx.Panel, WxWidgetMixin):
             self._selection_pens,
             self._selection_brushes
         )
+        if WX_DEBUG_TEXT:
+            dc.DrawRectangleList(
+                [x[1] for x in self._characters_bounding_rect],
+                [wx.Pen("blue", 1) for x in self._characters_bounding_rect],
+                [wx.Brush() for x in self._characters_bounding_rect],
+            )
 
     def _on_timer(self, wx_event):
         self._show_cursors = not self._show_cursors
