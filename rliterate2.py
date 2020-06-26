@@ -119,28 +119,18 @@ def usage(script):
 
 def main_frame_props(document):
     return {
-        "toolbar": toolbar_props(
-            document.get(["theme", "toolbar"]),
-            actions(document)
-        ),
-        "toolbar_divider": toolbar_divider_props(
-            document.get(["theme", "toolbar_divider"])
-        ),
-        "main_area": main_area_props(
-            document,
-            actions(document)
-        ),
         "title": format_title(
             document.get(["path"])
         ),
-    }
-
-@cache()
-def actions(document):
-    return {
-        "rotate_theme": document.rotate,
-        "set_toc_width": document.set_toc_width,
-        "set_hoisted_page": document.set_hoisted_page,
+        "toolbar": toolbar_props(
+            document
+        ),
+        "toolbar_divider": toolbar_divider_props(
+            document
+        ),
+        "main_area": main_area_props(
+            document
+        ),
     }
 
 @cache()
@@ -150,16 +140,16 @@ def format_title(path):
         os.path.abspath(os.path.dirname(path))
     )
 
-@cache()
-def toolbar_props(toolbar_theme, actions):
+def toolbar_props(document):
+    toolbar_theme = document.get(["theme", "toolbar"])
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
-        "actions": actions,
+        "actions": document.actions,
     }
 
-@cache()
-def toolbar_divider_props(toolbar_divider_theme):
+def toolbar_divider_props(document):
+    toolbar_divider_theme = document.get(["theme", "toolbar_divider"])
     return {
         "background": toolbar_divider_theme["color"],
         "min_size": (
@@ -168,22 +158,21 @@ def toolbar_divider_props(toolbar_divider_theme):
         ),
     }
 
-def main_area_props(document, actions):
+def main_area_props(document):
     return {
-        "toc": table_of_contents_props(
-            document,
-            actions
+        "actions": document.actions,
+        "toc": toc_props(
+            document
         ),
         "toc_divider": toc_divider_props(
-            document.get(["theme", "toc_divider"])
+            document
         ),
         "workspace": workspace_props(
             document
         ),
-        "actions": actions,
     }
 
-def table_of_contents_props(document, actions):
+def toc_props(document):
     return {
         "background": document.get(
             ["theme", "toc", "background"]
@@ -196,13 +185,13 @@ def table_of_contents_props(document, actions):
             document,
             document.get(["toc", "hoisted_page"]),
         ),
-        "row_margin": document.get(
+        "margin": 1 + document.get(
             ["theme", "toc", "row_margin"]
         ),
-        "scroll_area": table_of_contents_scroll_area_props(
+        "actions": document.actions,
+        "scroll_area": toc_scroll_area_props(
             document
         ),
-        "actions": actions,
     }
 
 def is_valid_hoisted_page(document, page_id):
@@ -215,34 +204,98 @@ def is_valid_hoisted_page(document, page_id):
         pass
     return False
 
-def table_of_contents_scroll_area_props(document):
-    props = {
+def toc_scroll_area_props(document):
+    return dict(generate_rows_and_drop_points(document), **{
         "rows_cache_limit": document.count_pages() - 1,
-        "row_extra": table_of_contents_row_extra_props(
-            document
+        "row_margin": document.get(
+            ["theme", "toc", "row_margin"]
+        ),
+        "indent_size": document.get(
+            ["theme", "toc", "indent_size"]
         ),
         "dragged_page": document.get(
             ["toc", "dragged_page"]
         ),
-        "actions": {
-            "can_move_page": document.can_move_page,
-            "move_page": document.move_page,
-        },
-    }
-    props.update(generate_rows_and_drop_points(
-        document,
+        "actions": document.actions,
+    })
+
+def generate_rows_and_drop_points(document):
+    try:
+        root_page = document.get_page(
+            document.get(["toc", "hoisted_page"])
+        )
+    except PageNotFound:
+        root_page = document.get_page(None)
+    return generate_rows_and_drop_points_page(
+        root_page,
+        toc_row_common_props(document),
         document.get(["toc", "collapsed"]),
-        document.get(["toc", "hoisted_page"]),
         document.get(["toc", "dragged_page"]),
         document.get_open_pages(),
-        document.get(["theme", "toc", "foreground"]),
-        document.get(["theme", "dragdrop_invalid_color"]),
-        document.get(["theme", "toc", "placeholder_color"]),
-        document.get(["theme", "toc", "font"]),
-    ))
-    return props
+        0,
+        False,
+        0
+    )
 
-def table_of_contents_row_extra_props(document):
+@cache(limit=1000, key_path=[0, "id"])
+def generate_rows_and_drop_points_page(
+    page,
+    row_common_props,
+    collapsed,
+    dragged_page,
+    open_pages,
+    level,
+    is_dragged,
+    row_offset
+):
+    rows = []
+    drop_points = []
+    is_collapsed = page["id"] in collapsed
+    is_dragged = is_dragged or page["id"] == dragged_page
+    rows.append(toc_row_props(
+        row_common_props,
+        page,
+        level,
+        is_dragged,
+        is_collapsed,
+        open_pages
+    ))
+    if is_collapsed:
+        target_index = len(page["children"])
+    else:
+        target_index = 0
+    drop_points.append(TableOfContentsDropPoint(
+        row_index=row_offset+len(rows)-1,
+        target_index=target_index,
+        target_page=page["id"],
+        level=level+1
+    ))
+    if not is_collapsed:
+        for target_index, child in enumerate(page["children"]):
+            sub_result = generate_rows_and_drop_points_page(
+                child,
+                row_common_props,
+                collapsed,
+                dragged_page,
+                open_pages,
+                level+1,
+                is_dragged,
+                row_offset+len(rows)
+            )
+            rows.extend(sub_result["rows"])
+            drop_points.extend(sub_result["drop_points"])
+            drop_points.append(TableOfContentsDropPoint(
+                row_index=row_offset+len(rows)-1,
+                target_index=target_index+1,
+                target_page=page["id"],
+                level=level+1
+            ))
+    return {
+        "rows": rows,
+        "drop_points": drop_points,
+    }
+
+def toc_row_common_props(document):
     return {
         "row_margin": document.get(
             ["theme", "toc", "row_margin"]
@@ -265,119 +318,82 @@ def table_of_contents_row_extra_props(document):
         "dragdrop_invalid_color": document.get(
             ["theme", "dragdrop_invalid_color"]
         ),
-        "actions": {
-            "set_hoisted_page": document.set_hoisted_page,
-            "set_dragged_page": document.set_dragged_page,
-            "toggle_collapsed": document.toggle_collapsed,
-            "open_page": document.open_page,
-        },
+        "placeholder_color": document.get(
+            ["theme", "toc", "placeholder_color"]
+        ),
+        "font": document.get(
+            ["theme", "toc", "font"]
+        ),
+        "actions": document.actions,
     }
 
-def generate_rows_and_drop_points(
-    document,
-    collapsed,
-    hoisted_page,
-    dragged_page,
-    open_pages,
-    foreground,
-    dragdrop_invalid_color,
-    placeholder_color,
-    font
-):
-    try:
-        root_page = document.get_page(hoisted_page)
-    except PageNotFound:
-        root_page = document.get_page(None)
-    return _generate_rows_and_drop_points_page(
-        root_page,
-        collapsed,
-        dragged_page,
-        open_pages,
-        foreground,
-        dragdrop_invalid_color,
-        placeholder_color,
-        font,
-        0,
-        False,
-        0
-    )
-
-@cache(limit=1000, key_path=[0, "id"])
-def _generate_rows_and_drop_points_page(
+def toc_row_props(
+    row_common_props,
     page,
-    collapsed,
-    dragged_page,
-    open_pages,
-    foreground,
-    dragdrop_invalid_color,
-    placeholder_color,
-    font,
     level,
-    dragged,
-    row_offset
+    is_dragged,
+    is_collapsed,
+    open_pages
 ):
-    rows = []
-    drop_points = []
-    is_collapsed = page["id"] in collapsed
-    num_children = len(page["children"])
-    dragged = dragged or page["id"] == dragged_page
+    return {
+        "id": page["id"],
+        "hover_background": row_common_props["hover_background"],
+        "actions": row_common_props["actions"],
+        "level": level,
+        "title": toc_row_title_props(
+            row_common_props,
+            page,
+            level,
+            is_dragged,
+            is_collapsed,
+            open_pages
+        ),
+        "drop_line": toc_row_drop_line_props(
+            row_common_props
+        ),
+    }
+
+def toc_row_title_props(
+    row_common_props,
+    page,
+    level,
+    is_dragged,
+    is_collapsed,
+    open_pages
+):
     if page["title"]:
         text = page["title"]
-        color = dragdrop_invalid_color if dragged else foreground
+        if is_dragged:
+            color = row_common_props["dragdrop_invalid_color"]
+        else:
+            color = row_common_props["foreground"]
     else:
         text = "Enter title..."
-        color = placeholder_color
-    rows.append({
+        color = row_common_props["placeholder_color"]
+    return dict(row_common_props, **{
         "id": page["id"],
-        "text_props": TextPropsBuilder(**dict(font,
+        "text_props": TextPropsBuilder(**dict(row_common_props["font"],
             bold=page["id"] in open_pages,
             color=color
         )).text(text).get(),
         "level": level,
-        "has_children": num_children > 0,
+        "has_children": bool(page["children"]),
         "collapsed": is_collapsed,
-        "dragged": dragged,
+        "dragged": is_dragged,
     })
-    if is_collapsed:
-        target_index = num_children
-    else:
-        target_index = 0
-    drop_points.append(TableOfContentsDropPoint(
-        row_index=row_offset+len(rows)-1,
-        target_index=target_index,
-        target_page=page["id"],
-        level=level+1
-    ))
-    if not is_collapsed:
-        for target_index, child in enumerate(page["children"]):
-            sub_result = _generate_rows_and_drop_points_page(
-                child,
-                collapsed,
-                dragged_page,
-                open_pages,
-                foreground,
-                dragdrop_invalid_color,
-                placeholder_color,
-                font,
-                level+1,
-                dragged,
-                row_offset+len(rows)
-            )
-            rows.extend(sub_result["rows"])
-            drop_points.extend(sub_result["drop_points"])
-            drop_points.append(TableOfContentsDropPoint(
-                row_index=row_offset+len(rows)-1,
-                target_index=target_index+1,
-                target_page=page["id"],
-                level=level+1
-            ))
+
+def toc_row_drop_line_props(row_common_props):
     return {
-        "rows": rows,
-        "drop_points": drop_points,
+        "indent": 0,
+        "active": False,
+        "valid": True,
+        "min_size": (-1, row_common_props["divider_thickness"]),
+        "color": row_common_props["dragdrop_color"],
+        "invalid_color": row_common_props["dragdrop_invalid_color"],
     }
 
-@cache()
-def toc_divider_props(toc_divider_theme):
+def toc_divider_props(document):
+    toc_divider_theme = document.get(["theme", "toc_divider"])
     return {
         "background": toc_divider_theme["color"],
         "min_size": (
@@ -395,93 +411,82 @@ def workspace_props(document):
         "margin": document.get(
             ["theme", "workspace", "margin"]
         ),
-        "column_width": (
-            document.get(["workspace", "page_body_width"]) +
-            2*document.get(["theme", "page", "margin"]) +
-            document.get(["theme", "page", "border", "size"])
-        ),
-        "columns": build_columns(
-            document,
-            document.get(["workspace", "columns"]),
-            document.get(["workspace", "page_body_width"]),
-            document.get(["theme", "page"]),
-            document.get(["selection"]),
-            workspace_actions(document)
-        ),
         "page_body_width": document.get(
             ["workspace", "page_body_width"]
         ),
-        "actions": workspace_actions(document),
+        "actions": document.actions,
+        "columns": columns_props(
+            document
+        ),
+        "divider_panel": {
+            "cursor": "size_horizontal",
+            "min_size": (document.get(["theme", "workspace", "margin"]), -1)
+        }
     }
 
-@cache()
-def workspace_actions(document):
-    return {
-        "set_page_body_width": document.set_page_body_width,
-        "edit_page": document.edit_page,
-        "edit_paragraph": document.edit_paragraph,
-        "show_selection": document.show_selection,
-        "hide_selection": document.hide_selection,
-        "set_selection": document.set_selection,
-    }
-
-@profile_sub("build_columns")
-def build_columns(document, columns, page_body_width, page_theme, selection, actions):
-    selection = selection.add("workspace")
-    columns_prop = []
-    for index, column in enumerate(columns):
-        columns_prop.append(build_column(
+@profile_sub("columns_props")
+def columns_props(document):
+    return [
+        column_props(
             document,
             column,
-            page_body_width,
-            page_theme,
-            selection.add("column", index),
-            actions
-        ))
-    return columns_prop
+            document.get(["selection"]).add("workspace", "column", index)
+        )
+        for index, column
+        in enumerate(document.get(["workspace", "columns"]))
+    ]
 
-def build_column(document, column, page_body_width, page_theme, selection, actions):
+def column_props(document, column, selection):
     column_prop = []
     index = 0
     for page_id in column:
         try:
-            column_prop.append(build_page(
+            column_prop.append(page_props(
                 document,
                 document.get_page(page_id),
-                page_body_width,
-                page_theme,
-                selection.add("page", index, page_id),
-                actions
+                selection.add("page", index, page_id)
             ))
             index += 1
         except PageNotFound:
             pass
-    return column_prop
-
-def build_page(document, page, page_body_width, page_theme, selection, actions):
     return {
-        "id": page["id"],
-        "title": build_title(
-            page,
-            page_body_width,
-            page_theme,
-            selection.add("title"),
-            actions
+        "min_size": (
+            document.get(["workspace", "page_body_width"]) +
+            2*document.get(["theme", "page", "margin"]) +
+            document.get(["theme", "page", "border", "size"]),
+            -1
         ),
-        "paragraphs": build_paragraphs(
-            document,
-            page["paragraphs"],
-            page_theme,
-            page_body_width,
-            selection.add("paragraphs"),
-            actions
+        "margin": document.get(
+            ["theme", "workspace", "margin"]
         ),
-        "border": page_theme["border"],
-        "background": page_theme["background"],
-        "margin": page_theme["margin"],
+        "column": column_prop,
     }
 
-def build_title(page, page_body_width, page_theme, selection, actions):
+def page_props(document, page, selection):
+    page_theme = document.get(["theme", "page"])
+    return {
+        "body": {
+            "id": page["id"],
+            "title": page_title_props(
+                page,
+                document.get(["workspace", "page_body_width"]),
+                page_theme,
+                selection.add("title"),
+                document.actions
+            ),
+            "paragraphs": paragraphs_props(
+                document,
+                page["paragraphs"],
+                selection.add("paragraphs")
+            ),
+            "background": page_theme["background"],
+            "margin": page_theme["margin"],
+        },
+        "border": page_theme["border"],
+    }
+
+@cache()
+def page_title_props(page, page_body_width, page_theme, selection, actions):
     input_handler = TitleInputHandler(page, page_theme, selection, actions)
     return {
         "text_edit_props": {
@@ -498,17 +503,17 @@ def build_title(page, page_body_width, page_theme, selection, actions):
         },
     }
 
-def build_paragraphs(document, paragraphs, page_theme, body_width, selection, actions):
+def paragraphs_props(document, paragraphs, selection):
     return [
-        build_paragraph(
+        paragraph_props(
             dict(
                 paragraph,
                 meta=build_paragraph_meta(document, paragraph)
             ),
-            page_theme,
-            body_width,
+            document.get(["theme", "page"]),
+            document.get(["workspace", "page_body_width"]),
             selection.add(index, paragraph["id"]),
-            actions
+            document.actions
         )
         for index, paragraph in enumerate(paragraphs)
     ]
@@ -537,21 +542,21 @@ def build_text_fragments_meta(meta, document, fragments):
             meta["page_titles"][fragment["page_id"]] = document.get_page(fragment["page_id"])["title"]
 
 @cache(limit=1000, key_path=[0, "id"])
-def build_paragraph(paragraph, page_theme, body_width, selection, actions):
+def paragraph_props(paragraph, page_theme, body_width, selection, actions):
     BUILDERS = {
-        "text": build_text_paragraph,
-        "quote": build_quote_paragraph,
-        "list": build_list_paragraph,
-        "code": build_code_paragraph,
-        "image": build_image_paragraph,
+        "text": text_paragraph_props,
+        "quote": quote_paragraph_props,
+        "list": list_paragraph_props,
+        "code": code_paragraph_props,
+        "image": image_paragraph_props,
     }
     return BUILDERS.get(
         paragraph["type"],
-        build_unknown_paragraph
+        unknown_paragraph_props
     )(paragraph, page_theme, body_width, selection, actions)
 
-@profile_sub("build_text_paragraph")
-def build_text_paragraph(paragraph, page_theme, body_width, selection, actions):
+@profile_sub("text_paragraph_props")
+def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     def save(new_text_fragments, new_selection):
         actions["edit_paragraph"](
             paragraph["id"],
@@ -573,8 +578,8 @@ def build_text_paragraph(paragraph, page_theme, body_width, selection, actions):
         ),
     }
 
-@profile_sub("build_quote_paragraph")
-def build_quote_paragraph(paragraph, page_theme, body_width, selection, actions):
+@profile_sub("quote_paragraph_props")
+def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     def save(new_text_fragments, new_selection):
         actions["edit_paragraph"](
             paragraph["id"],
@@ -598,11 +603,11 @@ def build_quote_paragraph(paragraph, page_theme, body_width, selection, actions)
     }
 
 
-@profile_sub("build_list_paragraph")
-def build_list_paragraph(paragraph, page_theme, body_width, selection, actions):
+@profile_sub("list_paragraph_props")
+def list_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": ListParagraph,
-        "rows": build_list_item_rows(
+        "rows": list_item_rows_props(
             paragraph,
             paragraph["children"],
             paragraph["child_type"],
@@ -611,14 +616,12 @@ def build_list_paragraph(paragraph, page_theme, body_width, selection, actions):
             actions,
             selection
         ),
-        "indent": page_theme["indent_size"],
-        "body_width": body_width,
     }
 
-def build_list_item_rows(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):
+def list_item_rows_props(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):
     rows = []
     for index, child in enumerate(children):
-        rows.append(build_list_item_row(
+        rows.append(list_item_row_props(
             paragraph,
             child_type,
             index,
@@ -630,7 +633,7 @@ def build_list_item_rows(paragraph, children, child_type, page_theme, body_width
             path+[index],
             level
         ))
-        rows.extend(build_list_item_rows(
+        rows.extend(list_item_rows_props(
             paragraph,
             child["children"],
             child["child_type"],
@@ -643,7 +646,7 @@ def build_list_item_rows(paragraph, children, child_type, page_theme, body_width
         ))
     return rows
 
-def build_list_item_row(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
+def list_item_row_props(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
     def save(new_text_fragments, new_selection):
         actions["edit_paragraph"](
             paragraph["id"],
@@ -657,6 +660,8 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
             selection.create(new_selection)
         )
     return {
+        "level": level,
+        "indent": page_theme["indent_size"],
         "bullet_props": dict(
             TextPropsBuilder(
                 **page_theme["text_font"]
@@ -674,7 +679,6 @@ def build_list_item_row(paragraph, child_type, index, child, page_theme, body_wi
             max_width=body_width-(level+1)*page_theme["indent_size"],
             line_height=page_theme["line_height"]
         ),
-        "level": level,
     }
 
 def _get_bullet_text(list_type, index):
@@ -683,33 +687,34 @@ def _get_bullet_text(list_type, index):
     else:
         return u"\u2022 "
 
-@profile_sub("build_code_paragraph")
-def build_code_paragraph(paragraph, page_theme, body_width, selection, actions):
+@profile_sub("code_paragraph_props")
+def code_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": CodeParagraph,
-        "header": build_code_paragraph_header(
+        "header": code_paragraph_header_props(
             paragraph,
-            page_theme
+            page_theme,
+            body_width
         ),
-        "body": build_code_paragraph_body(
+        "body": code_paragraph_body_props(
             paragraph,
-            page_theme
+            page_theme,
+            body_width
         ),
-        "body_width": body_width,
     }
 
-def build_code_paragraph_header(paragraph, page_theme):
+def code_paragraph_header_props(paragraph, page_theme, body_width):
     return {
         "background": page_theme["code"]["header_background"],
         "margin": page_theme["code"]["margin"],
-        "text_props": build_code_path_props(
+        "text_props": dict(code_paragraph_header_path_props(
             paragraph["filepath"],
             paragraph["chunkpath"],
             page_theme["code_font"]
-        ),
+        ), max_width=body_width-2*page_theme["code"]["margin"]),
     }
 
-def build_code_path_props(filepath, chunkpath, font):
+def code_paragraph_header_path_props(filepath, chunkpath, font):
     builder = TextPropsBuilder(**font)
     for index, x in enumerate(filepath):
         if index > 0:
@@ -723,10 +728,10 @@ def build_code_path_props(filepath, chunkpath, font):
         builder.text(x)
     return builder.get()
 
-def build_code_paragraph_body(paragraph, page_theme):
+def code_paragraph_body_props(paragraph, page_theme, body_width):
     builder = TextPropsBuilder(**page_theme["code_font"])
     for fragment in apply_token_styles(
-        build_code_body_fragments(
+        code_body_fragments_props(
             paragraph["fragments"],
             code_pygments_lexer(
                 paragraph.get("language", ""),
@@ -739,7 +744,10 @@ def build_code_paragraph_body(paragraph, page_theme):
     return {
         "background": page_theme["code"]["body_background"],
         "margin": page_theme["code"]["margin"],
-        "text_props": builder.get(),
+        "text_props": dict(
+            builder.get(),
+            max_width=body_width-2*page_theme["code"]["margin"]
+        ),
     }
 
 @profile_sub("apply_token_styles")
@@ -767,7 +775,7 @@ def build_style_dict(theme_style):
         styles[string_to_tokentype(name)] = value
     return styles
 
-def build_code_body_fragments(fragments, pygments_lexer):
+def code_body_fragments_props(fragments, pygments_lexer):
     code_chunk = CodeChunk()
     for fragment in fragments:
         if fragment["type"] == "code":
@@ -797,8 +805,8 @@ def code_pygments_lexer(language, filename):
     except:
         return pygments.lexers.TextLexer(stripnl=False)
 
-@profile_sub("build_image_paragraph")
-def build_image_paragraph(paragraph, page_theme, body_width, selection, actions):
+@profile_sub("image_paragraph_props")
+def image_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     def save(new_text_fragments, new_selection):
         actions["edit_paragraph"](
             paragraph["id"],
@@ -809,28 +817,34 @@ def build_image_paragraph(paragraph, page_theme, body_width, selection, actions)
         )
     return {
         "widget": ImageParagraph,
-        "base64_image": paragraph.get("image_base64", None),
-        "body_width": body_width,
-        "indent": page_theme["indent_size"],
-        "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph["fragments"],
-            paragraph["meta"],
-            selection,
-            page_theme,
-            actions,
-            save,
-            align="center",
-            max_width=body_width-2*page_theme["indent_size"],
-        ),
+        "image": {
+            "base64_image": paragraph.get("image_base64", None),
+            "width": body_width,
+        },
+        "image_text": {
+            "indent": page_theme["indent_size"],
+            "text_edit_props": text_fragments_to_text_edit_props(
+                paragraph["fragments"],
+                paragraph["meta"],
+                selection,
+                page_theme,
+                actions,
+                save,
+                align="center",
+                max_width=body_width-2*page_theme["indent_size"],
+            ),
+        },
     }
 
-def build_unknown_paragraph(paragraph, page_theme, body_width, selection, actions):
+def unknown_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": UnknownParagraph,
-        "text_props": TextPropsBuilder(**page_theme["code_font"]).text(
-            "Unknown paragraph type '{}'.".format(paragraph["type"])
-        ).get(),
-        "body_width": body_width,
+        "text_props": dict(
+            TextPropsBuilder(**page_theme["code_font"]).text(
+                "Unknown paragraph type '{}'.".format(paragraph["type"])
+            ).get(),
+            max_width=body_width
+        ),
     }
 
 def text_fragments_to_text_edit_props(fragments, meta, selection, page_theme, actions, save, align="left", **kwargs):
@@ -2098,7 +2112,7 @@ class TableOfContents(Panel):
             handlers = {}
             props['label'] = 'unhoist'
             handlers['button'] = lambda event: self.prop(['actions', 'set_hoisted_page'])(None)
-            sizer["border"] = add(1, self.prop(['row_margin']))
+            sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.ALL
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Button, props, sizer, handlers, name)
@@ -2134,7 +2148,6 @@ class TableOfContentsScrollArea(Scroll):
             handlers = {}
             name = 'rows'
             props.update(loopvar)
-            props.update(self.prop(['row_extra']))
             props['__reuse'] = loopvar['id']
             props['__cache'] = True
             sizer["flag"] |= wx.EXPAND
@@ -2208,8 +2221,8 @@ class TableOfContentsScrollArea(Scroll):
 
     def _calculate_indent(self, level):
         return (
-            (2 * self.prop(["row_extra", "row_margin"])) +
-            (level + 1) * self.prop(["row_extra", "indent_size"])
+            (2 * self.prop(["row_margin"])) +
+            (level + 1) * self.prop(["indent_size"])
         )
 
 TableOfContentsDropPoint = namedtuple("TableOfContentsDropPoint", [
@@ -2235,7 +2248,7 @@ class TableOfContentsRow(Panel):
         name = None
         handlers = {}
         name = 'title'
-        props.update(self.prop([]))
+        props.update(self.prop(['title']))
         handlers['click'] = lambda event: self.prop(['actions', 'open_page'])(self.prop(['id']))
         handlers['drag'] = lambda event: self._on_drag(event)
         handlers['right_click'] = lambda event: self._on_right_click(event)
@@ -2247,12 +2260,7 @@ class TableOfContentsRow(Panel):
         name = None
         handlers = {}
         name = 'drop_line'
-        props['indent'] = 0
-        props['active'] = False
-        props['valid'] = True
-        props['thickness'] = self.prop(['divider_thickness'])
-        props['color'] = self.prop(['dragdrop_color'])
-        props['invalid_color'] = self.prop(['dragdrop_invalid_color'])
+        props.update(self.prop(['drop_line']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TableOfContentsDropLine, props, sizer, handlers, name)
 
@@ -2360,7 +2368,6 @@ class TableOfContentsDropLine(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['min_size'] = makeTuple(-1, self.prop(['thickness']))
         props['background'] = self._get_color(self.prop(['active']), self.prop(['valid']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
@@ -2405,18 +2412,14 @@ class Workspace(HScroll):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['min_size'] = makeTuple(self.prop(['column_width']), -1)
-            props['column'] = loopvar
-            props['workspace_margin'] = self.prop(['margin'])
-            props['actions'] = self.prop(['actions'])
+            props.update(loopvar)
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Column, props, sizer, handlers, name)
             props = {}
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['cursor'] = 'size_horizontal'
-            props['min_size'] = makeTuple(self.prop(['margin']), -1)
+            props.update(self.prop(['divider_panel']))
             handlers['drag'] = lambda event: self._on_divider_drag(event)
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Panel, props, sizer, handlers, name)
@@ -2444,17 +2447,17 @@ class Column(VScroll):
 
     def _create_widgets(self):
         pass
-        self._create_space(self.prop(['workspace_margin']))
+        self._create_space(self.prop(['margin']))
         def loop_fn(loopvar):
             pass
             props = {}
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['page'] = loopvar
+            props.update(loopvar)
             sizer["flag"] |= wx.EXPAND
             self._create_widget(Page, props, sizer, handlers, name)
-            self._create_space(self.prop(['workspace_margin']))
+            self._create_space(self.prop(['margin']))
         loop_options = {}
         with self._loop(**loop_options):
             for loopvar in self.prop(['column']):
@@ -2475,7 +2478,7 @@ class Page(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['page'] = self.prop(['page'])
+        props.update(self.prop([]))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageTopRow, props, sizer, handlers, name)
@@ -2483,7 +2486,7 @@ class Page(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page', 'border']))
+        props.update(self.prop(['border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageBottomBorder, props, sizer, handlers, name)
 
@@ -2502,7 +2505,7 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page']))
+        props.update(self.prop(['body']))
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(PageBody, props, sizer, handlers, name)
@@ -2510,7 +2513,7 @@ class PageTopRow(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props.update(self.prop(['page', 'border']))
+        props.update(self.prop(['border']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(PageRightBorder, props, sizer, handlers, name)
 
@@ -2719,8 +2722,6 @@ class ListParagraph(Panel):
             name = None
             handlers = {}
             props.update(loopvar)
-            props['indent'] = self.prop(['indent'])
-            props['body_width'] = self.prop(['body_width'])
             sizer["flag"] |= wx.EXPAND
             self._create_widget(ListRow, props, sizer, handlers, name)
         loop_options = {}
@@ -2770,7 +2771,6 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['header']))
-        props['body_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(CodeParagraphHeader, props, sizer, handlers, name)
         props = {}
@@ -2778,7 +2778,6 @@ class CodeParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['body']))
-        props['body_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(CodeParagraphBody, props, sizer, handlers, name)
 
@@ -2798,7 +2797,6 @@ class CodeParagraphHeader(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
@@ -2820,7 +2818,6 @@ class CodeParagraphBody(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['body_width']), mul(2, self.prop(['margin'])))
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
         sizer["flag"] |= wx.ALL
@@ -2841,16 +2838,14 @@ class ImageParagraph(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['base64_image'] = self.prop(['base64_image'])
-        props['width'] = self.prop(['body_width'])
+        props.update(self.prop(['image']))
         sizer["flag"] |= wx.ALIGN_CENTER
         self._create_widget(Image, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['indent'] = self.prop(['indent'])
-        props['text_edit_props'] = self.prop(['text_edit_props'])
+        props.update(self.prop(['image_text']))
         sizer["flag"] |= wx.EXPAND
         self._create_widget(ImageText, props, sizer, handlers, name)
 
@@ -2891,7 +2886,6 @@ class UnknownParagraph(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['text_props']))
-        props['max_width'] = self.prop(['body_width'])
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Text, props, sizer, handlers, name)
 
@@ -3351,6 +3345,22 @@ class Document(Immutable):
             },
         })
         self._build_page_index()
+        self.actions = {
+            "can_move_page": self.can_move_page,
+            "edit_page": self.edit_page,
+            "edit_paragraph": self.edit_paragraph,
+            "hide_selection": self.hide_selection,
+            "move_page": self.move_page,
+            "open_page": self.open_page,
+            "rotate_theme": self.rotate,
+            "set_dragged_page": self.set_dragged_page,
+            "set_hoisted_page": self.set_hoisted_page,
+            "set_page_body_width": self.set_page_body_width,
+            "set_selection": self.set_selection,
+            "set_toc_width": self.set_toc_width,
+            "show_selection": self.show_selection,
+            "toggle_collapsed": self.toggle_collapsed,
+        }
 
     def _build_page_index(self):
         def build(page, path, parent, index):

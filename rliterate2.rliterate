@@ -299,7 +299,202 @@
 "title":"Files"
 },
 {
+"children":[
+{
 "children":[],
+"id":"742ebf5ff2d8457ab8c01b3721052425",
+"paragraphs":[
+{
+"fragments":[
+{
+"text":"The architecture of the GUI language is to have a top level widget and a function that generates props for it like this:",
+"type":"text"
+}
+],
+"id":"9a4982af5a8d4ef3accde8797477c790",
+"type":"text"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"frame MainFrame %layout_rows {\n    ...\n}\n",
+"type":"code"
+}
+],
+"id":"a24132fe5ce74f3ba9b961feed15fcbd",
+"language":"rlgui",
+"type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"def main_frame_props(...):\n    return {\n        ...\n    }\n",
+"type":"code"
+}
+],
+"id":"a1f1d48bf4ac4ace9a0d98f28284dc27",
+"language":"python",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Let's say that the main frame has two sub components. It would probably look like this:",
+"type":"text"
+}
+],
+"id":"3490220b22cf430e94a12b7775340d51",
+"type":"text"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        %align[EXPAND]\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"99cfc6c847294a54bec298e2d6186c3b",
+"language":"rlgui",
+"type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"def main_frame_props(...):\n    return {\n        \"foo\": foo_props(...),\n        \"bar\": bar_props(...),\n    }\n\ndef foo_props(...):\n    return {\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        ...\n    }\n",
+"type":"code"
+}
+],
+"id":"c432a76aa18d4cfa919cceb2714ee526",
+"language":"python",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Now let's say that there is a common prop in foo and bar called baz. Should ",
+"type":"text"
+},
+{
+"text":"foo_props",
+"type":"code"
+},
+{
+"text":" and ",
+"type":"text"
+},
+{
+"text":"bar_props",
+"type":"code"
+},
+{
+"text":" change to the following?",
+"type":"text"
+}
+],
+"id":"133013688d2546fe9de66745a11785eb",
+"type":"text"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"def foo_props(...):\n    return {\n        \"baz\": ...,\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        \"baz\": ...,\n        ...\n    }\n",
+"type":"code"
+}
+],
+"id":"39e907e10e2944019493f7c557aa769e",
+"language":"python",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Or should the common prop be promoted to a main frame prop and passed in the GUI code like this?",
+"type":"text"
+}
+],
+"id":"7df0a8dd582d44938bb4dd077df41a03",
+"type":"text"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        baz = #baz\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        baz = #baz\n        %align[EXPAND]\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"8b54fbc7ef854c06b4d24b00d481ca5f",
+"language":"rlgui",
+"type":"code"
+},
+{
+"chunkpath":[],
+"filepath":[],
+"fragments":[
+{
+"text":"def main_frame_props(...):\n    return {\n        \"foo\": foo_props(...),\n        \"bar\": bar_props(...),\n        \"baz\": ...,\n    }\n\ndef foo_props(...):\n    return {\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        ...\n    }\n",
+"type":"code"
+}
+],
+"id":"71b9df5be2dc4cf69cdd20f668aac305",
+"language":"python",
+"type":"code"
+},
+{
+"fragments":[
+{
+"text":"Both ways are supported by the GUI language.",
+"type":"text"
+}
+],
+"id":"f4b02b2202824334b950b36173094192",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"From a performance perspective, it probably doesn't matter too much. If the common prop is used deep in the widget hierarchy, it needs to be passed at each level if it's passed in the GUI code. If it's inserted in the prop function it can be inserted just where it needs to be.",
+"type":"text"
+}
+],
+"id":"d9ec65ce72d04d3da0e2233225182d83",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"The pattern with one prop function per widget is quite straight forward. If that is the way to go, perhaps the GUI language can be restricted to only allow that. Not sure if that is a good idea. But I like this pattern, and I will try to follow it.",
+"type":"text"
+}
+],
+"id":"6964eed9fc474e5da46731f989191fb8",
+"type":"text"
+},
+{
+"fragments":[
+{
+"text":"The problem I encountered with this pattern was that when the column width changed, props for code had to be generated again and code had to be highlighted again. That shouldn't be necessary. But because caching only happened at the paragraph level, and the column width is part of the arguments to paragraph prop, it resulted in a cache miss. The solution is probably to cache deeper down as well.",
+"type":"text"
+}
+],
+"id":"fda809ad4ebe4f93822f394b59ab2224",
+"type":"text"
+}
+],
+"title":"Pattern for passing props"
+}
+],
 "id":"0bd5a7e9be044e859bb82eef4ba1e452",
 "paragraphs":[
 {
@@ -454,7 +649,7 @@
 ],
 "fragments":[
 {
-"text":"@cache()\ndef toolbar_props(toolbar_theme, actions):\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"actions\": actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -498,7 +693,7 @@
 ],
 "fragments":[
 {
-"text":"@cache()\ndef toolbar_divider_props(toolbar_divider_theme):\n    return {\n        \"background\": toolbar_divider_theme[\"color\"],\n        \"min_size\": (\n            -1,\n            toolbar_divider_theme[\"thickness\"]\n        ),\n    }\n",
+"text":"def toolbar_divider_props(document):\n    toolbar_divider_theme = document.get([\"theme\", \"toolbar_divider\"])\n    return {\n        \"background\": toolbar_divider_theme[\"color\"],\n        \"min_size\": (\n            -1,\n            toolbar_divider_theme[\"thickness\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -569,7 +764,7 @@
 ],
 "fragments":[
 {
-"text":"def main_area_props(document, actions):\n    return {\n        \"toc\": table_of_contents_props(\n            document,\n            actions\n        ),\n        \"toc_divider\": toc_divider_props(\n            document.get([\"theme\", \"toc_divider\"])\n        ),\n        \"workspace\": workspace_props(\n            document\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def main_area_props(document):\n    return {\n        \"actions\": document.actions,\n        \"toc\": toc_props(\n            document\n        ),\n        \"toc_divider\": toc_divider_props(\n            document\n        ),\n        \"workspace\": workspace_props(\n            document\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -594,7 +789,7 @@
 ],
 "fragments":[
 {
-"text":"scroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=#rows_cache_limit) {\n        TableOfContentsRow[rows] {\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        }\n    }\n}\n\n",
+"text":"scroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=#rows_cache_limit) {\n        TableOfContentsRow[rows] {\n            $\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -624,7 +819,7 @@
 ],
 "fragments":[
 {
-"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"actions\", \"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self.prop([\"actions\", \"move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_extra\", \"row_margin\"])) +\n        (level + 1) * self.prop([\"row_extra\", \"indent_size\"])\n    )\n",
+"text":"_last_drop_row = None\n\ndef on_drag_drop_over(self, x, y):\n    self._hide()\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self._last_drop_row = self._get_drop_row(drop_point)\n    if self._last_drop_row is not None:\n        valid = self.prop([\"actions\", \"can_move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n        self._last_drop_row.show_drop_line(\n            self._calculate_indent(drop_point.level),\n            valid=valid\n        )\n        return valid\n    return False\n\ndef on_drag_drop_leave(self):\n    self._hide()\n\ndef on_drag_drop_data(self, x, y, page_info):\n    drop_point = self._get_drop_point(x, y)\n    if drop_point is not None:\n        self.prop([\"actions\", \"move_page\"])(\n            self.prop([\"dragged_page\"]),\n            drop_point.target_page,\n            drop_point.target_index\n        )\n\ndef _hide(self):\n    if self._last_drop_row is not None:\n        self._last_drop_row.hide_drop_line()\n\ndef _get_drop_point(self, x, y):\n    lines = defaultdict(list)\n    for drop_point in self.prop([\"drop_points\"]):\n        lines[\n            self._y_distance_to(\n                self._get_drop_row(drop_point),\n                y\n            )\n        ].append(drop_point)\n    if lines:\n        columns = {}\n        for drop_point in lines[min(lines.keys())]:\n            columns[self._x_distance_to(drop_point, x)] = drop_point\n        return columns[min(columns.keys())]\n\ndef _get_drop_row(self, drop_point):\n    return self.get_widget(\"rows\", drop_point.row_index)\n\ndef _y_distance_to(self, row, y):\n    span_y_center = row.get_y() + row.get_drop_line_y_offset()\n    return int(abs(span_y_center - y))\n\ndef _x_distance_to(self, drop_point, x):\n    return int(abs(self._calculate_indent(drop_point.level + 1.5) - x))\n\ndef _calculate_indent(self, level):\n    return (\n        (2 * self.prop([\"row_margin\"])) +\n        (level + 1) * self.prop([\"indent_size\"])\n    )\n",
 "type":"code"
 }
 ],
@@ -642,7 +837,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_scroll_area_props(document):\n    props = {\n        \"rows_cache_limit\": document.count_pages() - 1,\n        \"row_extra\": table_of_contents_row_extra_props(\n            document\n        ),\n        \"dragged_page\": document.get(\n            [\"toc\", \"dragged_page\"]\n        ),\n        \"actions\": {\n            \"can_move_page\": document.can_move_page,\n            \"move_page\": document.move_page,\n        },\n    }\n    props.update(generate_rows_and_drop_points(\n        document,\n        document.get([\"toc\", \"collapsed\"]),\n        document.get([\"toc\", \"hoisted_page\"]),\n        document.get([\"toc\", \"dragged_page\"]),\n        document.get_open_pages(),\n        document.get([\"theme\", \"toc\", \"foreground\"]),\n        document.get([\"theme\", \"dragdrop_invalid_color\"]),\n        document.get([\"theme\", \"toc\", \"placeholder_color\"]),\n        document.get([\"theme\", \"toc\", \"font\"]),\n    ))\n    return props\n",
+"text":"def toc_scroll_area_props(document):\n    return dict(generate_rows_and_drop_points(document), **{\n        \"rows_cache_limit\": document.count_pages() - 1,\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": document.get(\n            [\"theme\", \"toc\", \"indent_size\"]\n        ),\n        \"dragged_page\": document.get(\n            [\"toc\", \"dragged_page\"]\n        ),\n        \"actions\": document.actions,\n    })\n",
 "type":"code"
 }
 ],
@@ -658,11 +853,11 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_row_extra_props(document):\n    return {\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": document.get(\n            [\"theme\", \"toc\", \"indent_size\"]\n        ),\n        \"foreground\": document.get(\n            [\"theme\", \"toc\", \"foreground\"]\n        ),\n        \"hover_background\": document.get(\n            [\"theme\", \"toc\", \"hover_background\"]\n        ),\n        \"divider_thickness\": document.get(\n            [\"theme\", \"toc\", \"divider_thickness\"]\n        ),\n        \"dragdrop_color\": document.get(\n            [\"theme\", \"dragdrop_color\"]\n        ),\n        \"dragdrop_invalid_color\": document.get(\n            [\"theme\", \"dragdrop_invalid_color\"]\n        ),\n        \"actions\": {\n            \"set_hoisted_page\": document.set_hoisted_page,\n            \"set_dragged_page\": document.set_dragged_page,\n            \"toggle_collapsed\": document.toggle_collapsed,\n            \"open_page\": document.open_page,\n        },\n    }\n",
+"text":"def generate_rows_and_drop_points(document):\n    try:\n        root_page = document.get_page(\n            document.get([\"toc\", \"hoisted_page\"])\n        )\n    except PageNotFound:\n        root_page = document.get_page(None)\n    return generate_rows_and_drop_points_page(\n        root_page,\n        toc_row_common_props(document),\n        document.get([\"toc\", \"collapsed\"]),\n        document.get([\"toc\", \"dragged_page\"]),\n        document.get_open_pages(),\n        0,\n        False,\n        0\n    )\n",
 "type":"code"
 }
 ],
-"id":"979a1f19c35646fa87675dee9bd52ffd",
+"id":"ffa2e88613e34a1b98bcc17a7e7da68d",
 "type":"code"
 },
 {
@@ -674,11 +869,11 @@
 ],
 "fragments":[
 {
-"text":"def generate_rows_and_drop_points(\n    document,\n    collapsed,\n    hoisted_page,\n    dragged_page,\n    open_pages,\n    foreground,\n    dragdrop_invalid_color,\n    placeholder_color,\n    font\n):\n    try:\n        root_page = document.get_page(hoisted_page)\n    except PageNotFound:\n        root_page = document.get_page(None)\n    return _generate_rows_and_drop_points_page(\n        root_page,\n        collapsed,\n        dragged_page,\n        open_pages,\n        foreground,\n        dragdrop_invalid_color,\n        placeholder_color,\n        font,\n        0,\n        False,\n        0\n    )\n\n@cache(limit=1000, key_path=[0, \"id\"])\ndef _generate_rows_and_drop_points_page(\n    page,\n    collapsed,\n    dragged_page,\n    open_pages,\n    foreground,\n    dragdrop_invalid_color,\n    placeholder_color,\n    font,\n    level,\n    dragged,\n    row_offset\n):\n    rows = []\n    drop_points = []\n    is_collapsed = page[\"id\"] in collapsed\n    num_children = len(page[\"children\"])\n    dragged = dragged or page[\"id\"] == dragged_page\n    if page[\"title\"]:\n        text = page[\"title\"]\n        color = dragdrop_invalid_color if dragged else foreground\n    else:\n        text = \"Enter title...\"\n        color = placeholder_color\n    rows.append({\n        \"id\": page[\"id\"],\n        \"text_props\": TextPropsBuilder(**dict(font,\n            bold=page[\"id\"] in open_pages,\n            color=color\n        )).text(text).get(),\n        \"level\": level,\n        \"has_children\": num_children > 0,\n        \"collapsed\": is_collapsed,\n        \"dragged\": dragged,\n    })\n    if is_collapsed:\n        target_index = num_children\n    else:\n        target_index = 0\n    drop_points.append(TableOfContentsDropPoint(\n        row_index=row_offset+len(rows)-1,\n        target_index=target_index,\n        target_page=page[\"id\"],\n        level=level+1\n    ))\n    if not is_collapsed:\n        for target_index, child in enumerate(page[\"children\"]):\n            sub_result = _generate_rows_and_drop_points_page(\n                child,\n                collapsed,\n                dragged_page,\n                open_pages,\n                foreground,\n                dragdrop_invalid_color,\n                placeholder_color,\n                font,\n                level+1,\n                dragged,\n                row_offset+len(rows)\n            )\n            rows.extend(sub_result[\"rows\"])\n            drop_points.extend(sub_result[\"drop_points\"])\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=row_offset+len(rows)-1,\n                target_index=target_index+1,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
+"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef generate_rows_and_drop_points_page(\n    page,\n    row_common_props,\n    collapsed,\n    dragged_page,\n    open_pages,\n    level,\n    is_dragged,\n    row_offset\n):\n    rows = []\n    drop_points = []\n    is_collapsed = page[\"id\"] in collapsed\n    is_dragged = is_dragged or page[\"id\"] == dragged_page\n    rows.append(toc_row_props(\n        row_common_props,\n        page,\n        level,\n        is_dragged,\n        is_collapsed,\n        open_pages\n    ))\n    if is_collapsed:\n        target_index = len(page[\"children\"])\n    else:\n        target_index = 0\n    drop_points.append(TableOfContentsDropPoint(\n        row_index=row_offset+len(rows)-1,\n        target_index=target_index,\n        target_page=page[\"id\"],\n        level=level+1\n    ))\n    if not is_collapsed:\n        for target_index, child in enumerate(page[\"children\"]):\n            sub_result = generate_rows_and_drop_points_page(\n                child,\n                row_common_props,\n                collapsed,\n                dragged_page,\n                open_pages,\n                level+1,\n                is_dragged,\n                row_offset+len(rows)\n            )\n            rows.extend(sub_result[\"rows\"])\n            drop_points.extend(sub_result[\"drop_points\"])\n            drop_points.append(TableOfContentsDropPoint(\n                row_index=row_offset+len(rows)-1,\n                target_index=target_index+1,\n                target_page=page[\"id\"],\n                level=level+1\n            ))\n    return {\n        \"rows\": rows,\n        \"drop_points\": drop_points,\n    }\n",
 "type":"code"
 }
 ],
-"id":"ffa2e88613e34a1b98bcc17a7e7da68d",
+"id":"42f845b00ef240c0a90b1fd47ff47496",
 "type":"code"
 },
 {
@@ -726,6 +921,22 @@
 "rlgui/rlgui.py"
 ],
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toc_row_title_props(\n    row_common_props,\n    page,\n    level,\n    is_dragged,\n    is_collapsed,\n    open_pages\n):\n    if page[\"title\"]:\n        text = page[\"title\"]\n        if is_dragged:\n            color = row_common_props[\"dragdrop_invalid_color\"]\n        else:\n            color = row_common_props[\"foreground\"]\n    else:\n        text = \"Enter title...\"\n        color = row_common_props[\"placeholder_color\"]\n    return dict(row_common_props, **{\n        \"id\": page[\"id\"],\n        \"text_props\": TextPropsBuilder(**dict(row_common_props[\"font\"],\n            bold=page[\"id\"] in open_pages,\n            color=color\n        )).text(text).get(),\n        \"level\": level,\n        \"has_children\": bool(page[\"children\"]),\n        \"collapsed\": is_collapsed,\n        \"dragged\": is_dragged,\n    })\n",
+"type":"code"
+}
+],
+"id":"abce012f84704532b13d24df6587cf94",
+"type":"code"
 }
 ],
 "title":"Title"
@@ -743,7 +954,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel {\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #valid)\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel {\n        background = self._get_color(#active #valid)\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -781,6 +992,22 @@
 "language":"",
 "post_process":[],
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toc_row_drop_line_props(row_common_props):\n    return {\n        \"indent\": 0,\n        \"active\": False,\n        \"valid\": True,\n        \"min_size\": (-1, row_common_props[\"divider_thickness\"]),\n        \"color\": row_common_props[\"dragdrop_color\"],\n        \"invalid_color\": row_common_props[\"dragdrop_invalid_color\"],\n    }\n",
+"type":"code"
+}
+],
+"id":"fda3e97057684cafb86e8a67025d6e85",
+"type":"code"
 }
 ],
 "title":"Drop line"
@@ -797,7 +1024,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title] {\n        #\n        @click       = #actions.open_page(#id)\n        @drag        = self._on_drag(event)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    }\n    TableOfContentsDropLine[drop_line] {\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    }\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title] {\n        #title\n        @click       = #actions.open_page(#id)\n        @drag        = self._on_drag(event)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    }\n    TableOfContentsDropLine[drop_line] {\n        #drop_line\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -930,6 +1157,38 @@
 "language":"",
 "post_process":[],
 "type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toc_row_common_props(document):\n    return {\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"indent_size\": document.get(\n            [\"theme\", \"toc\", \"indent_size\"]\n        ),\n        \"foreground\": document.get(\n            [\"theme\", \"toc\", \"foreground\"]\n        ),\n        \"hover_background\": document.get(\n            [\"theme\", \"toc\", \"hover_background\"]\n        ),\n        \"divider_thickness\": document.get(\n            [\"theme\", \"toc\", \"divider_thickness\"]\n        ),\n        \"dragdrop_color\": document.get(\n            [\"theme\", \"dragdrop_color\"]\n        ),\n        \"dragdrop_invalid_color\": document.get(\n            [\"theme\", \"dragdrop_invalid_color\"]\n        ),\n        \"placeholder_color\": document.get(\n            [\"theme\", \"toc\", \"placeholder_color\"]\n        ),\n        \"font\": document.get(\n            [\"theme\", \"toc\", \"font\"]\n        ),\n        \"actions\": document.actions,\n    }\n",
+"type":"code"
+}
+],
+"id":"848d888f80004132b65e8076e16da995",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def toc_row_props(\n    row_common_props,\n    page,\n    level,\n    is_dragged,\n    is_collapsed,\n    open_pages\n):\n    return {\n        \"id\": page[\"id\"],\n        \"hover_background\": row_common_props[\"hover_background\"],\n        \"actions\": row_common_props[\"actions\"],\n        \"level\": level,\n        \"title\": toc_row_title_props(\n            row_common_props,\n            page,\n            level,\n            is_dragged,\n            is_collapsed,\n            open_pages\n        ),\n        \"drop_line\": toc_row_drop_line_props(\n            row_common_props\n        ),\n    }\n",
+"type":"code"
+}
+],
+"id":"9c5f95fdd10f42c2a73c0f0bffff8552",
+"type":"code"
 }
 ],
 "title":"Row"
@@ -946,7 +1205,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button {\n            label   = \"unhoist\"\n            @button = #actions.set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        }\n    }\n    TableOfContentsScrollArea {\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button {\n            label   = \"unhoist\"\n            @button = #actions.set_hoisted_page(None)\n            %margin[#margin,ALL]\n            %align[EXPAND]\n        }\n    }\n    TableOfContentsScrollArea {\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -967,7 +1226,7 @@
 ],
 "fragments":[
 {
-"text":"def table_of_contents_props(document, actions):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, document.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            document.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"row_margin\": document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"scroll_area\": table_of_contents_scroll_area_props(\n            document\n        ),\n        \"actions\": actions,\n    }\n",
+"text":"def toc_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"toc\", \"background\"]\n        ),\n        \"min_size\": (\n            max(50, document.get([\"toc\", \"width\"])),\n            -1\n        ),\n        \"has_valid_hoisted_page\": is_valid_hoisted_page(\n            document,\n            document.get([\"toc\", \"hoisted_page\"]),\n        ),\n        \"margin\": 1 + document.get(\n            [\"theme\", \"toc\", \"row_margin\"]\n        ),\n        \"actions\": document.actions,\n        \"scroll_area\": toc_scroll_area_props(\n            document\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1027,7 +1286,7 @@
 ],
 "fragments":[
 {
-"text":"@cache()\ndef toc_divider_props(toc_divider_theme):\n    return {\n        \"background\": toc_divider_theme[\"color\"],\n        \"min_size\": (\n            toc_divider_theme[\"thickness\"],\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
+"text":"def toc_divider_props(document):\n    toc_divider_theme = document.get([\"theme\", \"toc_divider\"])\n    return {\n        \"background\": toc_divider_theme[\"color\"],\n        \"min_size\": (\n            toc_divider_theme[\"thickness\"],\n            -1\n        ),\n        \"cursor\": \"size_horizontal\",\n    }\n",
 "type":"code"
 }
 ],
@@ -1052,7 +1311,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page {\n            page = $\n            %align[EXPAND]\n        }\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#margin]\n    loop (#column) {\n        Page {\n            $\n            %align[EXPAND]\n        }\n        %space[#margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1073,7 +1332,7 @@
 ],
 "fragments":[
 {
-"text":"def build_column(document, column, page_body_width, page_theme, selection, actions):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(build_page(\n                document,\n                document.get_page(page_id),\n                page_body_width,\n                page_theme,\n                selection.add(\"page\", index, page_id),\n                actions\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return column_prop\n",
+"text":"def column_props(document, column, selection):\n    column_prop = []\n    index = 0\n    for page_id in column:\n        try:\n            column_prop.append(page_props(\n                document,\n                document.get_page(page_id),\n                selection.add(\"page\", index, page_id)\n            ))\n            index += 1\n        except PageNotFound:\n            pass\n    return {\n        \"min_size\": (\n            document.get([\"workspace\", \"page_body_width\"]) +\n            2*document.get([\"theme\", \"page\", \"margin\"]) +\n            document.get([\"theme\", \"page\", \"border\", \"size\"]),\n            -1\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"column\": column_prop,\n    }\n",
 "type":"code"
 }
 ],
@@ -1098,7 +1357,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow {\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageBottomBorder {\n        #page.border\n        %align[EXPAND]\n    }\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow {\n        #\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageBottomBorder {\n        #border\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1119,7 +1378,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody {\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageRightBorder {\n        #page.border\n        %align[EXPAND]\n    }\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody {\n        #body\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageRightBorder {\n        #border\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1203,7 +1462,7 @@
 ],
 "fragments":[
 {
-"text":"def build_page(document, page, page_body_width, page_theme, selection, actions):\n    return {\n        \"id\": page[\"id\"],\n        \"title\": build_title(\n            page,\n            page_body_width,\n            page_theme,\n            selection.add(\"title\"),\n            actions\n        ),\n        \"paragraphs\": build_paragraphs(\n            document,\n            page[\"paragraphs\"],\n            page_theme,\n            page_body_width,\n            selection.add(\"paragraphs\"),\n            actions\n        ),\n        \"border\": page_theme[\"border\"],\n        \"background\": page_theme[\"background\"],\n        \"margin\": page_theme[\"margin\"],\n    }\n",
+"text":"def page_props(document, page, selection):\n    page_theme = document.get([\"theme\", \"page\"])\n    return {\n        \"body\": {\n            \"id\": page[\"id\"],\n            \"title\": page_title_props(\n                page,\n                document.get([\"workspace\", \"page_body_width\"]),\n                page_theme,\n                selection.add(\"title\"),\n                document.actions\n            ),\n            \"paragraphs\": paragraphs_props(\n                document,\n                page[\"paragraphs\"],\n                selection.add(\"paragraphs\")\n            ),\n            \"background\": page_theme[\"background\"],\n            \"margin\": page_theme[\"margin\"],\n        },\n        \"border\": page_theme[\"border\"],\n    }\n",
 "type":"code"
 }
 ],
@@ -1249,7 +1508,7 @@
 ],
 "fragments":[
 {
-"text":"def build_title(page, page_body_width, page_theme, selection, actions):\n    input_handler = TitleInputHandler(page, page_theme, selection, actions)\n    return {\n        \"text_edit_props\": {\n            \"text_props\": dict(\n                input_handler.text_props,\n                break_at_word=True,\n                line_height=page_theme[\"line_height\"]\n            ),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n            \"input_handler\": input_handler,\n            \"actions\": actions,\n        },\n    }\n",
+"text":"@cache()\ndef page_title_props(page, page_body_width, page_theme, selection, actions):\n    input_handler = TitleInputHandler(page, page_theme, selection, actions)\n    return {\n        \"text_edit_props\": {\n            \"text_props\": dict(\n                input_handler.text_props,\n                break_at_word=True,\n                line_height=page_theme[\"line_height\"]\n            ),\n            \"max_width\": page_body_width,\n            \"selection\": selection,\n            \"selection_color\": page_theme[\"selection_border\"],\n            \"input_handler\": input_handler,\n            \"actions\": actions,\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1339,7 +1598,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_text_paragraph\")\ndef build_text_paragraph(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": TextParagraph,\n        \"text_edit_props\": ",
+"text":"@profile_sub(\"text_paragraph_props\")\ndef text_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": TextParagraph,\n        \"text_edit_props\": ",
 "type":"code"
 },
 {
@@ -1393,7 +1652,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_quote_paragraph\")\ndef build_quote_paragraph(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_edit_props\": ",
+"text":"@profile_sub(\"quote_paragraph_props\")\ndef quote_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": QuoteParagraph,\n        \"text_edit_props\": ",
 "type":"code"
 },
 {
@@ -1426,7 +1685,7 @@
 ],
 "fragments":[
 {
-"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        ListRow {\n            $\n            indent     = #indent\n            body_width = #body_width\n            %align[EXPAND]\n        }\n    }\n}\n",
+"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        ListRow {\n            $\n            %align[EXPAND]\n        }\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1468,7 +1727,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_list_paragraph\")\ndef build_list_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": build_list_item_rows(\n            paragraph,\n            paragraph[\"children\"],\n            paragraph[\"child_type\"],\n            page_theme,\n            body_width,\n            actions,\n            selection\n        ),\n        \"indent\": page_theme[\"indent_size\"],\n        \"body_width\": body_width,\n    }\n",
+"text":"@profile_sub(\"list_paragraph_props\")\ndef list_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": ListParagraph,\n        \"rows\": list_item_rows_props(\n            paragraph,\n            paragraph[\"children\"],\n            paragraph[\"child_type\"],\n            page_theme,\n            body_width,\n            actions,\n            selection\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1486,7 +1745,7 @@
 ],
 "fragments":[
 {
-"text":"def build_list_item_rows(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):\n    rows = []\n    for index, child in enumerate(children):\n        rows.append(build_list_item_row(\n            paragraph,\n            child_type,\n            index,\n            child,\n            page_theme,\n            body_width,\n            actions,\n            selection.add(index, \"fragments\"),\n            path+[index],\n            level\n        ))\n        rows.extend(build_list_item_rows(\n            paragraph,\n            child[\"children\"],\n            child[\"child_type\"],\n            page_theme,\n            body_width,\n            actions,\n            selection.add(index),\n            path+[index, \"children\"],\n            level+1\n        ))\n    return rows\n\ndef build_list_item_row(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"children\": im_modify(\n                    paragraph[\"children\"],\n                    path+[\"fragments\"],\n                    lambda value: new_text_fragments\n                ),\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"bullet_props\": dict(\n            TextPropsBuilder(\n                **page_theme[\"text_font\"]\n            ).text(_get_bullet_text(child_type, index)).get(),\n            max_width=page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"text_edit_props\": ",
+"text":"def list_item_rows_props(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):\n    rows = []\n    for index, child in enumerate(children):\n        rows.append(list_item_row_props(\n            paragraph,\n            child_type,\n            index,\n            child,\n            page_theme,\n            body_width,\n            actions,\n            selection.add(index, \"fragments\"),\n            path+[index],\n            level\n        ))\n        rows.extend(list_item_rows_props(\n            paragraph,\n            child[\"children\"],\n            child[\"child_type\"],\n            page_theme,\n            body_width,\n            actions,\n            selection.add(index),\n            path+[index, \"children\"],\n            level+1\n        ))\n    return rows\n\ndef list_item_row_props(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"children\": im_modify(\n                    paragraph[\"children\"],\n                    path+[\"fragments\"],\n                    lambda value: new_text_fragments\n                ),\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"level\": level,\n        \"indent\": page_theme[\"indent_size\"],\n        \"bullet_props\": dict(\n            TextPropsBuilder(\n                **page_theme[\"text_font\"]\n            ).text(_get_bullet_text(child_type, index)).get(),\n            max_width=page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"text_edit_props\": ",
 "type":"code"
 },
 {
@@ -1494,7 +1753,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            child[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n        \"level\": level,\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
+"text":"(\n            child[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
 "type":"code"
 }
 ],
@@ -1521,7 +1780,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphHeader %layout_rows {\n    Text {\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
+"text":"panel CodeParagraphHeader %layout_rows {\n    Text {\n        #text_props\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1542,7 +1801,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_header(paragraph, page_theme):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": build_code_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"],\n            page_theme[\"code_font\"]\n        ),\n    }\n",
+"text":"def code_paragraph_header_props(paragraph, page_theme, body_width):\n    return {\n        \"background\": page_theme[\"code\"][\"header_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": dict(code_paragraph_header_path_props(\n            paragraph[\"filepath\"],\n            paragraph[\"chunkpath\"],\n            page_theme[\"code_font\"]\n        ), max_width=body_width-2*page_theme[\"code\"][\"margin\"]),\n    }\n",
 "type":"code"
 }
 ],
@@ -1560,7 +1819,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_path_props(filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
+"text":"def code_paragraph_header_path_props(filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1585,7 +1844,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphBody %layout_rows {\n    Text {\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
+"text":"panel CodeParagraphBody %layout_rows {\n    Text {\n        #text_props\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1606,7 +1865,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_paragraph_body(paragraph, page_theme):\n    builder = TextPropsBuilder(**page_theme[\"code_font\"])\n    for fragment in apply_token_styles(\n        build_code_body_fragments(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(\n                paragraph.get(\"language\", \"\"),\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n            )\n        ),\n        page_theme[\"token_styles\"]\n    ):\n        builder.text(**fragment)\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": builder.get(),\n    }\n",
+"text":"def code_paragraph_body_props(paragraph, page_theme, body_width):\n    builder = TextPropsBuilder(**page_theme[\"code_font\"])\n    for fragment in apply_token_styles(\n        code_body_fragments_props(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(\n                paragraph.get(\"language\", \"\"),\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n            )\n        ),\n        page_theme[\"token_styles\"]\n    ):\n        builder.text(**fragment)\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": dict(\n            builder.get(),\n            max_width=body_width-2*page_theme[\"code\"][\"margin\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1660,7 +1919,7 @@
 ],
 "fragments":[
 {
-"text":"def build_code_body_fragments(fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    return code_chunk.tokenize(pygments_lexer)\n",
+"text":"def code_body_fragments_props(fragments, pygments_lexer):\n    code_chunk = CodeChunk()\n    for fragment in fragments:\n        if fragment[\"type\"] == \"code\":\n            code_chunk.add(fragment[\"text\"])\n        elif fragment[\"type\"] == \"chunk\":\n            code_chunk.add(\n                \"{}<<{}>>\\n\".format(\n                    fragment[\"prefix\"],\n                    \"/\".join(fragment[\"path\"])\n                ),\n                {\"token_type\": TokenType.Comment.Preproc}\n            )\n    return code_chunk.tokenize(pygments_lexer)\n",
 "type":"code"
 }
 ],
@@ -1702,7 +1961,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader {\n        #header\n        body_width = #body_width\n        %align[EXPAND]\n    }\n    CodeParagraphBody {\n        #body\n        body_width = #body_width\n        %align[EXPAND]\n    }\n}\n",
+"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader {\n        #header\n        %align[EXPAND]\n    }\n    CodeParagraphBody {\n        #body\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1723,7 +1982,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_code_paragraph\")\ndef build_code_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": build_code_paragraph_header(\n            paragraph,\n            page_theme\n        ),\n        \"body\": build_code_paragraph_body(\n            paragraph,\n            page_theme\n        ),\n        \"body_width\": body_width,\n    }\n",
+"text":"@profile_sub(\"code_paragraph_props\")\ndef code_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": CodeParagraph,\n        \"header\": code_paragraph_header_props(\n            paragraph,\n            page_theme,\n            body_width\n        ),\n        \"body\": code_paragraph_body_props(\n            paragraph,\n            page_theme,\n            body_width\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1748,7 +2007,7 @@
 ],
 "fragments":[
 {
-"text":"panel ImageParagraph %layout_rows {\n    Image {\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    }\n    ImageText {\n        indent          = #indent\n        text_edit_props = #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
+"text":"panel ImageParagraph %layout_rows {\n    Image {\n        #image\n        %align[CENTER]\n    }\n    ImageText {\n        #image_text\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1790,7 +2049,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"build_image_paragraph\")\ndef build_image_paragraph(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": ImageParagraph,\n        \"base64_image\": paragraph.get(\"image_base64\", None),\n        \"body_width\": body_width,\n        \"indent\": page_theme[\"indent_size\"],\n        \"text_edit_props\": ",
+"text":"@profile_sub(\"image_paragraph_props\")\ndef image_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    def save(new_text_fragments, new_selection):\n        actions[\"edit_paragraph\"](\n            paragraph[\"id\"],\n            {\n                \"fragments\": new_text_fragments,\n            },\n            selection.create(new_selection)\n        )\n    return {\n        \"widget\": ImageParagraph,\n        \"image\": {\n            \"base64_image\": paragraph.get(\"image_base64\", None),\n            \"width\": body_width,\n        },\n        \"image_text\": {\n            \"indent\": page_theme[\"indent_size\"],\n            \"text_edit_props\": ",
 "type":"code"
 },
 {
@@ -1798,7 +2057,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            align=\"center\",\n            max_width=body_width-2*page_theme[\"indent_size\"],\n        ),\n    }\n",
+"text":"(\n                paragraph[\"fragments\"],\n                paragraph[\"meta\"],\n                selection,\n                page_theme,\n                actions,\n                save,\n                align=\"center\",\n                max_width=body_width-2*page_theme[\"indent_size\"],\n            ),\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -1823,7 +2082,7 @@
 ],
 "fragments":[
 {
-"text":"panel UnknownParagraph %layout_rows {\n    Text {\n        #text_props\n        max_width = #body_width\n        %align[EXPAND]\n    }\n}\n",
+"text":"panel UnknownParagraph %layout_rows {\n    Text {\n        #text_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1844,7 +2103,7 @@
 ],
 "fragments":[
 {
-"text":"def build_unknown_paragraph(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": TextPropsBuilder(**page_theme[\"code_font\"]).text(\n            \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n        ).get(),\n        \"body_width\": body_width,\n    }\n",
+"text":"def unknown_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": UnknownParagraph,\n        \"text_props\": dict(\n            TextPropsBuilder(**page_theme[\"code_font\"]).text(\n                \"Unknown paragraph type '{}'.\".format(paragraph[\"type\"])\n            ).get(),\n            max_width=body_width\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1868,7 +2127,7 @@
 ],
 "fragments":[
 {
-"text":"def build_paragraphs(document, paragraphs, page_theme, body_width, selection, actions):\n    return [\n        build_paragraph(\n            dict(\n                paragraph,\n                meta=build_paragraph_meta(document, paragraph)\n            ),\n            page_theme,\n            body_width,\n            selection.add(index, paragraph[\"id\"]),\n            actions\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
+"text":"def paragraphs_props(document, paragraphs, selection):\n    return [\n        paragraph_props(\n            dict(\n                paragraph,\n                meta=build_paragraph_meta(document, paragraph)\n            ),\n            document.get([\"theme\", \"page\"]),\n            document.get([\"workspace\", \"page_body_width\"]),\n            selection.add(index, paragraph[\"id\"]),\n            document.actions\n        )\n        for index, paragraph in enumerate(paragraphs)\n    ]\n",
 "type":"code"
 }
 ],
@@ -1904,7 +2163,7 @@
 ],
 "fragments":[
 {
-"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef build_paragraph(paragraph, page_theme, body_width, selection, actions):\n    BUILDERS = {\n        \"text\": build_text_paragraph,\n        \"quote\": build_quote_paragraph,\n        \"list\": build_list_paragraph,\n        \"code\": build_code_paragraph,\n        \"image\": build_image_paragraph,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        build_unknown_paragraph\n    )(paragraph, page_theme, body_width, selection, actions)\n",
+"text":"@cache(limit=1000, key_path=[0, \"id\"])\ndef paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    BUILDERS = {\n        \"text\": text_paragraph_props,\n        \"quote\": quote_paragraph_props,\n        \"list\": list_paragraph_props,\n        \"code\": code_paragraph_props,\n        \"image\": image_paragraph_props,\n    }\n    return BUILDERS.get(\n        paragraph[\"type\"],\n        unknown_paragraph_props\n    )(paragraph, page_theme, body_width, selection, actions)\n",
 "type":"code"
 }
 ],
@@ -1928,7 +2187,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column {\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            actions          = #actions\n            %align[EXPAND]\n        }\n        Panel {\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        }\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column {\n            $\n            %align[EXPAND]\n        }\n        Panel {\n            #divider_panel\n            @drag = self._on_divider_drag(event)\n            %align[EXPAND]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -1976,7 +2235,7 @@
 ],
 "fragments":[
 {
-"text":"def workspace_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"workspace\", \"background\"]\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"column_width\": (\n            document.get([\"workspace\", \"page_body_width\"]) +\n            2*document.get([\"theme\", \"page\", \"margin\"]) +\n            document.get([\"theme\", \"page\", \"border\", \"size\"])\n        ),\n        \"columns\": build_columns(\n            document,\n            document.get([\"workspace\", \"columns\"]),\n            document.get([\"workspace\", \"page_body_width\"]),\n            document.get([\"theme\", \"page\"]),\n            document.get([\"selection\"]),\n            workspace_actions(document)\n        ),\n        \"page_body_width\": document.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": workspace_actions(document),\n    }\n",
+"text":"def workspace_props(document):\n    return {\n        \"background\": document.get(\n            [\"theme\", \"workspace\", \"background\"]\n        ),\n        \"margin\": document.get(\n            [\"theme\", \"workspace\", \"margin\"]\n        ),\n        \"page_body_width\": document.get(\n            [\"workspace\", \"page_body_width\"]\n        ),\n        \"actions\": document.actions,\n        \"columns\": columns_props(\n            document\n        ),\n        \"divider_panel\": {\n            \"cursor\": \"size_horizontal\",\n            \"min_size\": (document.get([\"theme\", \"workspace\", \"margin\"]), -1)\n        }\n    }\n",
 "type":"code"
 }
 ],
@@ -1992,23 +2251,7 @@
 ],
 "fragments":[
 {
-"text":"@cache()\ndef workspace_actions(document):\n    return {\n        \"set_page_body_width\": document.set_page_body_width,\n        \"edit_page\": document.edit_page,\n        \"edit_paragraph\": document.edit_paragraph,\n        \"show_selection\": document.show_selection,\n        \"hide_selection\": document.hide_selection,\n        \"set_selection\": document.set_selection,\n    }\n",
-"type":"code"
-}
-],
-"id":"04f20822e98b49eebe085e3cf2fe6bae",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"@profile_sub(\"build_columns\")\ndef build_columns(document, columns, page_body_width, page_theme, selection, actions):\n    selection = selection.add(\"workspace\")\n    columns_prop = []\n    for index, column in enumerate(columns):\n        columns_prop.append(build_column(\n            document,\n            column,\n            page_body_width,\n            page_theme,\n            selection.add(\"column\", index),\n            actions\n        ))\n    return columns_prop\n",
+"text":"@profile_sub(\"columns_props\")\ndef columns_props(document):\n    return [\n        column_props(\n            document,\n            column,\n            document.get([\"selection\"]).add(\"workspace\", \"column\", index)\n        )\n        for index, column\n        in enumerate(document.get([\"workspace\", \"columns\"]))\n    ]\n",
 "type":"code"
 }
 ],
@@ -2652,27 +2895,11 @@
 ],
 "fragments":[
 {
-"text":"def main_frame_props(document):\n    return {\n        \"toolbar\": toolbar_props(\n            document.get([\"theme\", \"toolbar\"]),\n            actions(document)\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            document.get([\"theme\", \"toolbar_divider\"])\n        ),\n        \"main_area\": main_area_props(\n            document,\n            actions(document)\n        ),\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n    }\n",
+"text":"def main_frame_props(document):\n    return {\n        \"title\": format_title(\n            document.get([\"path\"])\n        ),\n        \"toolbar\": toolbar_props(\n            document\n        ),\n        \"toolbar_divider\": toolbar_divider_props(\n            document\n        ),\n        \"main_area\": main_area_props(\n            document\n        ),\n    }\n",
 "type":"code"
 }
 ],
 "id":"817bfdde2cd042328c69a297120bdf9d",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"@cache()\ndef actions(document):\n    return {\n        \"rotate_theme\": document.rotate,\n        \"set_toc_width\": document.set_toc_width,\n        \"set_hoisted_page\": document.set_hoisted_page,\n    }\n",
-"type":"code"
-}
-],
-"id":"d277c1f7e8c04947b3f2f8abc5802170",
 "type":"code"
 },
 {
@@ -3206,7 +3433,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._build_page_index()\n\n",
+"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"edit_paragraph\": self.edit_paragraph,\n            \"hide_selection\": self.hide_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"show_selection\": self.show_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n        }\n\n",
 "type":"code"
 },
 {
@@ -7750,211 +7977,7 @@
 "title":"History"
 },
 {
-"children":[
-{
 "children":[],
-"id":"742ebf5ff2d8457ab8c01b3721052425",
-"paragraphs":[
-{
-"fragments":[
-{
-"text":"The architecture of the GUI framework is to have a top level widget and a function that generates props for it like this:",
-"type":"text"
-}
-],
-"id":"9a4982af5a8d4ef3accde8797477c790",
-"type":"text"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"frame MainFrame %layout_rows {\n    ...\n}\n",
-"type":"code"
-}
-],
-"id":"a24132fe5ce74f3ba9b961feed15fcbd",
-"language":"rlgui",
-"type":"code"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"def main_frame_props(...):\n    return {\n        ...\n    }\n",
-"type":"code"
-}
-],
-"id":"a1f1d48bf4ac4ace9a0d98f28284dc27",
-"language":"python",
-"type":"code"
-},
-{
-"fragments":[
-{
-"text":"Let's say that the main frame has two sub components. It would probably look like this:",
-"type":"text"
-}
-],
-"id":"3490220b22cf430e94a12b7775340d51",
-"type":"text"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        %align[EXPAND]\n    }\n}\n",
-"type":"code"
-}
-],
-"id":"99cfc6c847294a54bec298e2d6186c3b",
-"language":"rlgui",
-"type":"code"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"def main_frame_props(...):\n    return {\n        \"foo\": foo_props(...),\n        \"bar\": bar_props(...),\n    }\n\ndef foo_props(...):\n    return {\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        ...\n    }\n",
-"type":"code"
-}
-],
-"id":"c432a76aa18d4cfa919cceb2714ee526",
-"language":"python",
-"type":"code"
-},
-{
-"fragments":[
-{
-"text":"Now let's say that there is a common prop in foo and bar called baz. Should ",
-"type":"text"
-},
-{
-"text":"foo_props",
-"type":"code"
-},
-{
-"text":" and ",
-"type":"text"
-},
-{
-"text":"bar_props",
-"type":"code"
-},
-{
-"text":" change to the following?",
-"type":"text"
-}
-],
-"id":"133013688d2546fe9de66745a11785eb",
-"type":"text"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"def foo_props(...):\n    return {\n        \"baz\": ...,\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        \"baz\": ...,\n        ...\n    }\n",
-"type":"code"
-}
-],
-"id":"39e907e10e2944019493f7c557aa769e",
-"language":"python",
-"type":"code"
-},
-{
-"fragments":[
-{
-"text":"Or should the common prop be promoted to a main frame prop and passed in the GUI code like this?",
-"type":"text"
-}
-],
-"id":"7df0a8dd582d44938bb4dd077df41a03",
-"type":"text"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        baz = #baz\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        baz = #baz\n        %align[EXPAND]\n    }\n}\n",
-"type":"code"
-}
-],
-"id":"8b54fbc7ef854c06b4d24b00d481ca5f",
-"language":"rlgui",
-"type":"code"
-},
-{
-"chunkpath":[],
-"filepath":[],
-"fragments":[
-{
-"text":"def main_frame_props(...):\n    return {\n        \"foo\": foo_props(...),\n        \"bar\": bar_props(...),\n        \"baz\": ...,\n    }\n\ndef foo_props(...):\n    return {\n        ...\n    }\n\ndef bar_props(...):\n    return {\n        ...\n    }\n",
-"type":"code"
-}
-],
-"id":"71b9df5be2dc4cf69cdd20f668aac305",
-"language":"python",
-"type":"code"
-},
-{
-"fragments":[
-{
-"text":"From a performance perspective, it probably doesn't matter too much. If the common prop is used deep in the widget hierarchy, it needs to be passed at each level if it's passed in the GUI code. If it's inserted in the prop function it can be inserted just where it needs to be.",
-"type":"text"
-}
-],
-"id":"d9ec65ce72d04d3da0e2233225182d83",
-"type":"text"
-},
-{
-"fragments":[
-{
-"text":"The pattern with one prop function per widget is quite straight forward. If that is the way to go, perhaps the GUI language can be restricted to only allow that. Not sure if that is a good idea. But I like this pattern, and I think I will try to follow it.",
-"type":"text"
-}
-],
-"id":"6964eed9fc474e5da46731f989191fb8",
-"type":"text"
-},
-{
-"fragments":[
-{
-"text":"The problem I encountered with this pattern was that when the column width changed, props for code had to be generated again and highlighted again. That shouldn't be necessary. But because caching only happened at the paragraph level, and the column width is part of the arguments to paragraph prop, it resulted in a cache miss. The solution is probably to cache deeper down as well.",
-"type":"text"
-}
-],
-"id":"fda809ad4ebe4f93822f394b59ab2224",
-"type":"text"
-},
-{
-"fragments":[
-{
-"text":"The pattern is not fully used for ",
-"type":"text"
-},
-{
-"page_id":"e23f4707dee34537a98e602ca3609133",
-"text":null,
-"type":"reference"
-},
-{
-"text":". Perhaps it could?",
-"type":"text"
-}
-],
-"id":"1157b00cd2264dc69ae68f2af49671f5",
-"type":"text"
-}
-],
-"title":"How to pass props?"
-}
-],
 "id":"6d92bc9005724ecdad6856ba67ec2121",
 "paragraphs":[
 {
