@@ -433,7 +433,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton(\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    )\n    ToolbarButton(\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    )\n    %space[#margin]\n}\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n}\n",
 "type":"code"
 }
 ],
@@ -521,7 +521,7 @@
 ],
 "fragments":[
 {
-"text":"panel MainArea %layout_columns {\n    TableOfContents[toc](\n        #toc\n        %align[EXPAND]\n    )\n    TableOfContentsDivider(\n        #toc_divider\n        @drag = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    )\n    Workspace(\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"panel MainArea %layout_columns {\n    TableOfContents[toc] {\n        #toc\n        %align[EXPAND]\n    }\n    TableOfContentsDivider {\n        #toc_divider\n        @drag = self._on_toc_divider_drag(event)\n        %align[EXPAND]\n    }\n    Workspace {\n        #workspace\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -594,7 +594,7 @@
 ],
 "fragments":[
 {
-"text":"scroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=#rows_cache_limit) {\n        TableOfContentsRow[rows](\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"scroll TableOfContentsScrollArea %layout_rows {\n    drop_target = \"move_page\"\n    loop (#rows cache_limit=#rows_cache_limit) {\n        TableOfContentsRow[rows] {\n            $\n            #row_extra\n            __reuse = $id\n            __cache = True\n            %align[EXPAND]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -715,7 +715,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse(\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #actions.toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        )\n    } else {\n        %space[#indent_size]\n    }\n    Text(\n        #text_props\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    )\n}\n",
+"text":"panel TableOfContentsTitle %layout_columns {\n    %space[add(#row_margin mul(#level #indent_size))]\n    if (#has_children) {\n        ExpandCollapse {\n            cursor       = \"hand\"\n            size         = #indent_size\n            collapsed    = #collapsed\n            @click       = #actions.toggle_collapsed(#id)\n            @drag        = None\n            @right_click = None\n            %align[EXPAND]\n        }\n    } else {\n        %space[#indent_size]\n    }\n    Text {\n        #text_props\n        %align[EXPAND]\n        %margin[#row_margin,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -743,7 +743,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel(\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #valid)\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n\n",
+"text":"panel TableOfContentsDropLine %layout_columns {\n    %space[#indent]\n    Panel {\n        min_size   = makeTuple(-1 #thickness)\n        background = self._get_color(#active #valid)\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -797,7 +797,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title](\n        #\n        @click       = #actions.open_page(#id)\n        @drag        = self._on_drag(event)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    )\n    TableOfContentsDropLine[drop_line](\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    )\n}\n\n",
+"text":"panel TableOfContentsRow %layout_rows {\n    TableOfContentsTitle[title] {\n        #\n        @click       = #actions.open_page(#id)\n        @drag        = self._on_drag(event)\n        @right_click = self._on_right_click(event)\n        @hover       = self._set_background(event.mouse_inside)\n        %align[EXPAND]\n    }\n    TableOfContentsDropLine[drop_line] {\n        indent        = 0\n        active        = False\n        valid         = True\n        thickness     = #divider_thickness\n        color         = #dragdrop_color\n        invalid_color = #dragdrop_invalid_color\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -946,7 +946,7 @@
 ],
 "fragments":[
 {
-"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button(\n            label   = \"unhoist\"\n            @button = #actions.set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        )\n    }\n    TableOfContentsScrollArea(\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel TableOfContents %layout_rows {\n    if (#has_valid_hoisted_page) {\n        Button {\n            label   = \"unhoist\"\n            @button = #actions.set_hoisted_page(None)\n            %margin[add(1 #row_margin),ALL]\n            %align[EXPAND]\n        }\n    }\n    TableOfContentsScrollArea {\n        #scroll_area\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1052,7 +1052,7 @@
 ],
 "fragments":[
 {
-"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page(\n            page = $\n            %align[EXPAND]\n        )\n        %space[#workspace_margin]\n    }\n}\n",
+"text":"vscroll Column %layout_rows {\n    %space[#workspace_margin]\n    loop (#column) {\n        Page {\n            page = $\n            %align[EXPAND]\n        }\n        %space[#workspace_margin]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1098,7 +1098,7 @@
 ],
 "fragments":[
 {
-"text":"panel Page %layout_rows {\n    PageTopRow(\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageBottomBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Page %layout_rows {\n    PageTopRow {\n        page = #page\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageBottomBorder {\n        #page.border\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1119,7 +1119,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageTopRow %layout_columns {\n    PageBody(\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    )\n    PageRightBorder(\n        #page.border\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel PageTopRow %layout_columns {\n    PageBody {\n        #page\n        %align[EXPAND]\n        %proportion[1]\n    }\n    PageRightBorder {\n        #page.border\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1140,7 +1140,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBody %layout_rows {\n    Title(\n        #title\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    )\n    loop (#paragraphs) {\n        $widget(\n            $\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel PageBody %layout_rows {\n    Title {\n        #title\n        %margin[#margin,ALL]\n        %align[EXPAND]\n    }\n    loop (#paragraphs) {\n        $widget {\n            $\n            %margin[#margin,LEFT|BOTTOM|RIGHT]\n            %align[EXPAND]\n        }\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1161,7 +1161,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageRightBorder %layout_rows {\n    %space[#size]\n    Panel(\n        min_size   = makeTuple(#size -1)\n        background = #color\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel PageRightBorder %layout_rows {\n    %space[#size]\n    Panel {\n        min_size   = makeTuple(#size -1)\n        background = #color\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1182,7 +1182,7 @@
 ],
 "fragments":[
 {
-"text":"panel PageBottomBorder %layout_columns {\n    %space[#size]\n    Panel(\n        min_size   = makeTuple(-1 #size)\n        background = #color\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"panel PageBottomBorder %layout_columns {\n    %space[#size]\n    Panel {\n        min_size   = makeTuple(-1 #size)\n        background = #color\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1228,7 +1228,7 @@
 ],
 "fragments":[
 {
-"text":"panel Title %layout_rows {\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel Title %layout_rows {\n    TextEdit {\n        #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1318,7 +1318,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextParagraph %layout_rows {\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel TextParagraph %layout_rows {\n    TextEdit {\n        #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1372,7 +1372,7 @@
 ],
 "fragments":[
 {
-"text":"panel QuoteParagraph %layout_columns {\n    %space[#indent_size]\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel QuoteParagraph %layout_columns {\n    %space[#indent_size]\n    TextEdit {\n        #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1426,7 +1426,7 @@
 ],
 "fragments":[
 {
-"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        ListRow(\n            $\n            indent     = #indent\n            body_width = #body_width\n            %align[EXPAND]\n        )\n    }\n}\n",
+"text":"panel ListParagraph %layout_rows {\n    loop (#rows) {\n        ListRow {\n            $\n            indent     = #indent\n            body_width = #body_width\n            %align[EXPAND]\n        }\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1447,7 +1447,7 @@
 ],
 "fragments":[
 {
-"text":"panel ListRow %layout_columns {\n    %space[mul(#level #indent)]\n    Text(\n        #bullet_props\n        property_here_to_distiguish_this_from_a_call = 1\n    )\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel ListRow %layout_columns {\n    %space[mul(#level #indent)]\n    Text {\n        #bullet_props\n    }\n    TextEdit {\n        #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1521,7 +1521,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphHeader %layout_rows {\n    Text(\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
+"text":"panel CodeParagraphHeader %layout_rows {\n    Text {\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1585,7 +1585,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraphBody %layout_rows {\n    Text(\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    )\n}\n",
+"text":"panel CodeParagraphBody %layout_rows {\n    Text {\n        #text_props\n        max_width = sub(#body_width mul(2 #margin))\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1702,7 +1702,7 @@
 ],
 "fragments":[
 {
-"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader(\n        #header\n        body_width = #body_width\n        %align[EXPAND]\n    )\n    CodeParagraphBody(\n        #body\n        body_width = #body_width\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel CodeParagraph %layout_rows {\n    CodeParagraphHeader {\n        #header\n        body_width = #body_width\n        %align[EXPAND]\n    }\n    CodeParagraphBody {\n        #body\n        body_width = #body_width\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1748,7 +1748,7 @@
 ],
 "fragments":[
 {
-"text":"panel ImageParagraph %layout_rows {\n    Image(\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    )\n    ImageText(\n        indent          = #indent\n        text_edit_props = #text_edit_props\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel ImageParagraph %layout_rows {\n    Image {\n        base64_image = #base64_image\n        width        = #body_width\n        %align[CENTER]\n    }\n    ImageText {\n        indent          = #indent\n        text_edit_props = #text_edit_props\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1769,7 +1769,7 @@
 ],
 "fragments":[
 {
-"text":"panel ImageText %layout_columns {\n    %space[#indent]\n    TextEdit(\n        #text_edit_props\n        %align[EXPAND]\n    )\n    %space[#indent]\n}\n",
+"text":"panel ImageText %layout_columns {\n    %space[#indent]\n    TextEdit {\n        #text_edit_props\n        %align[EXPAND]\n    }\n    %space[#indent]\n}\n",
 "type":"code"
 }
 ],
@@ -1823,7 +1823,7 @@
 ],
 "fragments":[
 {
-"text":"panel UnknownParagraph %layout_rows {\n    Text(\n        #text_props\n        max_width = #body_width\n        %align[EXPAND]\n    )\n}\n",
+"text":"panel UnknownParagraph %layout_rows {\n    Text {\n        #text_props\n        max_width = #body_width\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -1928,7 +1928,7 @@
 ],
 "fragments":[
 {
-"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column(\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            actions          = #actions\n            %align[EXPAND]\n        )\n        Panel(\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        )\n    }\n}\n\n",
+"text":"hscroll Workspace %layout_columns {\n    %space[#margin]\n    loop (#columns) {\n        Column {\n            min_size         = makeTuple(#column_width -1)\n            column           = $\n            workspace_margin = #margin\n            actions          = #actions\n            %align[EXPAND]\n        }\n        Panel {\n            cursor   = \"size_horizontal\"\n            min_size = makeTuple(#margin -1)\n            @drag    = self._on_divider_drag(event)\n            %align[EXPAND]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -2246,7 +2246,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text](\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    )\n    if (self._has_toolbar()) {\n        #toolbar.widget(\n            #toolbar.props\n            max_width = sub(#max_width mul(2 #selection_box.width))\n            %align[EXPAND]\n            %margin[#selection_box.width,ALL]\n        )\n    }\n}\n\n",
+"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text] {\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    }\n    if (self._has_toolbar()) {\n        #toolbar.widget {\n            #toolbar.props\n            max_width = sub(#max_width mul(2 #selection_box.width))\n            %align[EXPAND]\n            %margin[#selection_box.width,ALL]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -2491,7 +2491,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextFragmentsToolbar %layout_columns {\n    Text(\n        #text_props\n        max_width = sub(#max_width 6)\n        %align[EXPAND]\n        %margin[3,ALL]\n    )\n}\n",
+"text":"panel TextFragmentsToolbar %layout_columns {\n    Text {\n        #text_props\n        max_width = sub(#max_width 6)\n        %align[EXPAND]\n        %margin[3,ALL]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -2631,7 +2631,7 @@
 ],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n    Toolbar(\n        #toolbar\n        %align[EXPAND]\n    )\n    ToolbarDivider(\n        #toolbar_divider\n        %align[EXPAND]\n    )\n    MainArea(\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    )\n}\n",
+"text":"frame MainFrame %layout_rows {\n    Toolbar {\n        #toolbar\n        %align[EXPAND]\n    }\n    ToolbarDivider {\n        #toolbar_divider\n        %align[EXPAND]\n    }\n    MainArea {\n        #main_area\n        %align[EXPAND]\n        %proportion[1]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -3908,7 +3908,7 @@
 "type":"tabstop"
 },
 {
-"text":"-> [\"instance\" \"%space\" x]\n    | WS expr:x instanceName:ys WS\n      '(' instanceBody*:zs WS ')' ",
+"text":"-> [\"instance\" \"%space\" x]\n    | WS expr:x instanceName:ys WS\n      '{' instanceBody*:zs WS '}' ",
 "type":"code"
 },
 {
@@ -7806,7 +7806,7 @@
 "filepath":[],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n    Foo(\n        #foo\n        %align[EXPAND]\n    }\n    Bar(\n        #bar\n        %align[EXPAND]\n    )\n}\n",
+"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -7881,7 +7881,7 @@
 "filepath":[],
 "fragments":[
 {
-"text":"frame MainFrame %layout_rows {\n    Foo(\n        #foo\n        baz = #baz\n        %align[EXPAND]\n    )\n    Bar(\n        #bar\n        baz = #baz\n        %align[EXPAND]\n    )\n}\n",
+"text":"frame MainFrame %layout_rows {\n    Foo {\n        #foo\n        baz = #baz\n        %align[EXPAND]\n    }\n    Bar {\n        #bar\n        baz = #baz\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],

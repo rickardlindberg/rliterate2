@@ -2745,7 +2745,6 @@ class ListRow(Panel):
         name = None
         handlers = {}
         props.update(self.prop(['bullet_props']))
-        props['property_here_to_distiguish_this_from_a_call'] = 1
         self._create_widget(Text, props, sizer, handlers, name)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
