@@ -716,6 +716,7 @@ def code_paragraph_header_props(paragraph, page_theme, body_width):
         ), max_width=body_width-2*page_theme["code"]["margin"]),
     }
 
+@cache()
 def code_paragraph_header_path_props(filepath, chunkpath, font):
     builder = TextPropsBuilder(**font)
     for index, x in enumerate(filepath):
@@ -731,6 +732,20 @@ def code_paragraph_header_path_props(filepath, chunkpath, font):
     return builder.get()
 
 def code_paragraph_body_props(paragraph, page_theme, body_width):
+    return {
+        "background": page_theme["code"]["body_background"],
+        "margin": page_theme["code"]["margin"],
+        "text_props": dict(
+            code_paragraph_body_text_props(
+                paragraph,
+                page_theme
+            ),
+            max_width=body_width-2*page_theme["code"]["margin"]
+        ),
+    }
+
+@cache(limit=100, key_path=[0, "id"])
+def code_paragraph_body_text_props(paragraph, page_theme):
     builder = TextPropsBuilder(**page_theme["code_font"])
     for fragment in apply_token_styles(
         code_body_fragments_props(
@@ -743,14 +758,7 @@ def code_paragraph_body_props(paragraph, page_theme, body_width):
         page_theme["token_styles"]
     ):
         builder.text(**fragment)
-    return {
-        "background": page_theme["code"]["body_background"],
-        "margin": page_theme["code"]["margin"],
-        "text_props": dict(
-            builder.get(),
-            max_width=body_width-2*page_theme["code"]["margin"]
-        ),
-    }
+    return builder.get()
 
 @profile_sub("apply_token_styles")
 def apply_token_styles(fragments, token_styles):

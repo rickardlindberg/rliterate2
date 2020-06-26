@@ -1819,7 +1819,7 @@
 ],
 "fragments":[
 {
-"text":"def code_paragraph_header_path_props(filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
+"text":"@cache()\ndef code_paragraph_header_path_props(filepath, chunkpath, font):\n    builder = TextPropsBuilder(**font)\n    for index, x in enumerate(filepath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    if filepath and chunkpath:\n        builder.text(\" \")\n    for index, x in enumerate(chunkpath):\n        if index > 0:\n            builder.text(\"/\")\n        builder.text(x)\n    return builder.get()\n",
 "type":"code"
 }
 ],
@@ -1865,11 +1865,29 @@
 ],
 "fragments":[
 {
-"text":"def code_paragraph_body_props(paragraph, page_theme, body_width):\n    builder = TextPropsBuilder(**page_theme[\"code_font\"])\n    for fragment in apply_token_styles(\n        code_body_fragments_props(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(\n                paragraph.get(\"language\", \"\"),\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n            )\n        ),\n        page_theme[\"token_styles\"]\n    ):\n        builder.text(**fragment)\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": dict(\n            builder.get(),\n            max_width=body_width-2*page_theme[\"code\"][\"margin\"]\n        ),\n    }\n",
+"text":"def code_paragraph_body_props(paragraph, page_theme, body_width):\n    return {\n        \"background\": page_theme[\"code\"][\"body_background\"],\n        \"margin\": page_theme[\"code\"][\"margin\"],\n        \"text_props\": dict(\n            code_paragraph_body_text_props(\n                paragraph,\n                page_theme\n            ),\n            max_width=body_width-2*page_theme[\"code\"][\"margin\"]\n        ),\n    }\n",
 "type":"code"
 }
 ],
 "id":"3487e5683a9f4a3bbe70c16313722dc8",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@cache(limit=100, key_path=[0, \"id\"])\ndef code_paragraph_body_text_props(paragraph, page_theme):\n    builder = TextPropsBuilder(**page_theme[\"code_font\"])\n    for fragment in apply_token_styles(\n        code_body_fragments_props(\n            paragraph[\"fragments\"],\n            code_pygments_lexer(\n                paragraph.get(\"language\", \"\"),\n                paragraph[\"filepath\"][-1] if paragraph[\"filepath\"] else \"\",\n            )\n        ),\n        page_theme[\"token_styles\"]\n    ):\n        builder.text(**fragment)\n    return builder.get()\n",
+"type":"code"
+}
+],
+"id":"4956e853fad04d05b5f54a3d49ad1f38",
 "language":"",
 "post_process":[],
 "type":"code"
