@@ -3538,7 +3538,7 @@
 "filepath":[],
 "fragments":[
 {
-"text":"frame ExampleFrame %layout_rows {\n    Panel(\n        background = #color\n        %align[EXPAND]\n    )\n    Panel(\n        background = \"red\"\n        %align[EXPAND]\n    )\n}\n",
+"text":"frame ExampleFrame %layout_rows {\n    Panel {\n        background = #color\n        %align[EXPAND]\n    }\n    Panel {\n        background = \"red\"\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
