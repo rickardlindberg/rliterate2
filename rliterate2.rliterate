@@ -8113,6 +8113,16 @@
 ],
 "id":"62672754a4e344bdbf267eff16e63ba6",
 "type":"text"
+},
+{
+"fragments":[
+{
+"text":"Renaming files does not remove the old file from disk.",
+"type":"text"
+}
+],
+"id":"f5cd2ca2b5af447aac7806d034c55185",
+"type":"text"
 }
 ],
 "title":"Ideas for new features"
