@@ -2925,8 +2925,8 @@ class TextEdit(Panel):
         handlers['left_down'] = lambda event: self._on_left_down(event, self.prop(['selection']))
         handlers['drag'] = lambda event: self._on_drag(event, self.prop(['selection']))
         handlers['key'] = lambda event: self._on_key(event, self.prop(['selection']))
-        handlers['focus'] = lambda event: self.prop(['actions', 'show_selection'])(self.prop(['selection']))
-        handlers['unfocus'] = lambda event: self.prop(['actions', 'hide_selection'])(self.prop(['selection']))
+        handlers['focus'] = lambda event: self._on_focus(self.prop(['selection']))
+        handlers['unfocus'] = lambda event: self._on_unfocus(self.prop(['selection']))
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self._margin()
         sizer["flag"] |= wx.ALL
@@ -3035,6 +3035,12 @@ class TextEdit(Panel):
 
     def _has_toolbar(self):
         return self.prop_with_default(["toolbar"], None)
+
+    def _on_focus(self, selection):
+        self.prop(["actions", "show_selection"])(selection.trail)
+
+    def _on_unfocus(self, selection):
+        self.prop(["actions", "hide_selection"])(selection.trail)
 
 class TextPropsBuilder(object):
 
@@ -3708,15 +3714,15 @@ class Document(Immutable):
     def set_selection(self, selection):
         self.replace(["selection"], selection)
 
-    def show_selection(self, selection):
-        self._set_selection_visible(selection, True)
+    def show_selection(self, widget_path):
+        self._set_selection_visible(widget_path, True)
 
-    def hide_selection(self, selection):
-        self._set_selection_visible(selection, False)
+    def hide_selection(self, widget_path):
+        self._set_selection_visible(widget_path, False)
 
-    def _set_selection_visible(self, selection, visible):
+    def _set_selection_visible(self, widget_path, visible):
         current_selection = self.get(["selection"])
-        if (current_selection.path() == selection.path() and
+        if (current_selection.widget_path == widget_path and
             current_selection.visible != visible):
             self.modify(
                 ["selection"],
@@ -3786,11 +3792,11 @@ class CodeChunk(object):
                     part_index += 1
                     text = text[len(part["text"]):]
 
-class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
+class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "visible"])):
 
     @staticmethod
     def empty():
-        return Selection(trail=[], value=[], visible=False)
+        return Selection(trail=[], value=[], widget_path=[], visible=False)
 
     def add(self, *args):
         new_value = self.value
@@ -3803,10 +3809,20 @@ class Selection(namedtuple("Selection", ["trail", "value", "visible"])):
                 new_value = []
                 visible = False
             new_trail = new_trail + [arg]
-        return Selection(trail=new_trail, value=new_value, visible=visible)
+        return Selection(
+            trail=new_trail,
+            value=new_value,
+            widget_path=self.widget_path,
+            visible=visible
+        )
 
     def create(self, *args):
-        return Selection(trail=[], value=self.trail+list(args), visible=True)
+        return Selection(
+            trail=[],
+            value=self.trail+list(args),
+            widget_path=self.trail,
+            visible=True
+        )
 
     def present(self):
         return len(self.value) > 0 and self.visible

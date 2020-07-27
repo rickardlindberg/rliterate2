@@ -2507,7 +2507,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text] {\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = #actions.show_selection(#selection)\n        @unfocus   = #actions.hide_selection(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    }\n    if (self._has_toolbar()) {\n        #toolbar.widget {\n            #toolbar.props\n            max_width = sub(#max_width mul(2 #selection_box.width))\n            %align[EXPAND]\n            %margin[#selection_box.width,ALL]\n        }\n    }\n}\n\n",
+"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text] {\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = self._on_focus(#selection)\n        @unfocus   = self._on_unfocus(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    }\n    if (self._has_toolbar()) {\n        #toolbar.widget {\n            #toolbar.props\n            max_width = sub(#max_width mul(2 #selection_box.width))\n            %align[EXPAND]\n            %margin[#selection_box.width,ALL]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -2732,6 +2732,44 @@
 }
 ],
 "id":"50a32b1fbd514375a5ef05cf4f0fd4f1",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TextEdit"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _on_focus(self, selection):\n    self.prop([\"actions\", \"show_selection\"])(selection.trail)\n",
+"type":"code"
+}
+],
+"id":"7d78e73c5f2c4a169aaa0d080d120012",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"TextEdit"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _on_unfocus(self, selection):\n    self.prop([\"actions\", \"hide_selection\"])(selection.trail)\n",
+"type":"code"
+}
+],
+"id":"d90ab293ce49429fafada2555a98282b",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -3400,7 +3438,7 @@
 ],
 "fragments":[
 {
-"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, selection):\n    self._set_selection_visible(selection, True)\n\ndef hide_selection(self, selection):\n    self._set_selection_visible(selection, False)\n\ndef _set_selection_visible(self, selection, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.path() == selection.path() and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
+"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, widget_path):\n    self._set_selection_visible(widget_path, True)\n\ndef hide_selection(self, widget_path):\n    self._set_selection_visible(widget_path, False)\n\ndef _set_selection_visible(self, widget_path, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.widget_path == widget_path and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
 "type":"code"
 }
 ],
@@ -3416,7 +3454,7 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"visible\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], visible=False)\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                visible = self.visible\n            else:\n                new_value = []\n                visible = False\n            new_trail = new_trail + [arg]\n        return Selection(trail=new_trail, value=new_value, visible=visible)\n\n    def create(self, *args):\n        return Selection(trail=[], value=self.trail+list(args), visible=True)\n\n    def present(self):\n        return len(self.value) > 0 and self.visible\n\n    def get(self):\n        if self.present():\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"visible\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], visible=False)\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                visible = self.visible\n            else:\n                new_value = []\n                visible = False\n            new_trail = new_trail + [arg]\n        return Selection(\n            trail=new_trail,\n            value=new_value,\n            widget_path=self.widget_path,\n            visible=visible\n        )\n\n    def create(self, *args):\n        return Selection(\n            trail=[],\n            value=self.trail+list(args),\n            widget_path=self.trail,\n            visible=True\n        )\n\n    def present(self):\n        return len(self.value) > 0 and self.visible\n\n    def get(self):\n        if self.present():\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
 "type":"code"
 }
 ],
