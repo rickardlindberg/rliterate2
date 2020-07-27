@@ -144,9 +144,16 @@ def format_title(path):
 
 def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
+    if document.get(["selection"]).visible:
+        text_fragment_selection = TextPropsBuilder().text(
+            str(document.get(["selection"]).widget_path)
+        ).get()
+    else:
+        text_fragment_selection = None
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
+        "text_fragment_selection": text_fragment_selection,
         "actions": document.actions,
     }
 
@@ -2044,6 +2051,23 @@ class Toolbar(Panel):
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers, name)
         self._create_space(self.prop(['margin']))
+        if_condition = self.prop(['text_fragment_selection'])
+        def loop_fn(loopvar):
+            pass
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props.update(self.prop(['text_fragment_selection']))
+            sizer["flag"] |= wx.ALIGN_CENTER
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(Text, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+        with self._loop():
+            for loopvar in ([None] if (if_condition) else []):
+                loop_fn(loopvar)
 
 class ToolbarDivider(Panel):
 
