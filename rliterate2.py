@@ -144,9 +144,14 @@ def format_title(path):
 
 def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
-    if document.get(["selection"]).visible:
+    if (document.get(["selection"]).visible and
+        document.get(["selection"]).value[-1].get("what", None) == "text_fragments"):
         text_fragment_selection = TextPropsBuilder().text(
             str(document.get(["selection"]).widget_path)
+            +
+            "\n"
+            +
+            str(document.get(["selection"]).value[-1])
         ).get()
     else:
         text_fragment_selection = None
@@ -1108,7 +1113,7 @@ class StringInputHandler(object):
 
     @cursor.setter
     def cursor(self, position):
-        self.selection = dict(self.selection, **{
+        self.selection = self.create_selection({
             "start": position,
             "end": position,
             "cursor_at_start": True,
@@ -1121,7 +1126,7 @@ class StringInputHandler(object):
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
         position = self.start + len(text)
-        self.selection = dict(self.selection, **{
+        self.selection = self.create_selection({
             "start": position,
             "end": position,
             "cursor_at_start": True,
@@ -1133,7 +1138,7 @@ class StringInputHandler(object):
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = dict(self.selection, **{
+                self.selection = self.create_selection({
                     "start": self._next_cursor(self._cursors_left(text)),
                     "end": self.start,
                     "cursor_at_start": True,
@@ -1143,7 +1148,7 @@ class StringInputHandler(object):
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = dict(self.selection, **{
+                self.selection = self.create_selection({
                     "start": self.start,
                     "end": self._next_cursor(self._cursors_right(text)),
                     "cursor_at_start": False,
@@ -1167,11 +1172,11 @@ class StringInputHandler(object):
         if cursor == self.cursor:
             return False
         builder = TextPropsBuilder()
-        self.build_with_selection(builder, {
+        self.build_with_selection(builder, self.create_selection({
             "start": cursor,
             "end": cursor,
             "cursor_at_start": True,
-        })
+        }))
         return builder.get_main_cursor_char_index() != self.main_cursor_char_index
 
     def _cursors_left(self, text):
@@ -2665,6 +2670,9 @@ class TitleInputHandler(StringInputHandler):
             self.selection_trail.get()
         )
 
+    def create_selection(self, values):
+        return dict(values, what="page_title", page_id=self.page["id"])
+
     def build(self):
         builder = TextPropsBuilder(
             **self.page_theme["title_font"],
@@ -2997,11 +3005,14 @@ class TextEdit(Panel):
         index = self._get_index(event.x, event.y)
         if index is not None:
             self.prop(["actions", "set_selection"])(
-                selection.create({
-                    "start": index,
-                    "end": index,
-                    "cursor_at_start": True,
-                })
+
+                selection.create(
+                    self.prop(["input_handler"]).create_selection({
+                        "start": index,
+                        "end": index,
+                        "cursor_at_start": True,
+                    })
+                )
             )
 
     def _on_left_down(self, event, selection):
@@ -3010,11 +3021,14 @@ class TextEdit(Panel):
         index = self._get_index(event.x, event.y)
         if index is not None:
             self.prop(["actions", "set_selection"])(
-                selection.create({
-                    "start": index,
-                    "end": index,
-                    "cursor_at_start": True,
-                })
+                selection.create(
+                    self.prop(["input_handler"]).create_selection({
+
+                        "start": index,
+                        "end": index,
+                        "cursor_at_start": True,
+                    })
+                )
             )
 
     def _on_drag(self, event, selection):
@@ -3026,11 +3040,13 @@ class TextEdit(Panel):
             new_index = self._get_index(event.x, event.y)
             if self._initial_index is not None and new_index is not None:
                 self.prop(["actions", "set_selection"])(
-                    selection.create({
-                        "start": min(self._initial_index, new_index),
-                        "end": max(self._initial_index, new_index),
-                        "cursor_at_start": new_index <= self._initial_index,
-                    })
+                    selection.create(
+                        self.prop(["input_handler"]).create_selection({
+                            "start": min(self._initial_index, new_index),
+                            "end": max(self._initial_index, new_index),
+                            "cursor_at_start": new_index <= self._initial_index,
+                        })
+                    )
                 )
 
     def _get_index(self, x, y):
@@ -3172,6 +3188,9 @@ class TextFragmentsInputHandler(StringInputHandler):
             data,
             self.selection_trail.get()
         )
+
+    def create_selection(self, values):
+        return dict(values, what="text_fragments", paragraph_id="??")
 
     def build(self):
         builder = TextPropsBuilder(
