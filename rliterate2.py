@@ -571,50 +571,34 @@ def paragraph_props(paragraph, page_theme, body_width, selection, actions):
 
 @profile_sub("text_paragraph_props")
 def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    def save(new_text_fragments, new_selection):
-        actions["edit_paragraph"](
-            paragraph["id"],
-            {
-                "fragments": new_text_fragments,
-            },
-            selection.create(new_selection)
-        )
     return {
         "widget": TextParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph["id"],
+            paragraph,
             ["fragments"],
             paragraph["fragments"],
             paragraph["meta"],
             selection,
             page_theme,
             actions,
-            save,
+            actions["edit_paragraph"],
             max_width=body_width,
         ),
     }
 
 @profile_sub("quote_paragraph_props")
 def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    def save(new_text_fragments, new_selection):
-        actions["edit_paragraph"](
-            paragraph["id"],
-            {
-                "fragments": new_text_fragments,
-            },
-            selection.create(new_selection)
-        )
     return {
         "widget": QuoteParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph["id"],
+            paragraph,
             ["fragments"],
             paragraph["fragments"],
             paragraph["meta"],
             selection,
             page_theme,
             actions,
-            save,
+            actions["edit_paragraph"],
             max_width=body_width-page_theme["indent_size"],
         ),
         "indent_size": page_theme["indent_size"],
@@ -665,18 +649,6 @@ def list_item_rows_props(paragraph, children, child_type, page_theme, body_width
     return rows
 
 def list_item_row_props(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
-    def save(new_text_fragments, new_selection):
-        actions["edit_paragraph"](
-            paragraph["id"],
-            {
-                "children": im_modify(
-                    paragraph["children"],
-                    path+["fragments"],
-                    lambda value: new_text_fragments
-                ),
-            },
-            selection.create(new_selection)
-        )
     return {
         "level": level,
         "indent": page_theme["indent_size"],
@@ -688,14 +660,14 @@ def list_item_row_props(paragraph, child_type, index, child, page_theme, body_wi
             line_height=page_theme["line_height"]
         ),
         "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph["id"],
+            paragraph,
             ["children"]+path+["fragments"],
             child["fragments"],
             paragraph["meta"],
             selection,
             page_theme,
             actions,
-            save,
+            actions["edit_paragraph"],
             max_width=body_width-(level+1)*page_theme["indent_size"],
             line_height=page_theme["line_height"]
         ),
@@ -835,14 +807,6 @@ def code_pygments_lexer(language, filename):
 
 @profile_sub("image_paragraph_props")
 def image_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    def save(new_text_fragments, new_selection):
-        actions["edit_paragraph"](
-            paragraph["id"],
-            {
-                "fragments": new_text_fragments,
-            },
-            selection.create(new_selection)
-        )
     return {
         "widget": ImageParagraph,
         "image": {
@@ -852,14 +816,14 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
         "image_text": {
             "indent": page_theme["indent_size"],
             "text_edit_props": text_fragments_to_text_edit_props(
-                paragraph["id"],
+                paragraph,
                 ["fragments"],
                 paragraph["fragments"],
                 paragraph["meta"],
                 selection,
                 page_theme,
                 actions,
-                save,
+                actions["edit_paragraph"],
                 align="center",
                 max_width=body_width-2*page_theme["indent_size"],
             ),
@@ -877,14 +841,14 @@ def unknown_paragraph_props(paragraph, page_theme, body_width, selection, action
         ),
     }
 
-def text_fragments_to_text_edit_props(paragraph_id, path, fragments, meta, selection, page_theme, actions, save, align="left", **kwargs):
+def text_fragments_to_text_edit_props(paragraph, path, fragments, meta, selection, page_theme, actions, edit_paragraph, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
-        paragraph_id,
+        paragraph,
         path,
         fragments,
         meta,
         selection,
-        save,
+        edit_paragraph,
         page_theme
     )
     return {
@@ -3188,17 +3152,31 @@ class TextFragmentsToolbar(Panel):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, paragraph_id, path, data, meta, selection, save, page_theme):
-        self.paragraph_id = paragraph_id
+    def __init__(self, paragraph, path, data, meta, selection, edit_paragraph, page_theme):
+        self.paragraph = paragraph
+        self.paragraph_id = paragraph["id"]
         self.path = path
         self.meta = meta
         self.selection_trail = selection
-        self.save = save
+        self.edit_paragraph = edit_paragraph
         self.page_theme = page_theme
         StringInputHandler.__init__(
             self,
             data,
             self.selection_trail.get()
+        )
+
+    def save(self, fragments, selection):
+        self.edit_paragraph(
+            self.paragraph_id,
+            {
+                self.path[0]: im_modify(
+                    self.paragraph[self.path[0]],
+                    self.path[1:],
+                    lambda value: fragments
+                )
+            },
+            self.selection_trail.create(selection)
         )
 
     def create_selection(self, values):
