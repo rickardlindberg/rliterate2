@@ -2933,7 +2933,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, paragraph, path, data, meta, selection, edit_paragraph, page_theme):\n        self.paragraph = paragraph\n        self.paragraph_id = paragraph[\"id\"]\n        self.path = path\n        self.meta = meta\n        self.selection_trail = selection\n        self.edit_paragraph = edit_paragraph\n        self.page_theme = page_theme\n        ",
+"text":"):\n\n    def __init__(self, paragraph, path, data, meta, selection, edit_paragraph, page_theme):\n        self.paragraph = paragraph\n        self.path = path\n        self.meta = meta\n        self.selection_trail = selection\n        self.edit_paragraph = edit_paragraph\n        self.page_theme = page_theme\n        ",
 "type":"code"
 },
 {
@@ -2941,7 +2941,7 @@
 "type":"variable"
 },
 {
-"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def save(self, fragments, selection):\n        self.edit_paragraph(\n            self.paragraph_id,\n            {\n                self.path[0]: im_modify(\n                    self.paragraph[self.path[0]],\n                    self.path[1:],\n                    lambda value: fragments\n                )\n            },\n            self.selection_trail.create(selection)\n        )\n\n    def ",
+"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def save(self, fragments, selection):\n        self.edit_paragraph(\n            self.paragraph[\"id\"],\n            {\n                self.path[0]: im_modify(\n                    self.paragraph[self.path[0]],\n                    self.path[1:],\n                    lambda value: fragments\n                )\n            },\n            self.selection_trail.create(selection)\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -2949,7 +2949,7 @@
 "type":"variable"
 },
 {
-"text":"(self, values):\n        return dict(\n            values,\n            what=\"text_fragments\",\n            paragraph_id=self.paragraph_id,\n            path=self.path\n        )\n\n    def ",
+"text":"(self, values):\n        return dict(\n            values,\n            what=\"text_fragments\",\n            paragraph_id=self.paragraph[\"id\"],\n            path=self.path\n        )\n\n    def ",
 "type":"code"
 },
 {

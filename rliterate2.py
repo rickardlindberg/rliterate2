@@ -3150,7 +3150,6 @@ class TextFragmentsInputHandler(StringInputHandler):
 
     def __init__(self, paragraph, path, data, meta, selection, edit_paragraph, page_theme):
         self.paragraph = paragraph
-        self.paragraph_id = paragraph["id"]
         self.path = path
         self.meta = meta
         self.selection_trail = selection
@@ -3164,7 +3163,7 @@ class TextFragmentsInputHandler(StringInputHandler):
 
     def save(self, fragments, selection):
         self.edit_paragraph(
-            self.paragraph_id,
+            self.paragraph["id"],
             {
                 self.path[0]: im_modify(
                     self.paragraph[self.path[0]],
@@ -3179,7 +3178,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         return dict(
             values,
             what="text_fragments",
-            paragraph_id=self.paragraph_id,
+            paragraph_id=self.paragraph["id"],
             path=self.path
         )
 
