@@ -582,6 +582,8 @@ def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": TextParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["id"],
+            ["fragments"],
             paragraph["fragments"],
             paragraph["meta"],
             selection,
@@ -605,6 +607,8 @@ def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions)
     return {
         "widget": QuoteParagraph,
         "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["id"],
+            ["fragments"],
             paragraph["fragments"],
             paragraph["meta"],
             selection,
@@ -684,6 +688,8 @@ def list_item_row_props(paragraph, child_type, index, child, page_theme, body_wi
             line_height=page_theme["line_height"]
         ),
         "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph["id"],
+            ["children"]+path+["fragments"],
             child["fragments"],
             paragraph["meta"],
             selection,
@@ -846,6 +852,8 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
         "image_text": {
             "indent": page_theme["indent_size"],
             "text_edit_props": text_fragments_to_text_edit_props(
+                paragraph["id"],
+                ["fragments"],
                 paragraph["fragments"],
                 paragraph["meta"],
                 selection,
@@ -869,8 +877,10 @@ def unknown_paragraph_props(paragraph, page_theme, body_width, selection, action
         ),
     }
 
-def text_fragments_to_text_edit_props(fragments, meta, selection, page_theme, actions, save, align="left", **kwargs):
+def text_fragments_to_text_edit_props(paragraph_id, path, fragments, meta, selection, page_theme, actions, save, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
+        paragraph_id,
+        path,
         fragments,
         meta,
         selection,
@@ -3178,7 +3188,9 @@ class TextFragmentsToolbar(Panel):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, data, meta, selection, save, page_theme):
+    def __init__(self, paragraph_id, path, data, meta, selection, save, page_theme):
+        self.paragraph_id = paragraph_id
+        self.path = path
         self.meta = meta
         self.selection_trail = selection
         self.save = save
@@ -3190,7 +3202,12 @@ class TextFragmentsInputHandler(StringInputHandler):
         )
 
     def create_selection(self, values):
-        return dict(values, what="text_fragments", paragraph_id="??")
+        return dict(
+            values,
+            what="text_fragments",
+            paragraph_id=self.paragraph_id,
+            path=self.path
+        )
 
     def build(self):
         builder = TextPropsBuilder(

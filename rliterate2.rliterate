@@ -1614,7 +1614,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width,\n        ),\n    }\n",
+"text":"(\n            paragraph[\"id\"],\n            [\"fragments\"],\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width,\n        ),\n    }\n",
 "type":"code"
 }
 ],
@@ -1668,7 +1668,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-page_theme[\"indent_size\"],\n        ),\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n\n",
+"text":"(\n            paragraph[\"id\"],\n            [\"fragments\"],\n            paragraph[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-page_theme[\"indent_size\"],\n        ),\n        \"indent_size\": page_theme[\"indent_size\"],\n    }\n\n",
 "type":"code"
 }
 ],
@@ -1761,7 +1761,7 @@
 "type":"variable"
 },
 {
-"text":"(\n            child[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
+"text":"(\n            paragraph[\"id\"],\n            [\"children\"]+path+[\"fragments\"],\n            child[\"fragments\"],\n            paragraph[\"meta\"],\n            selection,\n            page_theme,\n            actions,\n            save,\n            max_width=body_width-(level+1)*page_theme[\"indent_size\"],\n            line_height=page_theme[\"line_height\"]\n        ),\n    }\n\ndef _get_bullet_text(list_type, index):\n    if list_type == \"ordered\":\n        return \"{}. \".format(index + 1)\n    else:\n        return u\"\\u2022 \"\n",
 "type":"code"
 }
 ],
@@ -2083,7 +2083,7 @@
 "type":"variable"
 },
 {
-"text":"(\n                paragraph[\"fragments\"],\n                paragraph[\"meta\"],\n                selection,\n                page_theme,\n                actions,\n                save,\n                align=\"center\",\n                max_width=body_width-2*page_theme[\"indent_size\"],\n            ),\n        },\n    }\n",
+"text":"(\n                paragraph[\"id\"],\n                [\"fragments\"],\n                paragraph[\"fragments\"],\n                paragraph[\"meta\"],\n                selection,\n                page_theme,\n                actions,\n                save,\n                align=\"center\",\n                max_width=body_width-2*page_theme[\"indent_size\"],\n            ),\n        },\n    }\n",
 "type":"code"
 }
 ],
@@ -2891,7 +2891,7 @@
 "type":"variable"
 },
 {
-"text":"(fragments, meta, selection, page_theme, actions, save, align=\"left\", **kwargs):\n    input_handler = ",
+"text":"(paragraph_id, path, fragments, meta, selection, page_theme, actions, save, align=\"left\", **kwargs):\n    input_handler = ",
 "type":"code"
 },
 {
@@ -2899,7 +2899,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        fragments,\n        meta,\n        selection,\n        save,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        \"toolbar\": input_handler.toolbar_props,\n        **kwargs,\n    }\n",
+"text":"(\n        paragraph_id,\n        path,\n        fragments,\n        meta,\n        selection,\n        save,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        \"toolbar\": input_handler.toolbar_props,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -2933,7 +2933,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, data, meta, selection, save, page_theme):\n        self.meta = meta\n        self.selection_trail = selection\n        self.save = save\n        self.page_theme = page_theme\n        ",
+"text":"):\n\n    def __init__(self, paragraph_id, path, data, meta, selection, save, page_theme):\n        self.paragraph_id = paragraph_id\n        self.path = path\n        self.meta = meta\n        self.selection_trail = selection\n        self.save = save\n        self.page_theme = page_theme\n        ",
 "type":"code"
 },
 {
@@ -2949,7 +2949,7 @@
 "type":"variable"
 },
 {
-"text":"(self, values):\n        return dict(values, what=\"text_fragments\", paragraph_id=\"??\")\n\n    def ",
+"text":"(self, values):\n        return dict(\n            values,\n            what=\"text_fragments\",\n            paragraph_id=self.paragraph_id,\n            path=self.path\n        )\n\n    def ",
 "type":"code"
 },
 {
