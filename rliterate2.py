@@ -576,7 +576,6 @@ def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph,
             ["fragments"],
-            paragraph["fragments"],
             selection,
             page_theme,
             actions,
@@ -591,7 +590,6 @@ def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions)
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph,
             ["fragments"],
-            paragraph["fragments"],
             selection,
             page_theme,
             actions,
@@ -658,7 +656,6 @@ def list_item_row_props(paragraph, child_type, index, child, page_theme, body_wi
         "text_edit_props": text_fragments_to_text_edit_props(
             paragraph,
             ["children"]+path+["fragments"],
-            child["fragments"],
             selection,
             page_theme,
             actions,
@@ -812,7 +809,6 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
             "text_edit_props": text_fragments_to_text_edit_props(
                 paragraph,
                 ["fragments"],
-                paragraph["fragments"],
                 selection,
                 page_theme,
                 actions,
@@ -833,11 +829,10 @@ def unknown_paragraph_props(paragraph, page_theme, body_width, selection, action
         ),
     }
 
-def text_fragments_to_text_edit_props(paragraph, path, fragments, selection, page_theme, actions, align="left", **kwargs):
+def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, actions, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
         paragraph,
         path,
-        fragments,
         selection,
         actions["edit_paragraph"],
         page_theme
@@ -3143,12 +3138,15 @@ class TextFragmentsToolbar(Panel):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, paragraph, path, data, selection, edit_paragraph, page_theme):
+    def __init__(self, paragraph, path, selection, edit_paragraph, page_theme):
         self.paragraph = paragraph
         self.path = path
         self.selection_trail = selection
         self.edit_paragraph = edit_paragraph
         self.page_theme = page_theme
+        data = self.paragraph
+        for part in path:
+            data = data[part]
         StringInputHandler.__init__(
             self,
             data,
