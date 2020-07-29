@@ -581,7 +581,6 @@ def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
             selection,
             page_theme,
             actions,
-            actions["edit_paragraph"],
             max_width=body_width,
         ),
     }
@@ -598,7 +597,6 @@ def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions)
             selection,
             page_theme,
             actions,
-            actions["edit_paragraph"],
             max_width=body_width-page_theme["indent_size"],
         ),
         "indent_size": page_theme["indent_size"],
@@ -667,7 +665,6 @@ def list_item_row_props(paragraph, child_type, index, child, page_theme, body_wi
             selection,
             page_theme,
             actions,
-            actions["edit_paragraph"],
             max_width=body_width-(level+1)*page_theme["indent_size"],
             line_height=page_theme["line_height"]
         ),
@@ -823,7 +820,6 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
                 selection,
                 page_theme,
                 actions,
-                actions["edit_paragraph"],
                 align="center",
                 max_width=body_width-2*page_theme["indent_size"],
             ),
@@ -841,14 +837,14 @@ def unknown_paragraph_props(paragraph, page_theme, body_width, selection, action
         ),
     }
 
-def text_fragments_to_text_edit_props(paragraph, path, fragments, meta, selection, page_theme, actions, edit_paragraph, align="left", **kwargs):
+def text_fragments_to_text_edit_props(paragraph, path, fragments, meta, selection, page_theme, actions, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
         paragraph,
         path,
         fragments,
         meta,
         selection,
-        edit_paragraph,
+        actions["edit_paragraph"],
         page_theme
     )
     return {
