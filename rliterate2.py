@@ -577,7 +577,6 @@ def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
             paragraph,
             ["fragments"],
             paragraph["fragments"],
-            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -593,7 +592,6 @@ def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions)
             paragraph,
             ["fragments"],
             paragraph["fragments"],
-            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -661,7 +659,6 @@ def list_item_row_props(paragraph, child_type, index, child, page_theme, body_wi
             paragraph,
             ["children"]+path+["fragments"],
             child["fragments"],
-            paragraph["meta"],
             selection,
             page_theme,
             actions,
@@ -816,7 +813,6 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
                 paragraph,
                 ["fragments"],
                 paragraph["fragments"],
-                paragraph["meta"],
                 selection,
                 page_theme,
                 actions,
@@ -837,12 +833,11 @@ def unknown_paragraph_props(paragraph, page_theme, body_width, selection, action
         ),
     }
 
-def text_fragments_to_text_edit_props(paragraph, path, fragments, meta, selection, page_theme, actions, align="left", **kwargs):
+def text_fragments_to_text_edit_props(paragraph, path, fragments, selection, page_theme, actions, align="left", **kwargs):
     input_handler = TextFragmentsInputHandler(
         paragraph,
         path,
         fragments,
-        meta,
         selection,
         actions["edit_paragraph"],
         page_theme
@@ -3148,10 +3143,9 @@ class TextFragmentsToolbar(Panel):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, paragraph, path, data, meta, selection, edit_paragraph, page_theme):
+    def __init__(self, paragraph, path, data, selection, edit_paragraph, page_theme):
         self.paragraph = paragraph
         self.path = path
-        self.meta = meta
         self.selection_trail = selection
         self.edit_paragraph = edit_paragraph
         self.page_theme = page_theme
@@ -3238,7 +3232,7 @@ class TextFragmentsInputHandler(StringInputHandler):
                 params.update(
                     self.page_theme["token_styles"]["RLiterate.Variable"]
                 )
-                text = self.meta["variables"][fragment["id"]]
+                text = self.paragraph["meta"]["variables"][fragment["id"]]
             elif fragment["type"] == "reference":
                 params.update(
                     self.page_theme["token_styles"]["RLiterate.Reference"]
@@ -3247,7 +3241,7 @@ class TextFragmentsInputHandler(StringInputHandler):
                     text = fragment["text"]
                     placeholder = False
                 else:
-                    text = self.meta["page_titles"][fragment["page_id"]]
+                    text = self.paragraph["meta"]["page_titles"][fragment["page_id"]]
                     placeholder = True
             elif fragment["type"] == "link":
                 params.update(
