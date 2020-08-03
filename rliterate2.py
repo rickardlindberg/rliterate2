@@ -144,8 +144,9 @@ def format_title(path):
 
 def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
-    if (document.get(["selection"]).visible and
-        document.get(["selection"]).value[-1].get("what", None) == "text_fragments"):
+    selection = document.get(["selection"])
+    if (selection.value and
+        selection.value[-1].get("what", None) == "text_fragments"):
         text_fragment_selection = TextPropsBuilder().text(
             str(document.get(["selection"]).widget_path)
             +
@@ -159,6 +160,7 @@ def toolbar_props(document):
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
         "text_fragment_selection": text_fragment_selection,
+        "selection": selection,
         "actions": document.actions,
     }
 
@@ -1152,6 +1154,7 @@ class StringInputHandler(object):
 class WidgetMixin(object):
 
     def __init__(self, parent, handlers, props):
+        self._pending_props = None
         self._parent = parent
         self._props = {}
         self._builtin_props = {}
@@ -1193,8 +1196,16 @@ class WidgetMixin(object):
         return value
 
     def update_props(self, props):
-        if self._update_props(props):
-            self._update_gui()
+        if self._pending_props is None:
+            self._pending_props = props
+            if self._update_props(props):
+                self._update_gui()
+            pending_props = self._pending_props
+            self._pending_props = None
+            if pending_props is not props:
+                self.update_props(pending_props)
+        else:
+            self._pending_props = props
 
     def _update_props(self, props):
         self._changed_props = []
@@ -2023,6 +2034,16 @@ class Toolbar(Panel):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
+            props['icon'] = 'add'
+            handlers['button'] = lambda event: self._add_text()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
             props.update(self.prop(['text_fragment_selection']))
             sizer["flag"] |= wx.ALIGN_CENTER
             sizer["border"] = self.prop(['margin'])
@@ -2033,6 +2054,19 @@ class Toolbar(Panel):
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
+
+    def _add_text(self):
+        selection = self.prop(["selection"])
+        self.prop(["actions", "modify_paragraph"])(
+            selection.value[-1]["paragraph_id"],
+            selection.value[-1]["path"],
+            lambda fragments: [{"type": "text", "text": "Hej!"}]+fragments,
+            selection._replace(stamp=genid(), value=selection.value[:-1]+[dict(selection.value[-1], **{
+                "start": [0, 0],
+                "end": [0, 3],
+                "cursor_at_start": False,
+            })])
+        )
 
 class ToolbarDivider(Panel):
 
@@ -2647,14 +2681,16 @@ class TitleInputHandler(StringInputHandler):
             if selection is not None:
                 builder.selection_start(selection["start"])
                 builder.selection_end(selection["end"])
-                if selection["cursor_at_start"]:
-                    builder.cursor(selection["start"], main=True)
-                else:
-                    builder.cursor(selection["end"], main=True)
+                if self.selection_trail.active:
+                    if selection["cursor_at_start"]:
+                        builder.cursor(selection["start"], main=True)
+                    else:
+                        builder.cursor(selection["end"], main=True)
             builder.text(self.data, index_increment=0)
         else:
-            if selection is not None:
-                builder.cursor(main=True)
+            if self.selection_trail.active:
+                if selection is not None:
+                    builder.cursor(main=True)
             builder.text("Enter title...", color=self.page_theme["placeholder_color"], index_constant=0)
         return builder.get()
 
@@ -2942,15 +2978,16 @@ class TextEdit(Panel):
 
     def _box(self, selection, selection_color):
         return {
-            "width": 1 if selection.present() else 0,
+            "width": 1 if selection.get() else 0,
             "color": selection_color,
         }
 
     def _immediate(self, selection):
-        return selection.present()
+        return selection.get()
 
     def _focus(self, selection):
-        return selection.present()
+        if selection.value:
+            return selection.stamp
 
     def _margin(self):
         width = self.prop(["selection_box", "width"])
@@ -2960,7 +2997,7 @@ class TextEdit(Panel):
             return 0
 
     def _on_click(self, event, selection):
-        if selection.present():
+        if selection.value:
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -2976,7 +3013,7 @@ class TextEdit(Panel):
             )
 
     def _on_left_down(self, event, selection):
-        if not selection.present():
+        if not selection.value:
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -2992,7 +3029,7 @@ class TextEdit(Panel):
             )
 
     def _on_drag(self, event, selection):
-        if not selection.present():
+        if not selection.value:
             return
         if event.initial:
             self._initial_index = self._get_index(event.x, event.y)
@@ -3021,14 +3058,14 @@ class TextEdit(Panel):
                 return character.get("index_left", None)
 
     def _on_key(self, event, selection):
-        if selection.present():
+        if selection.value:
             self.prop(["input_handler"]).handle_key(
                 event,
                 self.get_widget("text")
             )
 
     def _get_cursor(self, selection):
-        if selection.present():
+        if selection.value:
             return "beam"
         else:
             return None
@@ -3037,10 +3074,10 @@ class TextEdit(Panel):
         return self.prop_with_default(["toolbar"], None)
 
     def _on_focus(self, selection):
-        self.prop(["actions", "show_selection"])(selection.trail)
+        self.prop(["actions", "activate_selection"])(selection.trail)
 
     def _on_unfocus(self, selection):
-        self.prop(["actions", "hide_selection"])(selection.trail)
+        self.prop(["actions", "deactivate_selection"])(selection.trail)
 
 class TextPropsBuilder(object):
 
@@ -3277,20 +3314,20 @@ class TextFragmentsInputHandler(StringInputHandler):
         if start is not None:
             if placeholder:
                 builder.selection_start(0)
-                if cursor_at_start:
+                if cursor_at_start and self.selection_trail.active:
                     builder.cursor(1, main=True)
             else:
                 builder.selection_start(start)
-                if cursor_at_start:
+                if cursor_at_start and self.selection_trail.active:
                     builder.cursor(start, main=True)
         if end is not None:
             if placeholder:
                 builder.selection_end(len(text))
-                if not cursor_at_start:
+                if not cursor_at_start and self.selection_trail.active:
                     builder.cursor(1, main=True)
             else:
                 builder.selection_end(end)
-                if not cursor_at_start:
+                if not cursor_at_start and self.selection_trail.active:
                     builder.cursor(end, main=True)
         builder.text(text, **params)
 
@@ -3390,7 +3427,8 @@ class Document(Immutable):
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
             "edit_paragraph": self.edit_paragraph,
-            "hide_selection": self.hide_selection,
+            "modify_paragraph": self.modify_paragraph,
+            "deactivate_selection": self.deactivate_selection,
             "move_page": self.move_page,
             "open_page": self.open_page,
             "rotate_theme": self.rotate,
@@ -3399,7 +3437,7 @@ class Document(Immutable):
             "set_page_body_width": self.set_page_body_width,
             "set_selection": self.set_selection,
             "set_toc_width": self.set_toc_width,
-            "show_selection": self.show_selection,
+            "activate_selection": self.activate_selection,
             "toggle_collapsed": self.toggle_collapsed,
         }
 
@@ -3498,6 +3536,19 @@ class Document(Immutable):
                 path = self._find_paragraph(source_id)
                 for key, value in attributes.items():
                     self.replace(path + [key], value)
+                if new_selection is not None:
+                    self.set_selection(new_selection)
+        except ParagraphNotFound:
+            pass
+
+    def modify_paragraph(self, source_id, path, fn, new_selection):
+        try:
+            with self.transaction():
+                self.modify(
+                    self._find_paragraph(source_id)+path,
+                    fn,
+                    only_if_differs=True
+                )
                 if new_selection is not None:
                     self.set_selection(new_selection)
         except ParagraphNotFound:
@@ -3739,21 +3790,20 @@ class Document(Immutable):
     def set_selection(self, selection):
         self.replace(["selection"], selection)
 
-    def show_selection(self, widget_path):
-        self._set_selection_visible(widget_path, True)
+    def activate_selection(self, widget_path):
+        self._set_selection_active(widget_path, True)
 
-    def hide_selection(self, widget_path):
-        self._set_selection_visible(widget_path, False)
+    def deactivate_selection(self, widget_path):
+        self._set_selection_active(widget_path, False)
 
-    def _set_selection_visible(self, widget_path, visible):
+    def _set_selection_active(self, widget_path, active):
         current_selection = self.get(["selection"])
         if (current_selection.widget_path == widget_path and
-            current_selection.visible != visible):
+            current_selection.active != active):
             self.modify(
                 ["selection"],
-                lambda x: x._replace(visible=visible)
+                lambda x: x._replace(active=active)
             )
-
 
 class PageNotFound(Exception):
     pass
@@ -3817,11 +3867,11 @@ class CodeChunk(object):
                     part_index += 1
                     text = text[len(part["text"]):]
 
-class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "visible"])):
+class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "active", "stamp"])):
 
     @staticmethod
     def empty():
-        return Selection(trail=[], value=[], widget_path=[], visible=False)
+        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())
 
     def add(self, *args):
         new_value = self.value
@@ -3829,16 +3879,17 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "visib
         for arg in args:
             if new_value and new_value[0] == arg:
                 new_value = new_value[1:]
-                visible = self.visible
+                active = self.active
             else:
                 new_value = []
-                visible = False
+                active = False
             new_trail = new_trail + [arg]
         return Selection(
             trail=new_trail,
             value=new_value,
             widget_path=self.widget_path,
-            visible=visible
+            active=active,
+            stamp=self.stamp
         )
 
     def create(self, *args):
@@ -3846,14 +3897,12 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "visib
             trail=[],
             value=self.trail+list(args),
             widget_path=self.trail,
-            visible=True
+            active=True,
+            stamp=genid()
         )
 
-    def present(self):
-        return len(self.value) > 0 and self.visible
-
     def get(self):
-        if self.present():
+        if self.value:
             return self.value[0]
 
     def path(self):

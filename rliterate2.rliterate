@@ -628,8 +628,16 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragment_selection) {\n        Text {\n            #text_fragment_selection\n            %align[CENTER]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragment_selection) {\n        ToolbarButton {\n            icon    = \"add\"\n            @button = self._add_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        Text {\n            #text_fragment_selection\n            %align[CENTER]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n\n",
 "type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"Toolbar"
+],
+"prefix":"",
+"type":"chunk"
 }
 ],
 "id":"7d87330167694a41a0222b278aeb5aa5",
@@ -642,6 +650,25 @@
 },
 {
 "chunkpath":[
+"classes",
+"Toolbar"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[-1][\"paragraph_id\"],\n        selection.value[-1][\"path\"],\n        lambda fragments: [{\"type\": \"text\", \"text\": \"Hej!\"}]+fragments,\n        selection._replace(stamp=genid(), value=selection.value[:-1]+[dict(selection.value[-1], **{\n            \"start\": [0, 0],\n            \"end\": [0, 3],\n            \"cursor_at_start\": False,\n        })])\n    )\n",
+"type":"code"
+}
+],
+"id":"10b0105fa1c045ad963dbd2c06652a66",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -649,7 +676,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    if (document.get([\"selection\"]).visible and\n        document.get([\"selection\"]).value[-1].get(\"what\", None) == \"text_fragments\"):\n        text_fragment_selection = TextPropsBuilder().text(\n            str(document.get([\"selection\"]).widget_path)\n            +\n            \"\\n\"\n            +\n            str(document.get([\"selection\"]).value[-1])\n        ).get()\n    else:\n        text_fragment_selection = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"text_fragment_selection\": text_fragment_selection,\n        \"actions\": document.actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if (selection.value and\n        selection.value[-1].get(\"what\", None) == \"text_fragments\"):\n        text_fragment_selection = TextPropsBuilder().text(\n            str(document.get([\"selection\"]).widget_path)\n            +\n            \"\\n\"\n            +\n            str(document.get([\"selection\"]).value[-1])\n        ).get()\n    else:\n        text_fragment_selection = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"text_fragment_selection\": text_fragment_selection,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -1558,7 +1585,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        if self.data:\n            if selection is not None:\n                builder.selection_start(selection[\"start\"])\n                builder.selection_end(selection[\"end\"])\n                if selection[\"cursor_at_start\"]:\n                    builder.cursor(selection[\"start\"], main=True)\n                else:\n                    builder.cursor(selection[\"end\"], main=True)\n            builder.text(self.data, index_increment=0)\n        else:\n            if selection is not None:\n                builder.cursor(main=True)\n            builder.text(\"Enter title...\", color=self.page_theme[\"placeholder_color\"], index_constant=0)\n        return builder.get()\n\n    def save(self, new_title, new_selection):\n        self.actions[\"edit_page\"](\n            self.page[\"id\"],\n            {\n                \"title\": new_title,\n            },\n            self.selection_trail.create(new_selection)\n        )\n",
+"text":"(self, builder, selection):\n        if self.data:\n            if selection is not None:\n                builder.selection_start(selection[\"start\"])\n                builder.selection_end(selection[\"end\"])\n                if self.selection_trail.active:\n                    if selection[\"cursor_at_start\"]:\n                        builder.cursor(selection[\"start\"], main=True)\n                    else:\n                        builder.cursor(selection[\"end\"], main=True)\n            builder.text(self.data, index_increment=0)\n        else:\n            if self.selection_trail.active:\n                if selection is not None:\n                    builder.cursor(main=True)\n            builder.text(\"Enter title...\", color=self.page_theme[\"placeholder_color\"], index_constant=0)\n        return builder.get()\n\n    def save(self, new_title, new_selection):\n        self.actions[\"edit_page\"](\n            self.page[\"id\"],\n            {\n                \"title\": new_title,\n            },\n            self.selection_trail.create(new_selection)\n        )\n",
 "type":"code"
 }
 ],
@@ -2585,7 +2612,7 @@
 ],
 "fragments":[
 {
-"text":"def _box(self, selection, selection_color):\n    return {\n        \"width\": 1 if selection.present() else 0,\n        \"color\": selection_color,\n    }\n",
+"text":"def _box(self, selection, selection_color):\n    return {\n        \"width\": 1 if selection.get() else 0,\n        \"color\": selection_color,\n    }\n",
 "type":"code"
 }
 ],
@@ -2604,7 +2631,7 @@
 ],
 "fragments":[
 {
-"text":"def _immediate(self, selection):\n    return selection.present()\n",
+"text":"def _immediate(self, selection):\n    return selection.get()\n",
 "type":"code"
 }
 ],
@@ -2623,7 +2650,7 @@
 ],
 "fragments":[
 {
-"text":"def _focus(self, selection):\n    return selection.present()\n",
+"text":"def _focus(self, selection):\n    if selection.value:\n        return selection.stamp\n",
 "type":"code"
 }
 ],
@@ -2661,7 +2688,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_click(self, event, selection):\n    if selection.present():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_click(self, event, selection):\n    if selection.value:\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2688,7 +2715,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_left_down(self, event, selection):\n    if not selection.present():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_left_down(self, event, selection):\n    if not selection.value:\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2715,7 +2742,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, selection):\n    if not selection.present():\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
+"text":"def _on_drag(self, event, selection):\n    if not selection.value:\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2761,7 +2788,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_key(self, event, selection):\n    if selection.present():\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
+"text":"def _on_key(self, event, selection):\n    if selection.value:\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
 "type":"code"
 }
 ],
@@ -2780,7 +2807,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_cursor(self, selection):\n    if selection.present():\n        return \"beam\"\n    else:\n        return None\n",
+"text":"def _get_cursor(self, selection):\n    if selection.value:\n        return \"beam\"\n    else:\n        return None\n",
 "type":"code"
 }
 ],
@@ -2818,7 +2845,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_focus(self, selection):\n    self.prop([\"actions\", \"show_selection\"])(selection.trail)\n",
+"text":"def _on_focus(self, selection):\n    self.prop([\"actions\", \"activate_selection\"])(selection.trail)\n",
 "type":"code"
 }
 ],
@@ -2837,7 +2864,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_unfocus(self, selection):\n    self.prop([\"actions\", \"hide_selection\"])(selection.trail)\n",
+"text":"def _on_unfocus(self, selection):\n    self.prop([\"actions\", \"deactivate_selection\"])(selection.trail)\n",
 "type":"code"
 }
 ],
@@ -2973,7 +3000,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params[\"index_prefix\"] = [index]\n            start = None\n            end = None\n            cursor_at_start = True\n            placeholder = False\n            if selection is not None:\n                cursor_at_start = selection[\"cursor_at_start\"]\n                if selection[\"start\"][0] == index:\n                    start = selection[\"start\"][1]\n                if selection[\"end\"][0] == index:\n                    end = selection[\"end\"][1]\n            if (cursor_at_start and start is not None) or (not cursor_at_start and end is not None):\n                self.toolbar_props = {\n                    \"widget\": TextFragmentsToolbar,\n                    \"props\": {\n                        \"background\": \"#eeeeee\",\n                        \"text_props\": TextPropsBuilder().text(str(fragment)).get(),\n                    },\n                }\n            if fragment[\"type\"] == \"text\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Text\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"strong\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Strong\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"emphasis\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Emphasis\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"code\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Code\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"variable\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Variable\"]\n                )\n                text = self.paragraph[\"meta\"][\"variables\"][fragment[\"id\"]]\n            elif fragment[\"type\"] == \"reference\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Reference\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = self.paragraph[\"meta\"][\"page_titles\"][fragment[\"page_id\"]]\n                    placeholder = True\n            elif fragment[\"type\"] == \"link\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Link\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = fragment[\"url\"]\n                    placeholder = True\n            self.build_text(\n                text,\n                start,\n                end,\n                cursor_at_start,\n                params,\n                builder,\n                placeholder\n            )\n\n    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):\n        if text:\n            if placeholder and self.selection is not None:\n                text = \"<{}>\".format(text)\n                params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        else:\n            placeholder = True\n            text = \"<enter text>\"\n            params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        if placeholder:\n            params[\"index_constant\"] = 0\n        else:\n            params[\"index_increment\"] = 0\n        if start is not None:\n            if placeholder:\n                builder.selection_start(0)\n                if cursor_at_start:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_start(start)\n                if cursor_at_start:\n                    builder.cursor(start, main=True)\n        if end is not None:\n            if placeholder:\n                builder.selection_end(len(text))\n                if not cursor_at_start:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_end(end)\n                if not cursor_at_start:\n                    builder.cursor(end, main=True)\n        builder.text(text, **params)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
+"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params[\"index_prefix\"] = [index]\n            start = None\n            end = None\n            cursor_at_start = True\n            placeholder = False\n            if selection is not None:\n                cursor_at_start = selection[\"cursor_at_start\"]\n                if selection[\"start\"][0] == index:\n                    start = selection[\"start\"][1]\n                if selection[\"end\"][0] == index:\n                    end = selection[\"end\"][1]\n            if (cursor_at_start and start is not None) or (not cursor_at_start and end is not None):\n                self.toolbar_props = {\n                    \"widget\": TextFragmentsToolbar,\n                    \"props\": {\n                        \"background\": \"#eeeeee\",\n                        \"text_props\": TextPropsBuilder().text(str(fragment)).get(),\n                    },\n                }\n            if fragment[\"type\"] == \"text\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Text\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"strong\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Strong\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"emphasis\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Emphasis\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"code\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Code\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"variable\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Variable\"]\n                )\n                text = self.paragraph[\"meta\"][\"variables\"][fragment[\"id\"]]\n            elif fragment[\"type\"] == \"reference\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Reference\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = self.paragraph[\"meta\"][\"page_titles\"][fragment[\"page_id\"]]\n                    placeholder = True\n            elif fragment[\"type\"] == \"link\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Link\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = fragment[\"url\"]\n                    placeholder = True\n            self.build_text(\n                text,\n                start,\n                end,\n                cursor_at_start,\n                params,\n                builder,\n                placeholder\n            )\n\n    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):\n        if text:\n            if placeholder and self.selection is not None:\n                text = \"<{}>\".format(text)\n                params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        else:\n            placeholder = True\n            text = \"<enter text>\"\n            params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        if placeholder:\n            params[\"index_constant\"] = 0\n        else:\n            params[\"index_increment\"] = 0\n        if start is not None:\n            if placeholder:\n                builder.selection_start(0)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_start(start)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(start, main=True)\n        if end is not None:\n            if placeholder:\n                builder.selection_end(len(text))\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_end(end)\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(end, main=True)\n        builder.text(text, **params)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
 "type":"code"
 },
 {
@@ -3288,7 +3315,7 @@
 ],
 "fragments":[
 {
-"text":"def edit_paragraph(self, source_id, attributes, new_selection):\n    try:\n        with self.transaction():\n            path = self._find_paragraph(source_id)\n            for key, value in attributes.items():\n                self.replace(path + [key], value)\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
+"text":"def edit_paragraph(self, source_id, attributes, new_selection):\n    try:\n        with self.transaction():\n            path = self._find_paragraph(source_id)\n            for key, value in attributes.items():\n                self.replace(path + [key], value)\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n\ndef modify_paragraph(self, source_id, path, fn, new_selection):\n    try:\n        with self.transaction():\n            self.modify(\n                self._find_paragraph(source_id)+path,\n                fn,\n                only_if_differs=True\n            )\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -3518,7 +3545,7 @@
 ],
 "fragments":[
 {
-"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef show_selection(self, widget_path):\n    self._set_selection_visible(widget_path, True)\n\ndef hide_selection(self, widget_path):\n    self._set_selection_visible(widget_path, False)\n\ndef _set_selection_visible(self, widget_path, visible):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.widget_path == widget_path and\n        current_selection.visible != visible):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(visible=visible)\n        )\n\n",
+"text":"def set_selection(self, selection):\n    self.replace([\"selection\"], selection)\n\ndef activate_selection(self, widget_path):\n    self._set_selection_active(widget_path, True)\n\ndef deactivate_selection(self, widget_path):\n    self._set_selection_active(widget_path, False)\n\ndef _set_selection_active(self, widget_path, active):\n    current_selection = self.get([\"selection\"])\n    if (current_selection.widget_path == widget_path and\n        current_selection.active != active):\n        self.modify(\n            [\"selection\"],\n            lambda x: x._replace(active=active)\n        )\n",
 "type":"code"
 }
 ],
@@ -3534,7 +3561,7 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"visible\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], visible=False)\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                visible = self.visible\n            else:\n                new_value = []\n                visible = False\n            new_trail = new_trail + [arg]\n        return Selection(\n            trail=new_trail,\n            value=new_value,\n            widget_path=self.widget_path,\n            visible=visible\n        )\n\n    def create(self, *args):\n        return Selection(\n            trail=[],\n            value=self.trail+list(args),\n            widget_path=self.trail,\n            visible=True\n        )\n\n    def present(self):\n        return len(self.value) > 0 and self.visible\n\n    def get(self):\n        if self.present():\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                active = self.active\n            else:\n                new_value = []\n                active = False\n            new_trail = new_trail + [arg]\n        return Selection(\n            trail=new_trail,\n            value=new_value,\n            widget_path=self.widget_path,\n            active=active,\n            stamp=self.stamp\n        )\n\n    def create(self, *args):\n        return Selection(\n            trail=[],\n            value=self.trail+list(args),\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def get(self):\n        if self.value:\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
 "type":"code"
 }
 ],
@@ -3569,7 +3596,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"edit_paragraph\": self.edit_paragraph,\n            \"hide_selection\": self.hide_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"show_selection\": self.show_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n        }\n\n",
+"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"edit_paragraph\": self.edit_paragraph,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n        }\n\n",
 "type":"code"
 },
 {
@@ -3826,7 +3853,7 @@
 ],
 "fragments":[
 {
-"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._parent = parent\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._update_props(props):\n            self._update_gui()\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
+"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._pending_props = None\n        self._parent = parent\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._pending_props is None:\n            self._pending_props = props\n            if self._update_props(props):\n                self._update_gui()\n            pending_props = self._pending_props\n            self._pending_props = None\n            if pending_props is not props:\n                self.update_props(pending_props)\n        else:\n            self._pending_props = props\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
 "type":"code"
 }
 ],
