@@ -2926,7 +2926,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        paragraph,\n        path,\n        selection,\n        actions[\"edit_paragraph\"],\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        \"toolbar\": input_handler.toolbar_props,\n        **kwargs,\n    }\n",
+"text":"(\n        paragraph,\n        path,\n        selection,\n        actions[\"modify_paragraph\"],\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        \"toolbar\": input_handler.toolbar_props,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -2960,7 +2960,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, paragraph, path, selection, edit_paragraph, page_theme):\n        self.paragraph = paragraph\n        self.path = path\n        self.selection_trail = selection\n        self.edit_paragraph = edit_paragraph\n        self.page_theme = page_theme\n        data = self.paragraph\n        for part in path:\n            data = data[part]\n        ",
+"text":"):\n\n    def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):\n        self.paragraph = paragraph\n        self.path = path\n        self.selection_trail = selection\n        self.modify_paragraph = modify_paragraph\n        self.page_theme = page_theme\n        data = self.paragraph\n        for part in path:\n            data = data[part]\n        ",
 "type":"code"
 },
 {
@@ -2968,7 +2968,7 @@
 "type":"variable"
 },
 {
-"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def save(self, fragments, selection):\n        self.edit_paragraph(\n            self.paragraph[\"id\"],\n            {\n                self.path[0]: im_modify(\n                    self.paragraph[self.path[0]],\n                    self.path[1:],\n                    lambda value: fragments\n                )\n            },\n            self.selection_trail.create(selection)\n        )\n\n    def ",
+"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def save(self, fragments, selection):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            lambda value: fragments,\n            self.selection_trail.create(selection)\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -3315,7 +3315,7 @@
 ],
 "fragments":[
 {
-"text":"def edit_paragraph(self, source_id, attributes, new_selection):\n    try:\n        with self.transaction():\n            path = self._find_paragraph(source_id)\n            for key, value in attributes.items():\n                self.replace(path + [key], value)\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n\ndef modify_paragraph(self, source_id, path, fn, new_selection):\n    try:\n        with self.transaction():\n            self.modify(\n                self._find_paragraph(source_id)+path,\n                fn,\n                only_if_differs=True\n            )\n            if new_selection is not None:\n                self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
+"text":"def modify_paragraph(self, source_id, path, fn, new_selection):\n    try:\n        with self.transaction():\n            self.modify(\n                self._find_paragraph(source_id)+path,\n                fn,\n                only_if_differs=True\n            )\n            self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -3596,7 +3596,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"edit_paragraph\": self.edit_paragraph,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n        }\n\n",
+"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n        }\n\n",
 "type":"code"
 },
 {

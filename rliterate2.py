@@ -836,7 +836,7 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
         paragraph,
         path,
         selection,
-        actions["edit_paragraph"],
+        actions["modify_paragraph"],
         page_theme
     )
     return {
@@ -3175,11 +3175,11 @@ class TextFragmentsToolbar(Panel):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, paragraph, path, selection, edit_paragraph, page_theme):
+    def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):
         self.paragraph = paragraph
         self.path = path
         self.selection_trail = selection
-        self.edit_paragraph = edit_paragraph
+        self.modify_paragraph = modify_paragraph
         self.page_theme = page_theme
         data = self.paragraph
         for part in path:
@@ -3191,15 +3191,10 @@ class TextFragmentsInputHandler(StringInputHandler):
         )
 
     def save(self, fragments, selection):
-        self.edit_paragraph(
+        self.modify_paragraph(
             self.paragraph["id"],
-            {
-                self.path[0]: im_modify(
-                    self.paragraph[self.path[0]],
-                    self.path[1:],
-                    lambda value: fragments
-                )
-            },
+            self.path,
+            lambda value: fragments,
             self.selection_trail.create(selection)
         )
 
@@ -3426,7 +3421,6 @@ class Document(Immutable):
         self.actions = {
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
-            "edit_paragraph": self.edit_paragraph,
             "modify_paragraph": self.modify_paragraph,
             "deactivate_selection": self.deactivate_selection,
             "move_page": self.move_page,
@@ -3530,17 +3524,6 @@ class Document(Immutable):
                     self.set_selection(new_selection)
         except PageNotFound:
             pass
-    def edit_paragraph(self, source_id, attributes, new_selection):
-        try:
-            with self.transaction():
-                path = self._find_paragraph(source_id)
-                for key, value in attributes.items():
-                    self.replace(path + [key], value)
-                if new_selection is not None:
-                    self.set_selection(new_selection)
-        except ParagraphNotFound:
-            pass
-
     def modify_paragraph(self, source_id, path, fn, new_selection):
         try:
             with self.transaction():
@@ -3549,8 +3532,7 @@ class Document(Immutable):
                     fn,
                     only_if_differs=True
                 )
-                if new_selection is not None:
-                    self.set_selection(new_selection)
+                self.set_selection(new_selection)
         except ParagraphNotFound:
             pass
     def _find_paragraph(self, paragraph_id):
