@@ -850,7 +850,6 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
         "selection_color": page_theme["selection_border"],
         "input_handler": input_handler,
         "actions": actions,
-        "toolbar": input_handler.toolbar_props,
         **kwargs,
     }
 
@@ -2959,22 +2958,6 @@ class TextEdit(Panel):
         sizer["border"] = self._margin()
         sizer["flag"] |= wx.ALL
         self._create_widget(Text, props, sizer, handlers, name)
-        if_condition = self._has_toolbar()
-        def loop_fn(loopvar):
-            pass
-            props = {}
-            sizer = {"flag": 0, "border": 0, "proportion": 0}
-            name = None
-            handlers = {}
-            props.update(self.prop(['toolbar', 'props']))
-            props['max_width'] = sub(self.prop(['max_width']), mul(2, self.prop(['selection_box', 'width'])))
-            sizer["flag"] |= wx.EXPAND
-            sizer["border"] = self.prop(['selection_box', 'width'])
-            sizer["flag"] |= wx.ALL
-            self._create_widget(self.prop(['toolbar', 'widget']), props, sizer, handlers, name)
-        with self._loop():
-            for loopvar in ([None] if (if_condition) else []):
-                loop_fn(loopvar)
 
     def _box(self, selection, selection_color):
         return {
@@ -3070,9 +3053,6 @@ class TextEdit(Panel):
         else:
             return None
 
-    def _has_toolbar(self):
-        return self.prop_with_default(["toolbar"], None)
-
     def _on_focus(self, selection):
         self.prop(["actions", "activate_selection"])(selection.trail)
 
@@ -3151,28 +3131,6 @@ class TextPropsBuilder(object):
     def _index(self, offset):
         return len(self._characters) + offset
 
-class TextFragmentsToolbar(Panel):
-
-    def _get_local_props(self):
-        return {
-        }
-
-    def _create_sizer(self):
-        return wx.BoxSizer(wx.HORIZONTAL)
-
-    def _create_widgets(self):
-        pass
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        props.update(self.prop(['text_props']))
-        props['max_width'] = sub(self.prop(['max_width']), 6)
-        sizer["flag"] |= wx.EXPAND
-        sizer["border"] = 3
-        sizer["flag"] |= wx.ALL
-        self._create_widget(Text, props, sizer, handlers, name)
-
 class TextFragmentsInputHandler(StringInputHandler):
 
     def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):
@@ -3212,7 +3170,6 @@ class TextFragmentsInputHandler(StringInputHandler):
             cursor_color=self.page_theme["cursor_color"],
             **self.page_theme["text_font"]
         )
-        self.toolbar_props = None
         self.build_with_selection(builder, self.selection)
         return builder
 
@@ -3230,14 +3187,6 @@ class TextFragmentsInputHandler(StringInputHandler):
                     start = selection["start"][1]
                 if selection["end"][0] == index:
                     end = selection["end"][1]
-            if (cursor_at_start and start is not None) or (not cursor_at_start and end is not None):
-                self.toolbar_props = {
-                    "widget": TextFragmentsToolbar,
-                    "props": {
-                        "background": "#eeeeee",
-                        "text_props": TextPropsBuilder().text(str(fragment)).get(),
-                    },
-                }
             if fragment["type"] == "text":
                 params.update(
                     self.page_theme["token_styles"]["RLiterate.Text"]

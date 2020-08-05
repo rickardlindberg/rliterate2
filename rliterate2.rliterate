@@ -2582,7 +2582,7 @@
 ],
 "fragments":[
 {
-"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text] {\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = self._on_focus(#selection)\n        @unfocus   = self._on_unfocus(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    }\n    if (self._has_toolbar()) {\n        #toolbar.widget {\n            #toolbar.props\n            max_width = sub(#max_width mul(2 #selection_box.width))\n            %align[EXPAND]\n            %margin[#selection_box.width,ALL]\n        }\n    }\n}\n\n",
+"text":"panel TextEdit %layout_rows {\n    selection_box = self._box(#selection #selection_color)\n    Text[text] {\n        #text_props\n        max_width  = sub(#max_width mul(2 self._margin()))\n        immediate  = self._immediate(#selection)\n        focus      = self._focus(#selection)\n        cursor     = self._get_cursor(#selection)\n        @click     = self._on_click(event #selection)\n        @left_down = self._on_left_down(event #selection)\n        @drag      = self._on_drag(event #selection)\n        @key       = self._on_key(event #selection)\n        @focus     = self._on_focus(#selection)\n        @unfocus   = self._on_unfocus(#selection)\n        %align[EXPAND]\n        %margin[self._margin(),ALL]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -2826,25 +2826,6 @@
 ],
 "fragments":[
 {
-"text":"def _has_toolbar(self):\n    return self.prop_with_default([\"toolbar\"], None)\n",
-"type":"code"
-}
-],
-"id":"50a32b1fbd514375a5ef05cf4f0fd4f1",
-"language":"",
-"post_process":[],
-"type":"code"
-},
-{
-"chunkpath":[
-"classes",
-"TextEdit"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
 "text":"def _on_focus(self, selection):\n    self.prop([\"actions\", \"activate_selection\"])(selection.trail)\n",
 "type":"code"
 }
@@ -2882,27 +2863,6 @@
 "paragraphs":[
 {
 "chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel TextFragmentsToolbar %layout_columns {\n    Text {\n        #text_props\n        max_width = sub(#max_width 6)\n        %align[EXPAND]\n        %margin[3,ALL]\n    }\n}\n",
-"type":"code"
-}
-],
-"id":"770aec51b9a34711ac2a73dafd1e553c",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-},
-{
-"chunkpath":[
 "functions"
 ],
 "filepath":[
@@ -2926,7 +2886,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        paragraph,\n        path,\n        selection,\n        actions[\"modify_paragraph\"],\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        \"toolbar\": input_handler.toolbar_props,\n        **kwargs,\n    }\n",
+"text":"(\n        paragraph,\n        path,\n        selection,\n        actions[\"modify_paragraph\"],\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -2984,7 +2944,7 @@
 "type":"variable"
 },
 {
-"text":"(self):\n        builder = TextPropsBuilder(\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"],\n            **self.page_theme[\"text_font\"]\n        )\n        self.toolbar_props = None\n        self.",
+"text":"(self):\n        builder = TextPropsBuilder(\n            selection_color=self.page_theme[\"selection_color\"],\n            cursor_color=self.page_theme[\"cursor_color\"],\n            **self.page_theme[\"text_font\"]\n        )\n        self.",
 "type":"code"
 },
 {
@@ -3000,7 +2960,7 @@
 "type":"variable"
 },
 {
-"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params[\"index_prefix\"] = [index]\n            start = None\n            end = None\n            cursor_at_start = True\n            placeholder = False\n            if selection is not None:\n                cursor_at_start = selection[\"cursor_at_start\"]\n                if selection[\"start\"][0] == index:\n                    start = selection[\"start\"][1]\n                if selection[\"end\"][0] == index:\n                    end = selection[\"end\"][1]\n            if (cursor_at_start and start is not None) or (not cursor_at_start and end is not None):\n                self.toolbar_props = {\n                    \"widget\": TextFragmentsToolbar,\n                    \"props\": {\n                        \"background\": \"#eeeeee\",\n                        \"text_props\": TextPropsBuilder().text(str(fragment)).get(),\n                    },\n                }\n            if fragment[\"type\"] == \"text\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Text\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"strong\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Strong\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"emphasis\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Emphasis\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"code\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Code\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"variable\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Variable\"]\n                )\n                text = self.paragraph[\"meta\"][\"variables\"][fragment[\"id\"]]\n            elif fragment[\"type\"] == \"reference\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Reference\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = self.paragraph[\"meta\"][\"page_titles\"][fragment[\"page_id\"]]\n                    placeholder = True\n            elif fragment[\"type\"] == \"link\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Link\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = fragment[\"url\"]\n                    placeholder = True\n            self.build_text(\n                text,\n                start,\n                end,\n                cursor_at_start,\n                params,\n                builder,\n                placeholder\n            )\n\n    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):\n        if text:\n            if placeholder and self.selection is not None:\n                text = \"<{}>\".format(text)\n                params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        else:\n            placeholder = True\n            text = \"<enter text>\"\n            params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        if placeholder:\n            params[\"index_constant\"] = 0\n        else:\n            params[\"index_increment\"] = 0\n        if start is not None:\n            if placeholder:\n                builder.selection_start(0)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_start(start)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(start, main=True)\n        if end is not None:\n            if placeholder:\n                builder.selection_end(len(text))\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_end(end)\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(end, main=True)\n        builder.text(text, **params)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
+"text":"(self, builder, selection):\n        for index, fragment in enumerate(self.data):\n            params = {}\n            params[\"index_prefix\"] = [index]\n            start = None\n            end = None\n            cursor_at_start = True\n            placeholder = False\n            if selection is not None:\n                cursor_at_start = selection[\"cursor_at_start\"]\n                if selection[\"start\"][0] == index:\n                    start = selection[\"start\"][1]\n                if selection[\"end\"][0] == index:\n                    end = selection[\"end\"][1]\n            if fragment[\"type\"] == \"text\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Text\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"strong\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Strong\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"emphasis\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Emphasis\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"code\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Code\"]\n                )\n                text = fragment[\"text\"]\n            elif fragment[\"type\"] == \"variable\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Variable\"]\n                )\n                text = self.paragraph[\"meta\"][\"variables\"][fragment[\"id\"]]\n            elif fragment[\"type\"] == \"reference\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Reference\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = self.paragraph[\"meta\"][\"page_titles\"][fragment[\"page_id\"]]\n                    placeholder = True\n            elif fragment[\"type\"] == \"link\":\n                params.update(\n                    self.page_theme[\"token_styles\"][\"RLiterate.Link\"]\n                )\n                if fragment[\"text\"]:\n                    text = fragment[\"text\"]\n                    placeholder = False\n                else:\n                    text = fragment[\"url\"]\n                    placeholder = True\n            self.build_text(\n                text,\n                start,\n                end,\n                cursor_at_start,\n                params,\n                builder,\n                placeholder\n            )\n\n    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):\n        if text:\n            if placeholder and self.selection is not None:\n                text = \"<{}>\".format(text)\n                params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        else:\n            placeholder = True\n            text = \"<enter text>\"\n            params[\"color\"] = self.page_theme[\"placeholder_color\"]\n        if placeholder:\n            params[\"index_constant\"] = 0\n        else:\n            params[\"index_increment\"] = 0\n        if start is not None:\n            if placeholder:\n                builder.selection_start(0)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_start(start)\n                if cursor_at_start and self.selection_trail.active:\n                    builder.cursor(start, main=True)\n        if end is not None:\n            if placeholder:\n                builder.selection_end(len(text))\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(1, main=True)\n            else:\n                builder.selection_end(end)\n                if not cursor_at_start and self.selection_trail.active:\n                    builder.cursor(end, main=True)\n        builder.text(text, **params)\n\n    def replace(self, text):\n        before = self.data[:self.start[0]]\n        left = self.data[self.start[0]]\n        right = self.data[self.end[0]]\n        after = self.data[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.data = before + middle + after\n        self.selection = dict(self.selection, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n\n    def handle_key(self, key_event, text):\n        ",
 "type":"code"
 },
 {
