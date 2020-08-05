@@ -147,18 +147,16 @@ def toolbar_props(document):
     selection = document.get(["selection"])
     if (selection.value and
         selection.value[-1].get("what", None) == "text_fragments"):
-        text_fragment_selection = TextPropsBuilder().text(
-            str(document.get(["selection"]).widget_path)
-            +
-            "\n"
-            +
-            str(document.get(["selection"]).value[-1])
-        ).get()
+        text_fragment_selection = True
     else:
-        text_fragment_selection = None
+        text_fragment_selection = False
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
+        "bar": {
+            "background": document.get(["theme", "toolbar_divider", "color"]),
+            "size": (1, -1),
+        },
         "text_fragment_selection": text_fragment_selection,
         "selection": selection,
         "actions": document.actions,
@@ -1560,6 +1558,7 @@ class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
                 "quit": wx.ART_QUIT,
                 "save": wx.ART_FILE_SAVE,
                 "settings": wx.ART_HELP_SETTINGS,
+                "bold": "gtk-bold",
             }.get(value, wx.ART_QUESTION),
             wx.ART_BUTTON,
             (24, 24)
@@ -2033,22 +2032,23 @@ class Toolbar(Panel):
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
-            props['icon'] = 'add'
+            props.update(self.prop(['bar']))
+            sizer["flag"] |= wx.EXPAND
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(Panel, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'bold'
             handlers['button'] = lambda event: self._add_text()
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.TOP
             sizer["flag"] |= wx.BOTTOM
             self._create_widget(ToolbarButton, props, sizer, handlers, name)
-            props = {}
-            sizer = {"flag": 0, "border": 0, "proportion": 0}
-            name = None
-            handlers = {}
-            props.update(self.prop(['text_fragment_selection']))
-            sizer["flag"] |= wx.ALIGN_CENTER
-            sizer["border"] = self.prop(['margin'])
-            sizer["flag"] |= wx.TOP
-            sizer["flag"] |= wx.BOTTOM
-            self._create_widget(Text, props, sizer, handlers, name)
             self._create_space(self.prop(['margin']))
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
