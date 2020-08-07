@@ -1044,24 +1044,24 @@ class Immutable(object):
 
 class StringInputHandler(object):
 
-    def __init__(self, data, selection):
+    def __init__(self, data, selection_value):
         self.data = data
-        self.selection = selection
+        self.selection_value = selection_value
         builder = self.build()
         self.text_props = builder.get()
         self.main_cursor_char_index = builder.get_main_cursor_char_index()
 
     @property
     def start(self):
-        return self.selection["start"]
+        return self.selection_value["start"]
 
     @property
     def end(self):
-        return self.selection["end"]
+        return self.selection_value["end"]
 
     @property
     def cursor_at_start(self):
-        return self.selection["cursor_at_start"]
+        return self.selection_value["cursor_at_start"]
 
     @property
     def cursor(self):
@@ -1072,7 +1072,7 @@ class StringInputHandler(object):
 
     @cursor.setter
     def cursor(self, position):
-        self.selection = self.create_selection({
+        self.selection_value = self.create_selection_value({
             "start": position,
             "end": position,
             "cursor_at_start": True,
@@ -1085,7 +1085,7 @@ class StringInputHandler(object):
     def replace(self, text):
         self.data = self.data[:self.start] + text + self.data[self.end:]
         position = self.start + len(text)
-        self.selection = self.create_selection({
+        self.selection_value = self.create_selection_value({
             "start": position,
             "end": position,
             "cursor_at_start": True,
@@ -1097,7 +1097,7 @@ class StringInputHandler(object):
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = self.create_selection({
+                self.selection_value = self.create_selection_value({
                     "start": self._next_cursor(self._cursors_left(text)),
                     "end": self.start,
                     "cursor_at_start": True,
@@ -1107,7 +1107,7 @@ class StringInputHandler(object):
             if self.has_selection:
                 self.replace("")
             else:
-                self.selection = self.create_selection({
+                self.selection_value = self.create_selection_value({
                     "start": self.start,
                     "end": self._next_cursor(self._cursors_right(text)),
                     "cursor_at_start": False,
@@ -1119,7 +1119,7 @@ class StringInputHandler(object):
             self.cursor = self._next_cursor(self._cursors_right(text))
         else:
             self.replace(key_event.key)
-        self.save(self.data, self.selection)
+        self.save(self.data, self.selection_value)
 
     def _next_cursor(self, cursors):
         for cursor in cursors:
@@ -1131,7 +1131,7 @@ class StringInputHandler(object):
         if cursor == self.cursor:
             return False
         builder = TextPropsBuilder()
-        self.build_with_selection(builder, self.create_selection({
+        self.build_with_selection_value(builder, self.create_selection_value({
             "start": cursor,
             "end": cursor,
             "cursor_at_start": True,
@@ -2655,15 +2655,15 @@ class TitleInputHandler(StringInputHandler):
     def __init__(self, page, page_theme, selection, actions):
         self.page = page
         self.page_theme = page_theme
-        self.selection_trail = selection
+        self.selection = selection
         self.actions = actions
         StringInputHandler.__init__(
             self,
             self.page["title"],
-            self.selection_trail.value_here
+            self.selection.value_here
         )
 
-    def create_selection(self, values):
+    def create_selection_value(self, values):
         return dict(values, what="page_title", page_id=self.page["id"])
 
     def build(self):
@@ -2672,34 +2672,34 @@ class TitleInputHandler(StringInputHandler):
             selection_color=self.page_theme["selection_color"],
             cursor_color=self.page_theme["cursor_color"]
         )
-        self.build_with_selection(builder, self.selection)
+        self.build_with_selection_value(builder, self.selection_value)
         return builder
 
-    def build_with_selection(self, builder, selection):
+    def build_with_selection_value(self, builder, selection_value):
         if self.data:
-            if selection is not None:
-                builder.selection_start(selection["start"])
-                builder.selection_end(selection["end"])
-                if self.selection_trail.active:
-                    if selection["cursor_at_start"]:
-                        builder.cursor(selection["start"], main=True)
+            if selection_value is not None:
+                builder.selection_start(selection_value["start"])
+                builder.selection_end(selection_value["end"])
+                if self.selection.active:
+                    if selection_value["cursor_at_start"]:
+                        builder.cursor(selection_value["start"], main=True)
                     else:
-                        builder.cursor(selection["end"], main=True)
+                        builder.cursor(selection_value["end"], main=True)
             builder.text(self.data, index_increment=0)
         else:
-            if self.selection_trail.active:
-                if selection is not None:
+            if self.selection.active:
+                if selection_value is not None:
                     builder.cursor(main=True)
             builder.text("Enter title...", color=self.page_theme["placeholder_color"], index_constant=0)
         return builder.get()
 
-    def save(self, new_title, new_selection):
+    def save(self, new_title, new_selection_value):
         self.actions["edit_page"](
             self.page["id"],
             {
                 "title": new_title,
             },
-            self.selection_trail.create(new_selection)
+            self.selection.create(new_selection_value)
         )
 
 class TextParagraph(Panel):
@@ -2987,7 +2987,7 @@ class TextEdit(Panel):
             self.prop(["actions", "set_selection"])(
 
                 selection.create(
-                    self.prop(["input_handler"]).create_selection({
+                    self.prop(["input_handler"]).create_selection_value({
                         "start": index,
                         "end": index,
                         "cursor_at_start": True,
@@ -3002,7 +3002,7 @@ class TextEdit(Panel):
         if index is not None:
             self.prop(["actions", "set_selection"])(
                 selection.create(
-                    self.prop(["input_handler"]).create_selection({
+                    self.prop(["input_handler"]).create_selection_value({
 
                         "start": index,
                         "end": index,
@@ -3021,7 +3021,7 @@ class TextEdit(Panel):
             if self._initial_index is not None and new_index is not None:
                 self.prop(["actions", "set_selection"])(
                     selection.create(
-                        self.prop(["input_handler"]).create_selection({
+                        self.prop(["input_handler"]).create_selection_value({
                             "start": min(self._initial_index, new_index),
                             "end": max(self._initial_index, new_index),
                             "cursor_at_start": new_index <= self._initial_index,
@@ -3136,7 +3136,7 @@ class TextFragmentsInputHandler(StringInputHandler):
     def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):
         self.paragraph = paragraph
         self.path = path
-        self.selection_trail = selection
+        self.selection = selection
         self.modify_paragraph = modify_paragraph
         self.page_theme = page_theme
         data = self.paragraph
@@ -3145,18 +3145,18 @@ class TextFragmentsInputHandler(StringInputHandler):
         StringInputHandler.__init__(
             self,
             data,
-            self.selection_trail.value_here
+            self.selection.value_here
         )
 
-    def save(self, fragments, selection):
+    def save(self, fragments, selection_value):
         self.modify_paragraph(
             self.paragraph["id"],
             self.path,
             lambda value: fragments,
-            self.selection_trail.create(selection)
+            self.selection.create(selection_value)
         )
 
-    def create_selection(self, values):
+    def create_selection_value(self, values):
         return dict(
             values,
             what="text_fragments",
@@ -3170,10 +3170,10 @@ class TextFragmentsInputHandler(StringInputHandler):
             cursor_color=self.page_theme["cursor_color"],
             **self.page_theme["text_font"]
         )
-        self.build_with_selection(builder, self.selection)
+        self.build_with_selection_value(builder, self.selection_value)
         return builder
 
-    def build_with_selection(self, builder, selection):
+    def build_with_selection_value(self, builder, selection_value):
         for index, fragment in enumerate(self.data):
             params = {}
             params["index_prefix"] = [index]
@@ -3181,12 +3181,12 @@ class TextFragmentsInputHandler(StringInputHandler):
             end = None
             cursor_at_start = True
             placeholder = False
-            if selection is not None:
-                cursor_at_start = selection["cursor_at_start"]
-                if selection["start"][0] == index:
-                    start = selection["start"][1]
-                if selection["end"][0] == index:
-                    end = selection["end"][1]
+            if selection_value is not None:
+                cursor_at_start = selection_value["cursor_at_start"]
+                if selection_value["start"][0] == index:
+                    start = selection_value["start"][1]
+                if selection_value["end"][0] == index:
+                    end = selection_value["end"][1]
             if fragment["type"] == "text":
                 params.update(
                     self.page_theme["token_styles"]["RLiterate.Text"]
@@ -3258,20 +3258,20 @@ class TextFragmentsInputHandler(StringInputHandler):
         if start is not None:
             if placeholder:
                 builder.selection_start(0)
-                if cursor_at_start and self.selection_trail.active:
+                if cursor_at_start and self.selection.active:
                     builder.cursor(1, main=True)
             else:
                 builder.selection_start(start)
-                if cursor_at_start and self.selection_trail.active:
+                if cursor_at_start and self.selection.active:
                     builder.cursor(start, main=True)
         if end is not None:
             if placeholder:
                 builder.selection_end(len(text))
-                if not cursor_at_start and self.selection_trail.active:
+                if not cursor_at_start and self.selection.active:
                     builder.cursor(1, main=True)
             else:
                 builder.selection_end(end)
-                if not cursor_at_start and self.selection_trail.active:
+                if not cursor_at_start and self.selection.active:
                     builder.cursor(end, main=True)
         builder.text(text, **params)
 
@@ -3324,7 +3324,7 @@ class TextFragmentsInputHandler(StringInputHandler):
             else:
                 position = [self.end[0], len(text)]
         self.data = before + middle + after
-        self.selection = dict(self.selection, **{
+        self.selection_value = self.create_selection_value({
             "start": position,
             "end": position,
             "cursor_at_start": True,
