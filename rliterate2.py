@@ -2660,7 +2660,7 @@ class TitleInputHandler(StringInputHandler):
         StringInputHandler.__init__(
             self,
             self.page["title"],
-            self.selection_trail.get()
+            self.selection_trail.value_here
         )
 
     def create_selection(self, values):
@@ -2961,15 +2961,15 @@ class TextEdit(Panel):
 
     def _box(self, selection, selection_color):
         return {
-            "width": 1 if selection.get() else 0,
+            "width": 1 if selection.value_here else 0,
             "color": selection_color,
         }
 
     def _immediate(self, selection):
-        return selection.get()
+        return selection.value_here
 
     def _focus(self, selection):
-        if selection.get():
+        if selection.value_here:
             return selection.stamp
 
     def _margin(self):
@@ -2980,7 +2980,7 @@ class TextEdit(Panel):
             return 0
 
     def _on_click(self, event, selection):
-        if selection.get():
+        if selection.value_here:
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -2996,7 +2996,7 @@ class TextEdit(Panel):
             )
 
     def _on_left_down(self, event, selection):
-        if not selection.get():
+        if not selection.value_here:
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -3012,7 +3012,7 @@ class TextEdit(Panel):
             )
 
     def _on_drag(self, event, selection):
-        if not selection.get():
+        if not selection.value_here:
             return
         if event.initial:
             self._initial_index = self._get_index(event.x, event.y)
@@ -3041,14 +3041,14 @@ class TextEdit(Panel):
                 return character.get("index_left", None)
 
     def _on_key(self, event, selection):
-        if selection.get():
+        if selection.value_here:
             self.prop(["input_handler"]).handle_key(
                 event,
                 self.get_widget("text")
             )
 
     def _get_cursor(self, selection):
-        if selection.get():
+        if selection.value_here:
             return "beam"
         else:
             return None
@@ -3145,7 +3145,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         StringInputHandler.__init__(
             self,
             data,
-            self.selection_trail.get()
+            self.selection_trail.value_here
         )
 
     def save(self, fragments, selection):
@@ -3822,7 +3822,8 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "activ
             stamp=genid()
         )
 
-    def get(self):
+    @property
+    def value_here(self):
         if self.trail == self.widget_path:
             return self.value
 
