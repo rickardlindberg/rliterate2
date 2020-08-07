@@ -3617,7 +3617,7 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        return Selection(\n            trail=self.trail+list(args),\n            value=self.value,\n            widget_path=self.widget_path,\n            active=self.active,\n            stamp=self.stamp\n        )\n\n    def create(self, value):\n        return Selection(\n            trail=[],\n            value=value,\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def ",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        return self._replace(trail=self.trail+list(args))\n\n    def create(self, value):\n        return Selection(\n            trail=[],\n            value=value,\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def ",
 "type":"code"
 },
 {

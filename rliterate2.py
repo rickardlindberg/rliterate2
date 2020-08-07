@@ -3805,13 +3805,7 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "activ
         return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())
 
     def add(self, *args):
-        return Selection(
-            trail=self.trail+list(args),
-            value=self.value,
-            widget_path=self.widget_path,
-            active=self.active,
-            stamp=self.stamp
-        )
+        return self._replace(trail=self.trail+list(args))
 
     def create(self, value):
         return Selection(
