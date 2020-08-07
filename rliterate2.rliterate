@@ -1553,7 +1553,15 @@
 ],
 "fragments":[
 {
-"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        StringInputHandler.__init__(\n            self,\n            self.page[\"title\"],\n            self.selection_trail.get()\n        )\n\n    def ",
+"text":"class TitleInputHandler(StringInputHandler):\n\n    def __init__(self, page, page_theme, selection, actions):\n        self.page = page\n        self.page_theme = page_theme\n        self.selection_trail = selection\n        self.actions = actions\n        StringInputHandler.__init__(\n            self,\n            self.page[\"title\"],\n            self.selection_trail.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"()\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -2612,7 +2620,15 @@
 ],
 "fragments":[
 {
-"text":"def _box(self, selection, selection_color):\n    return {\n        \"width\": 1 if selection.get() else 0,\n        \"color\": selection_color,\n    }\n",
+"text":"def _box(self, selection, selection_color):\n    return {\n        \"width\": 1 if selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"() else 0,\n        \"color\": selection_color,\n    }\n",
 "type":"code"
 }
 ],
@@ -2631,7 +2647,15 @@
 ],
 "fragments":[
 {
-"text":"def _immediate(self, selection):\n    return selection.get()\n",
+"text":"def _immediate(self, selection):\n    return selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"()\n",
 "type":"code"
 }
 ],
@@ -2650,7 +2674,15 @@
 ],
 "fragments":[
 {
-"text":"def _focus(self, selection):\n    if selection.get():\n        return selection.stamp\n",
+"text":"def _focus(self, selection):\n    if selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        return selection.stamp\n",
 "type":"code"
 }
 ],
@@ -2688,7 +2720,15 @@
 ],
 "fragments":[
 {
-"text":"def _on_click(self, event, selection):\n    if selection.get():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_click(self, event, selection):\n    if selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2715,7 +2755,15 @@
 ],
 "fragments":[
 {
-"text":"def _on_left_down(self, event, selection):\n    if not selection.get():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_left_down(self, event, selection):\n    if not selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2742,7 +2790,15 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, selection):\n    if not selection.get():\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
+"text":"def _on_drag(self, event, selection):\n    if not selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2788,7 +2844,15 @@
 ],
 "fragments":[
 {
-"text":"def _on_key(self, event, selection):\n    if selection.get():\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
+"text":"def _on_key(self, event, selection):\n    if selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
 "type":"code"
 }
 ],
@@ -2807,7 +2871,15 @@
 ],
 "fragments":[
 {
-"text":"def _get_cursor(self, selection):\n    if selection.get():\n        return \"beam\"\n    else:\n        return None\n",
+"text":"def _get_cursor(self, selection):\n    if selection.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"():\n        return \"beam\"\n    else:\n        return None\n",
 "type":"code"
 }
 ],
@@ -2928,7 +3000,15 @@
 "type":"variable"
 },
 {
-"text":".__init__(\n            self,\n            data,\n            self.selection_trail.get()\n        )\n\n    def save(self, fragments, selection):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            lambda value: fragments,\n            self.selection_trail.create(selection)\n        )\n\n    def ",
+"text":".__init__(\n            self,\n            data,\n            self.selection_trail.",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"()\n        )\n\n    def save(self, fragments, selection):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            lambda value: fragments,\n            self.selection_trail.create(selection)\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -3521,7 +3601,15 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        return Selection(\n            trail=self.trail+list(args),\n            value=self.value,\n            widget_path=self.widget_path,\n            active=self.active,\n            stamp=self.stamp\n        )\n\n    def create(self, value):\n        return Selection(\n            trail=[],\n            value=value,\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def get(self):\n        if self.trail == self.widget_path:\n            return self.value\n",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        return Selection(\n            trail=self.trail+list(args),\n            value=self.value,\n            widget_path=self.widget_path,\n            active=self.active,\n            stamp=self.stamp\n        )\n\n    def create(self, value):\n        return Selection(\n            trail=[],\n            value=value,\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def ",
+"type":"code"
+},
+{
+"id":"663af76f885a408f8c1991a83320a144",
+"type":"variable"
+},
+{
+"text":"(self):\n        if self.trail == self.widget_path:\n            return self.value\n",
 "type":"code"
 }
 ],
@@ -8277,6 +8365,7 @@
 "4dabcd9b4f634a85af8d9119a745a33c":"create_props",
 "5591f6bb68d24320aee6f91d489b5513":"build",
 "5f71ca24cdae4919bb3a5612fa704ac3":"_find_refresh_widget",
+"663af76f885a408f8c1991a83320a144":"get",
 "6e0d0c9950204b6a8b9eebccb0974f72":"TextFragmentKeyHandler",
 "7783f19273504229bb20053bc01b7057":"widget",
 "7f02baf9597a44618c7942768716bba3":"OnDataDropped",
