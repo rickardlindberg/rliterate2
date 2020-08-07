@@ -658,7 +658,7 @@
 ],
 "fragments":[
 {
-"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[-1][\"paragraph_id\"],\n        selection.value[-1][\"path\"],\n        lambda fragments: [{\"type\": \"text\", \"text\": \"Hej!\"}]+fragments,\n        selection._replace(stamp=genid(), value=selection.value[:-1]+[dict(selection.value[-1], **{\n            \"start\": [0, 0],\n            \"end\": [0, 3],\n            \"cursor_at_start\": False,\n        })])\n    )\n",
+"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: [{\"type\": \"text\", \"text\": \"Hej!\"}]+fragments,\n        selection._replace(stamp=genid(), value=dict(selection.value, **{\n            \"start\": [0, 0],\n            \"end\": [0, 3],\n            \"cursor_at_start\": False,\n        }))\n    )\n",
 "type":"code"
 }
 ],
@@ -676,7 +676,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if (selection.value and\n        selection.value[-1].get(\"what\", None) == \"text_fragments\"):\n        text_fragment_selection = True\n    else:\n        text_fragment_selection = False\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragment_selection\": text_fragment_selection,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if (selection.value and\n        selection.value.get(\"what\", None) == \"text_fragments\"):\n        text_fragment_selection = True\n    else:\n        text_fragment_selection = False\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragment_selection\": text_fragment_selection,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -2650,7 +2650,7 @@
 ],
 "fragments":[
 {
-"text":"def _focus(self, selection):\n    if selection.value:\n        return selection.stamp\n",
+"text":"def _focus(self, selection):\n    if selection.get():\n        return selection.stamp\n",
 "type":"code"
 }
 ],
@@ -2688,7 +2688,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_click(self, event, selection):\n    if selection.value:\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_click(self, event, selection):\n    if selection.get():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2715,7 +2715,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_left_down(self, event, selection):\n    if not selection.value:\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
+"text":"def _on_left_down(self, event, selection):\n    if not selection.get():\n        return\n    index = self._get_index(event.x, event.y)\n    if index is not None:\n        self.prop([\"actions\", \"set_selection\"])(\n            selection.create(\n                self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2742,7 +2742,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_drag(self, event, selection):\n    if not selection.value:\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
+"text":"def _on_drag(self, event, selection):\n    if not selection.get():\n        return\n    if event.initial:\n        self._initial_index = self._get_index(event.x, event.y)\n    else:\n        new_index = self._get_index(event.x, event.y)\n        if self._initial_index is not None and new_index is not None:\n            self.prop([\"actions\", \"set_selection\"])(\n                selection.create(\n                    self.prop([\"input_handler\"]).",
 "type":"code"
 },
 {
@@ -2788,7 +2788,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_key(self, event, selection):\n    if selection.value:\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
+"text":"def _on_key(self, event, selection):\n    if selection.get():\n        self.prop([\"input_handler\"]).handle_key(\n            event,\n            self.get_widget(\"text\")\n        )\n",
 "type":"code"
 }
 ],
@@ -2807,7 +2807,7 @@
 ],
 "fragments":[
 {
-"text":"def _get_cursor(self, selection):\n    if selection.value:\n        return \"beam\"\n    else:\n        return None\n",
+"text":"def _get_cursor(self, selection):\n    if selection.get():\n        return \"beam\"\n    else:\n        return None\n",
 "type":"code"
 }
 ],
@@ -3521,7 +3521,7 @@
 ],
 "fragments":[
 {
-"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        new_value = self.value\n        new_trail = self.trail\n        for arg in args:\n            if new_value and new_value[0] == arg:\n                new_value = new_value[1:]\n                active = self.active\n            else:\n                new_value = []\n                active = False\n            new_trail = new_trail + [arg]\n        return Selection(\n            trail=new_trail,\n            value=new_value,\n            widget_path=self.widget_path,\n            active=active,\n            stamp=self.stamp\n        )\n\n    def create(self, *args):\n        return Selection(\n            trail=[],\n            value=self.trail+list(args),\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def get(self):\n        if self.value:\n            return self.value[0]\n\n    def path(self):\n        return self.trail + self.value\n",
+"text":"class Selection(namedtuple(\"Selection\", [\"trail\", \"value\", \"widget_path\", \"active\", \"stamp\"])):\n\n    @staticmethod\n    def empty():\n        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())\n\n    def add(self, *args):\n        return Selection(\n            trail=self.trail+list(args),\n            value=self.value,\n            widget_path=self.widget_path,\n            active=self.active,\n            stamp=self.stamp\n        )\n\n    def create(self, value):\n        return Selection(\n            trail=[],\n            value=value,\n            widget_path=self.trail,\n            active=True,\n            stamp=genid()\n        )\n\n    def get(self):\n        if self.trail == self.widget_path:\n            return self.value\n",
 "type":"code"
 }
 ],

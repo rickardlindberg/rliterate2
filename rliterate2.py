@@ -146,7 +146,7 @@ def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
     selection = document.get(["selection"])
     if (selection.value and
-        selection.value[-1].get("what", None) == "text_fragments"):
+        selection.value.get("what", None) == "text_fragments"):
         text_fragment_selection = True
     else:
         text_fragment_selection = False
@@ -2057,14 +2057,14 @@ class Toolbar(Panel):
     def _add_text(self):
         selection = self.prop(["selection"])
         self.prop(["actions", "modify_paragraph"])(
-            selection.value[-1]["paragraph_id"],
-            selection.value[-1]["path"],
+            selection.value["paragraph_id"],
+            selection.value["path"],
             lambda fragments: [{"type": "text", "text": "Hej!"}]+fragments,
-            selection._replace(stamp=genid(), value=selection.value[:-1]+[dict(selection.value[-1], **{
+            selection._replace(stamp=genid(), value=dict(selection.value, **{
                 "start": [0, 0],
                 "end": [0, 3],
                 "cursor_at_start": False,
-            })])
+            }))
         )
 
 class ToolbarDivider(Panel):
@@ -2969,7 +2969,7 @@ class TextEdit(Panel):
         return selection.get()
 
     def _focus(self, selection):
-        if selection.value:
+        if selection.get():
             return selection.stamp
 
     def _margin(self):
@@ -2980,7 +2980,7 @@ class TextEdit(Panel):
             return 0
 
     def _on_click(self, event, selection):
-        if selection.value:
+        if selection.get():
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -2996,7 +2996,7 @@ class TextEdit(Panel):
             )
 
     def _on_left_down(self, event, selection):
-        if not selection.value:
+        if not selection.get():
             return
         index = self._get_index(event.x, event.y)
         if index is not None:
@@ -3012,7 +3012,7 @@ class TextEdit(Panel):
             )
 
     def _on_drag(self, event, selection):
-        if not selection.value:
+        if not selection.get():
             return
         if event.initial:
             self._initial_index = self._get_index(event.x, event.y)
@@ -3041,14 +3041,14 @@ class TextEdit(Panel):
                 return character.get("index_left", None)
 
     def _on_key(self, event, selection):
-        if selection.value:
+        if selection.get():
             self.prop(["input_handler"]).handle_key(
                 event,
                 self.get_widget("text")
             )
 
     def _get_cursor(self, selection):
-        if selection.value:
+        if selection.get():
             return "beam"
         else:
             return None
@@ -3805,39 +3805,26 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "activ
         return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())
 
     def add(self, *args):
-        new_value = self.value
-        new_trail = self.trail
-        for arg in args:
-            if new_value and new_value[0] == arg:
-                new_value = new_value[1:]
-                active = self.active
-            else:
-                new_value = []
-                active = False
-            new_trail = new_trail + [arg]
         return Selection(
-            trail=new_trail,
-            value=new_value,
+            trail=self.trail+list(args),
+            value=self.value,
             widget_path=self.widget_path,
-            active=active,
+            active=self.active,
             stamp=self.stamp
         )
 
-    def create(self, *args):
+    def create(self, value):
         return Selection(
             trail=[],
-            value=self.trail+list(args),
+            value=value,
             widget_path=self.trail,
             active=True,
             stamp=genid()
         )
 
     def get(self):
-        if self.value:
-            return self.value[0]
-
-    def path(self):
-        return self.trail + self.value
+        if self.trail == self.widget_path:
+            return self.value
 
 DragEvent = namedtuple("DragEvent", "initial,x,y,dx,dy,initiate_drag_drop")
 
