@@ -2060,7 +2060,7 @@ class Toolbar(Panel):
             selection.value["paragraph_id"],
             selection.value["path"],
             lambda fragments: [{"type": "text", "text": "Hej!"}]+fragments,
-            selection._replace(stamp=genid(), value=dict(selection.value, **{
+            selection.update_value(dict(selection.value, **{
                 "start": [0, 0],
                 "end": [0, 3],
                 "cursor_at_start": False,
@@ -3821,6 +3821,9 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "activ
             active=True,
             stamp=genid()
         )
+
+    def update_value(self, new_value):
+        return self._replace(stamp=genid(), value=new_value)
 
     @property
     def value_here(self):
