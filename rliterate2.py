@@ -145,8 +145,7 @@ def format_title(path):
 def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
     selection = document.get(["selection"])
-    if (selection.value and
-        selection.value.get("what", None) == "text_fragments"):
+    if selection.value.get("what") == "text_fragments":
         text_fragment_selection = True
     else:
         text_fragment_selection = False
@@ -2060,11 +2059,11 @@ class Toolbar(Panel):
             selection.value["paragraph_id"],
             selection.value["path"],
             lambda fragments: [{"type": "text", "text": "Hej!"}]+fragments,
-            selection.update_value(dict(selection.value, **{
+            selection.update_value({
                 "start": [0, 0],
                 "end": [0, 3],
                 "cursor_at_start": False,
-            }))
+            })
         )
 
 class ToolbarDivider(Panel):
@@ -2677,7 +2676,7 @@ class TitleInputHandler(StringInputHandler):
 
     def build_with_selection_value(self, builder, selection_value):
         if self.data:
-            if selection_value is not None:
+            if selection_value:
                 builder.selection_start(selection_value["start"])
                 builder.selection_end(selection_value["end"])
                 if self.selection.active:
@@ -2688,7 +2687,7 @@ class TitleInputHandler(StringInputHandler):
             builder.text(self.data, index_increment=0)
         else:
             if self.selection.active:
-                if selection_value is not None:
+                if selection_value:
                     builder.cursor(main=True)
             builder.text("Enter title...", color=self.page_theme["placeholder_color"], index_constant=0)
         return builder.get()
@@ -3181,7 +3180,7 @@ class TextFragmentsInputHandler(StringInputHandler):
             end = None
             cursor_at_start = True
             placeholder = False
-            if selection_value is not None:
+            if selection_value:
                 cursor_at_start = selection_value["cursor_at_start"]
                 if selection_value["start"][0] == index:
                     start = selection_value["start"][1]
@@ -3798,11 +3797,23 @@ class CodeChunk(object):
                     part_index += 1
                     text = text[len(part["text"]):]
 
-class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "active", "stamp"])):
+class Selection(namedtuple("Selection", [
+    "trail",
+    "value",
+    "widget_path",
+    "active",
+    "stamp",
+])):
 
     @staticmethod
     def empty():
-        return Selection(trail=[], value=[], widget_path=[], active=False, stamp=genid())
+        return Selection(
+            trail=[],
+            value={},
+            widget_path=[],
+            active=False,
+            stamp=genid()
+        )
 
     def add(self, *args):
         return self._replace(trail=self.trail+list(args))
@@ -3816,13 +3827,18 @@ class Selection(namedtuple("Selection", ["trail", "value", "widget_path", "activ
             stamp=genid()
         )
 
-    def update_value(self, new_value):
-        return self._replace(stamp=genid(), value=new_value)
+    def update_value(self, values):
+        return self._replace(
+            stamp=genid(),
+            value=dict(self.value, **values)
+        )
 
     @property
     def value_here(self):
         if self.trail == self.widget_path:
             return self.value
+        else:
+            return {}
 
 DragEvent = namedtuple("DragEvent", "initial,x,y,dx,dy,initiate_drag_drop")
 
