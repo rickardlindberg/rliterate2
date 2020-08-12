@@ -658,7 +658,7 @@
 ],
 "fragments":[
 {
-"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_selection = make_bold(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    )\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: new_text_fragments,\n        selection.",
+"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_selection = TextFragments(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    ).bold().get()\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: new_text_fragments,\n        selection.",
 "type":"code"
 },
 {
@@ -3437,50 +3437,18 @@
 "paragraphs":[
 {
 "chunkpath":[
-"functions"
+"classes"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"def make_bold(text_fragments, selection_value):\n    return ",
-"type":"code"
-},
-{
-"id":"0f3e8abf378142c9b162cece42346634",
-"type":"variable"
-},
-{
-"text":"(\n        [{\"type\": \"text\", \"text\": \"Hej!\"}]+text_fragments,\n        dict(selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        ),\n    )\n",
+"text":"class TextFragments(object):\n\n    def __init__(self, text_fragments, selection_value):\n        self.text_fragments = text_fragments\n        self.selection_value = selection_value\n\n    def bold(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Hej!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def normalize(self):\n        return self\n\n    def get(self):\n        self.normalize()\n        return (\n            self.text_fragments,\n            self.selection_value\n        )\n",
 "type":"code"
 }
 ],
 "id":"430eed7782274cd99f17867dbe2ba605",
-"type":"code"
-},
-{
-"chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def ",
-"type":"code"
-},
-{
-"id":"0f3e8abf378142c9b162cece42346634",
-"type":"variable"
-},
-{
-"text":"(text_fragments, selection_value):\n    return (\n        text_fragments,\n        selection_value\n    )\n",
-"type":"code"
-}
-],
-"id":"7726b50fdea14c4db303c4ff3181a728",
 "type":"code"
 }
 ],

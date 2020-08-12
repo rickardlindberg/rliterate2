@@ -878,22 +878,6 @@ def create_new_page():
         "paragraphs": [],
     }
 
-def make_bold(text_fragments, selection_value):
-    return normalize_text_fragments(
-        [{"type": "text", "text": "Hej!"}]+text_fragments,
-        dict(selection_value,
-            start=[0, 0],
-            end=[0, 3],
-            cursor_at_start=False
-        ),
-    )
-
-def normalize_text_fragments(text_fragments, selection_value):
-    return (
-        text_fragments,
-        selection_value
-    )
-
 def genid():
     return uuid.uuid4().hex
 
@@ -2075,10 +2059,10 @@ class Toolbar(Panel):
 
     def _add_text(self):
         selection = self.prop(["selection"])
-        new_text_fragments, new_selection = make_bold(
+        new_text_fragments, new_selection = TextFragments(
             self.prop(["text_fragments"]),
             selection.value
-        )
+        ).bold().get()
         self.prop(["actions", "modify_paragraph"])(
             selection.value["paragraph_id"],
             selection.value["path"],
@@ -3770,6 +3754,31 @@ class PageMeta(object):
 
 class ParagraphNotFound(Exception):
     pass
+
+class TextFragments(object):
+
+    def __init__(self, text_fragments, selection_value):
+        self.text_fragments = text_fragments
+        self.selection_value = selection_value
+
+    def bold(self):
+        self.text_fragments = [{"type": "text", "text": "Hej!"}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 3],
+            cursor_at_start=False
+        )
+        return self
+
+    def normalize(self):
+        return self
+
+    def get(self):
+        self.normalize()
+        return (
+            self.text_fragments,
+            self.selection_value
+        )
 
 class CodeChunk(object):
 
