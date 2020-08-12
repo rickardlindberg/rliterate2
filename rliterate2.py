@@ -879,13 +879,19 @@ def create_new_page():
     }
 
 def make_bold(text_fragments, selection_value):
-    return (
+    return normalize_text_fragments(
         [{"type": "text", "text": "Hej!"}]+text_fragments,
         dict(selection_value,
             start=[0, 0],
             end=[0, 3],
             cursor_at_start=False
         ),
+    )
+
+def normalize_text_fragments(text_fragments, selection_value):
+    return (
+        text_fragments,
+        selection_value
     )
 
 def genid():

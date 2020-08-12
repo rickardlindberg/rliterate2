@@ -3444,11 +3444,43 @@
 ],
 "fragments":[
 {
-"text":"def make_bold(text_fragments, selection_value):\n    return (\n        [{\"type\": \"text\", \"text\": \"Hej!\"}]+text_fragments,\n        dict(selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        ),\n    )\n",
+"text":"def make_bold(text_fragments, selection_value):\n    return ",
+"type":"code"
+},
+{
+"id":"0f3e8abf378142c9b162cece42346634",
+"type":"variable"
+},
+{
+"text":"(\n        [{\"type\": \"text\", \"text\": \"Hej!\"}]+text_fragments,\n        dict(selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        ),\n    )\n",
 "type":"code"
 }
 ],
 "id":"430eed7782274cd99f17867dbe2ba605",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def ",
+"type":"code"
+},
+{
+"id":"0f3e8abf378142c9b162cece42346634",
+"type":"variable"
+},
+{
+"text":"(text_fragments, selection_value):\n    return (\n        text_fragments,\n        selection_value\n    )\n",
+"type":"code"
+}
+],
+"id":"7726b50fdea14c4db303c4ff3181a728",
 "type":"code"
 }
 ],
@@ -8412,6 +8444,7 @@
 },
 "variables":{
 "03156156ebb247f5afb5616c81807c6a":"layout_me",
+"0f3e8abf378142c9b162cece42346634":"normalize_text_fragments",
 "0f86edb70f4c42d2a13500eafb09f308":"target_page",
 "11be3ff0d787439e83e1b731a5b7e3ef":"create_selection_value",
 "1a3c1e487f6943c0a391a189560ab24f":"_prune_filter",
