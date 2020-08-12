@@ -628,7 +628,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragment_selection) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"bold\"\n            @button = self._add_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"bold\"\n            @button = self._add_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -658,7 +658,7 @@
 ],
 "fragments":[
 {
-"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: [{\"type\": \"text\", \"text\": \"Hej!\"}]+fragments,\n        selection.",
+"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_selection = make_bold(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    )\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: new_text_fragments,\n        selection.",
 "type":"code"
 },
 {
@@ -666,7 +666,7 @@
 "type":"variable"
 },
 {
-"text":"({\n            \"start\": [0, 0],\n            \"end\": [0, 3],\n            \"cursor_at_start\": False,\n        })\n    )\n",
+"text":"(new_selection)\n    )\n",
 "type":"code"
 }
 ],
@@ -684,7 +684,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragment_selection = True\n    else:\n        text_fragment_selection = False\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragment_selection\": text_fragment_selection,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragments = document.get_paragraph(\n            selection.value[\"paragraph_id\"],\n            selection.value[\"path\"]\n        )\n    else:\n        text_fragments = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragments\": text_fragments,\n        \"text_fragments_selected\": text_fragments is not None,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -3380,18 +3380,19 @@
 },
 {
 "chunkpath":[
-"classes"
+"classes",
+"Document"
 ],
 "filepath":[
 "rliterate2.py"
 ],
 "fragments":[
 {
-"text":"class ParagraphNotFound(Exception):\n    pass\n",
+"text":"def get_paragraph(self, source_id, sub_path=[]):\n    return self.get(self._find_paragraph(source_id)+sub_path)\n",
 "type":"code"
 }
 ],
-"id":"c549831288b740de8e3ba248684c7f0b",
+"id":"257270555f234da1a8d9f9cc83a60bbb",
 "type":"code"
 },
 {
@@ -3410,9 +3411,48 @@
 ],
 "id":"c8e8ea5584ae4dada3ef6a53094e146e",
 "type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ParagraphNotFound(Exception):\n    pass\n",
+"type":"code"
+}
+],
+"id":"c549831288b740de8e3ba248684c7f0b",
+"type":"code"
 }
 ],
 "title":"Paragraphs"
+},
+{
+"children":[],
+"id":"83ea3699f88a4a34a4934c6a8d6cd32b",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def make_bold(text_fragments, selection_value):\n    return (\n        [{\"type\": \"text\", \"text\": \"Hej!\"}]+text_fragments,\n        dict(selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        ),\n    )\n",
+"type":"code"
+}
+],
+"id":"430eed7782274cd99f17867dbe2ba605",
+"type":"code"
+}
+],
+"title":"Text fragments"
 },
 {
 "children":[],

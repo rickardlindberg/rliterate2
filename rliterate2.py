@@ -146,9 +146,12 @@ def toolbar_props(document):
     toolbar_theme = document.get(["theme", "toolbar"])
     selection = document.get(["selection"])
     if selection.value.get("what") == "text_fragments":
-        text_fragment_selection = True
+        text_fragments = document.get_paragraph(
+            selection.value["paragraph_id"],
+            selection.value["path"]
+        )
     else:
-        text_fragment_selection = False
+        text_fragments = None
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
@@ -156,7 +159,8 @@ def toolbar_props(document):
             "background": document.get(["theme", "toolbar_divider", "color"]),
             "size": (1, -1),
         },
-        "text_fragment_selection": text_fragment_selection,
+        "text_fragments": text_fragments,
+        "text_fragments_selected": text_fragments is not None,
         "selection": selection,
         "actions": document.actions,
     }
@@ -873,6 +877,16 @@ def create_new_page():
         "children": [],
         "paragraphs": [],
     }
+
+def make_bold(text_fragments, selection_value):
+    return (
+        [{"type": "text", "text": "Hej!"}]+text_fragments,
+        dict(selection_value,
+            start=[0, 0],
+            end=[0, 3],
+            cursor_at_start=False
+        ),
+    )
 
 def genid():
     return uuid.uuid4().hex
@@ -2024,7 +2038,7 @@ class Toolbar(Panel):
         sizer["flag"] |= wx.BOTTOM
         self._create_widget(ToolbarButton, props, sizer, handlers, name)
         self._create_space(self.prop(['margin']))
-        if_condition = self.prop(['text_fragment_selection'])
+        if_condition = self.prop(['text_fragments_selected'])
         def loop_fn(loopvar):
             pass
             props = {}
@@ -2055,15 +2069,15 @@ class Toolbar(Panel):
 
     def _add_text(self):
         selection = self.prop(["selection"])
+        new_text_fragments, new_selection = make_bold(
+            self.prop(["text_fragments"]),
+            selection.value
+        )
         self.prop(["actions", "modify_paragraph"])(
             selection.value["paragraph_id"],
             selection.value["path"],
-            lambda fragments: [{"type": "text", "text": "Hej!"}]+fragments,
-            selection.update_value({
-                "start": [0, 0],
-                "end": [0, 3],
-                "cursor_at_start": False,
-            })
+            lambda fragments: new_text_fragments,
+            selection.update_value(new_selection)
         )
 
 class ToolbarDivider(Panel):
@@ -3483,6 +3497,8 @@ class Document(Immutable):
                 self.set_selection(new_selection)
         except ParagraphNotFound:
             pass
+    def get_paragraph(self, source_id, sub_path=[]):
+        return self.get(self._find_paragraph(source_id)+sub_path)
     def _find_paragraph(self, paragraph_id):
         def find_in_page(page, path):
             for index, paragraph in enumerate(page["paragraphs"]):
