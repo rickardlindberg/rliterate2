@@ -2047,7 +2047,7 @@ class Toolbar(Panel):
             name = None
             handlers = {}
             props['icon'] = 'bold'
-            handlers['button'] = lambda event: self._add_text()
+            handlers['button'] = lambda event: self._make_bold()
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.TOP
             sizer["flag"] |= wx.BOTTOM
@@ -2057,17 +2057,17 @@ class Toolbar(Panel):
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
 
-    def _add_text(self):
+    def _make_bold(self):
         selection = self.prop(["selection"])
-        new_text_fragments, new_selection = TextFragments(
+        new_text_fragments, new_selection_value = TextFragments(
             self.prop(["text_fragments"]),
             selection.value
         ).bold().get()
         self.prop(["actions", "modify_paragraph"])(
             selection.value["paragraph_id"],
             selection.value["path"],
-            lambda fragments: new_text_fragments,
-            selection.update_value(new_selection)
+            new_text_fragments,
+            selection.update_value(new_selection_value)
         )
 
 class ToolbarDivider(Panel):
@@ -3151,11 +3151,11 @@ class TextFragmentsInputHandler(StringInputHandler):
             self.selection.value_here
         )
 
-    def save(self, fragments, selection_value):
+    def save(self, text_fragments, selection_value):
         self.modify_paragraph(
             self.paragraph["id"],
             self.path,
-            lambda value: fragments,
+            text_fragments,
             self.selection.create(selection_value)
         )
 
@@ -3427,20 +3427,19 @@ class Document(Immutable):
                     self.set_selection(new_selection)
         except PageNotFound:
             pass
-    def modify_paragraph(self, source_id, path, fn, new_selection):
+    def modify_paragraph(self, source_id, path, new_value, new_selection):
         try:
             with self.transaction():
-                self.modify(
-                    self._find_paragraph(source_id)+path,
-                    fn,
-                    only_if_differs=True
+                self.replace(
+                    self._find_paragraph_path(source_id)+path,
+                    new_value
                 )
                 self.set_selection(new_selection)
         except ParagraphNotFound:
             pass
     def get_paragraph(self, source_id, sub_path=[]):
-        return self.get(self._find_paragraph(source_id)+sub_path)
-    def _find_paragraph(self, paragraph_id):
+        return self.get(self._find_paragraph_path(source_id)+sub_path)
+    def _find_paragraph_path(self, paragraph_id):
         def find_in_page(page, path):
             for index, paragraph in enumerate(page["paragraphs"]):
                 if paragraph["id"] == paragraph_id:

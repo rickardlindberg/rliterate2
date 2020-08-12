@@ -628,7 +628,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"bold\"\n            @button = self._add_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"bold\"\n            @button = self._make_bold()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -658,7 +658,7 @@
 ],
 "fragments":[
 {
-"text":"def _add_text(self):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_selection = TextFragments(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    ).bold().get()\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        lambda fragments: new_text_fragments,\n        selection.",
+"text":"def _make_bold(self):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_selection_value = TextFragments(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    ).bold().get()\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        new_text_fragments,\n        selection.",
 "type":"code"
 },
 {
@@ -666,7 +666,7 @@
 "type":"variable"
 },
 {
-"text":"(new_selection)\n    )\n",
+"text":"(new_selection_value)\n    )\n",
 "type":"code"
 }
 ],
@@ -3016,7 +3016,7 @@
 "type":"variable"
 },
 {
-"text":"\n        )\n\n    def save(self, fragments, selection_value):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            lambda value: fragments,\n            self.selection.create(selection_value)\n        )\n\n    def ",
+"text":"\n        )\n\n    def save(self, text_fragments, selection_value):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            text_fragments,\n            self.selection.create(selection_value)\n        )\n\n    def ",
 "type":"code"
 },
 {
@@ -3363,7 +3363,15 @@
 ],
 "fragments":[
 {
-"text":"def modify_paragraph(self, source_id, path, fn, new_selection):\n    try:\n        with self.transaction():\n            self.modify(\n                self._find_paragraph(source_id)+path,\n                fn,\n                only_if_differs=True\n            )\n            self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
+"text":"def modify_paragraph(self, source_id, path, new_value, new_selection):\n    try:\n        with self.transaction():\n            self.replace(\n                self.",
+"type":"code"
+},
+{
+"id":"17d9e1db2ea84cc0838b3d8d4eaf615e",
+"type":"variable"
+},
+{
+"text":"(source_id)+path,\n                new_value\n            )\n            self.set_selection(new_selection)\n    except ParagraphNotFound:\n        pass\n",
 "type":"code"
 }
 ],
@@ -3380,7 +3388,15 @@
 ],
 "fragments":[
 {
-"text":"def get_paragraph(self, source_id, sub_path=[]):\n    return self.get(self._find_paragraph(source_id)+sub_path)\n",
+"text":"def get_paragraph(self, source_id, sub_path=[]):\n    return self.get(self.",
+"type":"code"
+},
+{
+"id":"17d9e1db2ea84cc0838b3d8d4eaf615e",
+"type":"variable"
+},
+{
+"text":"(source_id)+sub_path)\n",
 "type":"code"
 }
 ],
@@ -3397,7 +3413,15 @@
 ],
 "fragments":[
 {
-"text":"def _find_paragraph(self, paragraph_id):\n    def find_in_page(page, path):\n        for index, paragraph in enumerate(page[\"paragraphs\"]):\n            if paragraph[\"id\"] == paragraph_id:\n                return path + [\"paragraphs\", index]\n        for index, child in enumerate(page[\"children\"]):\n            try:\n                return find_in_page(child, path + [\"children\", index])\n            except ParagraphNotFound:\n                pass\n        raise ParagraphNotFound()\n    return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)\n",
+"text":"def ",
+"type":"code"
+},
+{
+"id":"17d9e1db2ea84cc0838b3d8d4eaf615e",
+"type":"variable"
+},
+{
+"text":"(self, paragraph_id):\n    def find_in_page(page, path):\n        for index, paragraph in enumerate(page[\"paragraphs\"]):\n            if paragraph[\"id\"] == paragraph_id:\n                return path + [\"paragraphs\", index]\n        for index, child in enumerate(page[\"children\"]):\n            try:\n                return find_in_page(child, path + [\"children\", index])\n            except ParagraphNotFound:\n                pass\n        raise ParagraphNotFound()\n    return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)\n",
 "type":"code"
 }
 ],
@@ -8407,6 +8431,7 @@
 "0f3e8abf378142c9b162cece42346634":"normalize_text_fragments",
 "0f86edb70f4c42d2a13500eafb09f308":"target_page",
 "11be3ff0d787439e83e1b731a5b7e3ef":"create_selection_value",
+"17d9e1db2ea84cc0838b3d8d4eaf615e":"_find_paragraph_path",
 "1a3c1e487f6943c0a391a189560ab24f":"_prune_filter",
 "1eaa3d40e7f94d83acb420fed05432f8":"TextFragmentsInputHandler",
 "1ee3df1321aa4ed28bca5a0114b08124":"layout",
