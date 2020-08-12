@@ -3279,59 +3279,10 @@ class TextFragmentsInputHandler(StringInputHandler):
         builder.text(text, **params)
 
     def replace(self, text):
-        before = self.data[:self.start[0]]
-        left = self.data[self.start[0]]
-        right = self.data[self.end[0]]
-        after = self.data[self.end[0]+1:]
-        if left is right:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]
-                ),
-            ]
-            position = [self.start[0], self.start[1]+len(text)]
-        elif self.cursor_at_start:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]] + text
-                ),
-                im_modify(
-                    right,
-                    ["text"],
-                    lambda value: value[self.end[1]:]
-                ),
-            ]
-            if not middle[1]["text"]:
-                middle.pop(1)
-            position = [self.start[0], self.start[1]+len(text)]
-        else:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]]
-                ),
-                im_modify(
-                    right,
-                    ["text"],
-                    lambda value: text + value[self.end[1]:]
-                ),
-            ]
-            if not middle[0]["text"]:
-                middle.pop(0)
-                position = [self.end[0]-1, len(text)]
-            else:
-                position = [self.end[0], len(text)]
-        self.data = before + middle + after
-        self.selection_value = self.create_selection_value({
-            "start": position,
-            "end": position,
-            "cursor_at_start": True,
-        })
+        self.data, self.selection_value = TextFragments(
+            self.data,
+            self.selection_value
+        ).replace(text).get()
 
     def handle_key(self, key_event, text):
         StringInputHandler.handle_key(self, key_event, text)
@@ -3761,6 +3712,18 @@ class TextFragments(object):
         self.text_fragments = text_fragments
         self.selection_value = selection_value
 
+    @property
+    def start(self):
+        return self.selection_value["start"]
+
+    @property
+    def end(self):
+        return self.selection_value["end"]
+
+    @property
+    def cursor_at_start(self):
+        return self.selection_value["cursor_at_start"]
+
     def bold(self):
         self.text_fragments = [{"type": "text", "text": "Hej!"}]+self.text_fragments
         self.selection_value = dict(self.selection_value,
@@ -3768,6 +3731,62 @@ class TextFragments(object):
             end=[0, 3],
             cursor_at_start=False
         )
+        return self
+
+    def replace(self, text):
+        before = self.text_fragments[:self.start[0]]
+        left = self.text_fragments[self.start[0]]
+        right = self.text_fragments[self.end[0]]
+        after = self.text_fragments[self.end[0]+1:]
+        if left is right:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]
+                ),
+            ]
+            position = [self.start[0], self.start[1]+len(text)]
+        elif self.cursor_at_start:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]] + text
+                ),
+                im_modify(
+                    right,
+                    ["text"],
+                    lambda value: value[self.end[1]:]
+                ),
+            ]
+            if not middle[1]["text"]:
+                middle.pop(1)
+            position = [self.start[0], self.start[1]+len(text)]
+        else:
+            middle = [
+                im_modify(
+                    left,
+                    ["text"],
+                    lambda value: value[:self.start[1]]
+                ),
+                im_modify(
+                    right,
+                    ["text"],
+                    lambda value: text + value[self.end[1]:]
+                ),
+            ]
+            if not middle[0]["text"]:
+                middle.pop(0)
+                position = [self.end[0]-1, len(text)]
+            else:
+                position = [self.end[0], len(text)]
+        self.text_fragments = before + middle + after
+        self.selection_value = dict(self.selection_value, **{
+            "start": position,
+            "end": position,
+            "cursor_at_start": True,
+        })
         return self
 
     def normalize(self):
