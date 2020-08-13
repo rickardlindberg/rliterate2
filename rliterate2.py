@@ -150,8 +150,17 @@ def toolbar_props(document):
             selection.value["paragraph_id"],
             selection.value["path"]
         )
+        if selection.value["cursor_at_start"]:
+            fragment_under_cursor = text_fragments[selection.value["start"][0]]
+        else:
+            fragment_under_cursor = text_fragments[selection.value["end"][0]]
+        if fragment_under_cursor["type"] == "variable":
+            cursor_variable = fragment_under_cursor["id"]
+        else:
+            cursor_variable = None
     else:
         text_fragments = None
+        cursor_variable = None
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
@@ -161,7 +170,10 @@ def toolbar_props(document):
         },
         "text_fragments": text_fragments,
         "text_fragments_selected": text_fragments is not None,
-        "style_text_props": TextPropsBuilder().text("Text style:").get(),
+        "style_text_props": TextPropsBuilder().text("Style:").get(),
+        "variable_text_props": TextPropsBuilder().text("Variable:").get(),
+        "selected_variable": document.get_selected_variable(),
+        "cursor_variable": cursor_variable,
         "selection": selection,
         "actions": document.actions,
     }
@@ -1259,6 +1271,7 @@ class WxWidgetMixin(WidgetMixin):
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
         self._register_builtin("tooltip", self.SetToolTip)
+        self._register_builtin("enabled", self.Enable)
         self._event_map = {
             "left_down": [
                 (wx.EVT_LEFT_DOWN, self._on_wx_left_down),
@@ -1556,6 +1569,7 @@ class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
         self.SetBitmap(wx.ArtProvider.GetBitmap(
             {
                 "add": wx.ART_ADD_BOOKMARK,
+                "remove": wx.ART_CROSS_MARK,
                 "back": wx.ART_GO_BACK,
                 "forward": wx.ART_GO_FORWARD,
                 "undo": wx.ART_UNDO,
@@ -1563,6 +1577,8 @@ class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
                 "quit": wx.ART_QUIT,
                 "save": wx.ART_FILE_SAVE,
                 "settings": wx.ART_HELP_SETTINGS,
+                "copy": wx.ART_COPY,
+                "paste": wx.ART_PASTE,
                 "text": "gtk-edit",
                 "bold": "gtk-bold",
                 "italic": "gtk-italic",
@@ -2065,7 +2081,7 @@ class Toolbar(Panel):
             name = None
             handlers = {}
             props['icon'] = 'text'
-            props['tooltip'] = 'Regular text'
+            props['tooltip'] = 'Regular'
             handlers['button'] = lambda event: self._make_text()
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.TOP
@@ -2105,6 +2121,64 @@ class Toolbar(Panel):
             sizer["flag"] |= wx.BOTTOM
             self._create_widget(ToolbarButton, props, sizer, handlers, name)
             self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props.update(self.prop(['variable_text_props']))
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            sizer["flag"] |= wx.ALIGN_CENTER
+            self._create_widget(Text, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'copy'
+            props['tooltip'] = 'Select'
+            props['enabled'] = bool(self.prop(['cursor_variable']))
+            handlers['button'] = lambda event: self._select_variable()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'remove'
+            props['tooltip'] = 'Unselect'
+            props['enabled'] = bool(self.prop(['selected_variable']))
+            handlers['button'] = lambda event: self._unselect_variable()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'paste'
+            props['tooltip'] = 'Insert selected'
+            props['enabled'] = bool(self.prop(['selected_variable']))
+            handlers['button'] = lambda event: self._insert_variable()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'add'
+            props['tooltip'] = 'Create new'
+            handlers['button'] = lambda event: self._add_variable()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
@@ -2120,10 +2194,28 @@ class Toolbar(Panel):
 
     def _make_code(self):
         self._make(lambda x: x.code())
+    def _select_variable(self):
+        self.prop(["actions", "set_selected_variable"])(
+            self.prop(["cursor_variable"]),
+            reset_focus=True
+        )
 
+    def _unselect_variable(self):
+        self.prop(["actions", "set_selected_variable"])(
+            None,
+            reset_focus=True
+        )
+
+    def _insert_variable(self):
+        self._make(lambda x: x.variable(
+            self.prop(["selected_variable"])
+        ))
+
+    def _add_variable(self):
+        self._make(lambda x: x.variable())
     def _make(self, fn):
         selection = self.prop(["selection"])
-        new_text_fragments, new_selection_value = fn(TextFragments(
+        new_text_fragments, new_variables, new_selection_value = fn(TextFragments(
             self.prop(["text_fragments"]),
             selection.value
         )).get()
@@ -2131,6 +2223,7 @@ class Toolbar(Panel):
             selection.value["paragraph_id"],
             selection.value["path"],
             new_text_fragments,
+            new_variables,
             selection.update_value(new_selection_value)
         )
 
@@ -3214,12 +3307,14 @@ class TextFragmentsInputHandler(StringInputHandler):
             data,
             self.selection.value_here
         )
+        self.new_variables = {}
 
     def save(self, text_fragments, selection_value):
         self.modify_paragraph(
             self.paragraph["id"],
             self.path,
             text_fragments,
+            self.new_variables,
             self.selection.create(selection_value)
         )
 
@@ -3343,7 +3438,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         builder.text(text, **params)
 
     def replace(self, text):
-        self.data, self.selection_value = TextFragments(
+        self.data, self.new_variables, self.selection_value = TextFragments(
             self.data,
             self.selection_value
         ).replace(text).get()
@@ -3360,6 +3455,7 @@ class Document(Immutable):
             "path": path,
             "doc": load_document_from_file(path),
             "selection": Selection.empty(),
+            "selected_variable": None,
             "theme": self.DEFAULT_THEME,
             "toc": {
                 "width": 230,
@@ -3400,6 +3496,7 @@ class Document(Immutable):
             "set_toc_width": self.set_toc_width,
             "activate_selection": self.activate_selection,
             "toggle_collapsed": self.toggle_collapsed,
+            "set_selected_variable": self.set_selected_variable,
         }
 
     def _build_page_index(self):
@@ -3491,13 +3588,18 @@ class Document(Immutable):
                     self.set_selection(new_selection)
         except PageNotFound:
             pass
-    def modify_paragraph(self, source_id, path, new_value, new_selection):
+    def modify_paragraph(self, source_id, path, new_value, new_variables, new_selection):
         try:
             with self.transaction():
                 self.replace(
                     self._find_paragraph_path(source_id)+path,
                     new_value
                 )
+                if new_variables:
+                    self.modify(
+                        ["doc", "variables"],
+                        lambda x: dict(x, **new_variables)
+                    )
                 self.set_selection(new_selection)
         except ParagraphNotFound:
             pass
@@ -3517,6 +3619,15 @@ class Document(Immutable):
         return find_in_page(self.get(self.ROOT_PAGE_PATH), self.ROOT_PAGE_PATH)
     def get_variable(self, variable_id):
         return self.get(["doc", "variables", variable_id])
+    def get_selected_variable(self):
+        return self.get(["selected_variable"])
+    def set_selected_variable(self, variable_id, reset_focus=False):
+        if variable_id not in self.get(["doc", "variables"]):
+            variable_id = None
+        with self.transaction():
+            self.replace(["selected_variable"], variable_id)
+            if reset_focus:
+                self.set_selection(self.get(["selection"]).update_value({}))
     base00  = "#657b83"
     base1   = "#93a1a1"
     yellow  = "#b58900"
@@ -3771,9 +3882,11 @@ class ParagraphNotFound(Exception):
 
 class TextFragments(object):
 
-    def __init__(self, text_fragments, selection_value):
+    def __init__(self, text_fragments, selection_value, variables={}):
         self.text_fragments = text_fragments
         self.selection_value = selection_value
+        self.variables = variables
+        self.new_variables = {}
 
     @property
     def start(self):
@@ -3879,6 +3992,18 @@ class TextFragments(object):
         })
         return self
 
+    def variable(self, variable_id=None):
+        if variable_id is None:
+            variable_id = genid()
+            self.new_variables[variable_id] = ""
+        self.text_fragments = [{"type": "variable", "id": variable_id}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 0],
+            cursor_at_start=False
+        )
+        return self
+
     def normalize(self):
         return self
 
@@ -3886,6 +4011,7 @@ class TextFragments(object):
         self.normalize()
         return (
             self.text_fragments,
+            self.new_variables,
             self.selection_value
         )
 
