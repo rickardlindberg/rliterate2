@@ -1135,7 +1135,7 @@ class StringInputHandler(object):
             self.cursor = self._next_cursor(self._cursors_right(text))
         else:
             self.replace(key_event.key)
-        self.save(self.data, self.selection_value)
+        self.save()
 
     def _next_cursor(self, cursors):
         for cursor in cursors:
@@ -2853,13 +2853,13 @@ class TitleInputHandler(StringInputHandler):
             builder.text("Enter title...", color=self.page_theme["placeholder_color"], index_constant=0)
         return builder.get()
 
-    def save(self, new_title, new_selection_value):
+    def save(self):
         self.actions["edit_page"](
             self.page["id"],
             {
-                "title": new_title,
+                "title": self.data,
             },
-            self.selection.create(new_selection_value)
+            self.selection.create(self.selection_value)
         )
 
 class TextParagraph(Panel):
@@ -3309,13 +3309,13 @@ class TextFragmentsInputHandler(StringInputHandler):
         )
         self.new_variables = {}
 
-    def save(self, text_fragments, selection_value):
+    def save(self):
         self.modify_paragraph(
             self.paragraph["id"],
             self.path,
-            text_fragments,
+            self.data,
             self.new_variables,
-            self.selection.create(selection_value)
+            self.selection.create(self.selection_value)
         )
 
     def create_selection_value(self, values):
@@ -3440,7 +3440,8 @@ class TextFragmentsInputHandler(StringInputHandler):
     def replace(self, text):
         self.data, self.new_variables, self.selection_value = TextFragments(
             self.data,
-            self.selection_value
+            self.selection_value,
+            self.paragraph["meta"]["variables"]
         ).replace(text).get()
 
     def handle_key(self, key_event, text):
