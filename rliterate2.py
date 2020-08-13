@@ -161,6 +161,7 @@ def toolbar_props(document):
         },
         "text_fragments": text_fragments,
         "text_fragments_selected": text_fragments is not None,
+        "style_text_props": TextPropsBuilder().text("Text style:").get(),
         "selection": selection,
         "actions": document.actions,
     }
@@ -1257,6 +1258,7 @@ class WxWidgetMixin(WidgetMixin):
                 None: self._default_cursor,
             }.get(value, wx.Cursor(wx.CURSOR_QUESTION_ARROW)))
         )
+        self._register_builtin("tooltip", self.SetToolTip)
         self._event_map = {
             "left_down": [
                 (wx.EVT_LEFT_DOWN, self._on_wx_left_down),
@@ -1561,7 +1563,10 @@ class ToolbarButton(wx.BitmapButton, WxWidgetMixin):
                 "quit": wx.ART_QUIT,
                 "save": wx.ART_FILE_SAVE,
                 "settings": wx.ART_HELP_SETTINGS,
+                "text": "gtk-edit",
                 "bold": "gtk-bold",
+                "italic": "gtk-italic",
+                "code": "gtk-index",
             }.get(value, wx.ART_QUESTION),
             wx.ART_BUTTON,
             (24, 24)
@@ -2042,12 +2047,59 @@ class Toolbar(Panel):
             sizer["flag"] |= wx.BOTTOM
             self._create_widget(Panel, props, sizer, handlers, name)
             self._create_space(self.prop(['margin']))
+            self._create_space(self.prop(['margin']))
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props.update(self.prop(['style_text_props']))
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            sizer["flag"] |= wx.ALIGN_CENTER
+            self._create_widget(Text, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'text'
+            props['tooltip'] = 'Regular text'
+            handlers['button'] = lambda event: self._make_text()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
             props = {}
             sizer = {"flag": 0, "border": 0, "proportion": 0}
             name = None
             handlers = {}
             props['icon'] = 'bold'
-            handlers['button'] = lambda event: self._make_bold()
+            props['tooltip'] = 'Strong emphasis'
+            handlers['button'] = lambda event: self._make_strong()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'italic'
+            props['tooltip'] = 'Emphasis'
+            handlers['button'] = lambda event: self._make_emphasis()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'code'
+            props['tooltip'] = 'Code'
+            handlers['button'] = lambda event: self._make_code()
             sizer["border"] = self.prop(['margin'])
             sizer["flag"] |= wx.TOP
             sizer["flag"] |= wx.BOTTOM
@@ -2057,12 +2109,24 @@ class Toolbar(Panel):
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
 
-    def _make_bold(self):
+    def _make_text(self):
+        self._make(lambda x: x.text())
+
+    def _make_strong(self):
+        self._make(lambda x: x.strong())
+
+    def _make_emphasis(self):
+        self._make(lambda x: x.emphasis())
+
+    def _make_code(self):
+        self._make(lambda x: x.code())
+
+    def _make(self, fn):
         selection = self.prop(["selection"])
-        new_text_fragments, new_selection_value = TextFragments(
+        new_text_fragments, new_selection_value = fn(TextFragments(
             self.prop(["text_fragments"]),
             selection.value
-        ).bold().get()
+        )).get()
         self.prop(["actions", "modify_paragraph"])(
             selection.value["paragraph_id"],
             selection.value["path"],
@@ -3723,8 +3787,35 @@ class TextFragments(object):
     def cursor_at_start(self):
         return self.selection_value["cursor_at_start"]
 
-    def bold(self):
-        self.text_fragments = [{"type": "text", "text": "Hej!"}]+self.text_fragments
+    def text(self):
+        self.text_fragments = [{"type": "text", "text": "Text!"}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 3],
+            cursor_at_start=False
+        )
+        return self
+
+    def strong(self):
+        self.text_fragments = [{"type": "text", "text": "Strong!"}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 3],
+            cursor_at_start=False
+        )
+        return self
+
+    def emphasis(self):
+        self.text_fragments = [{"type": "text", "text": "Emphasis!"}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 3],
+            cursor_at_start=False
+        )
+        return self
+
+    def code(self):
+        self.text_fragments = [{"type": "text", "text": "Code!"}]+self.text_fragments
         self.selection_value = dict(self.selection_value,
             start=[0, 0],
             end=[0, 3],
