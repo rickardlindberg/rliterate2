@@ -1470,8 +1470,16 @@ class WxWidgetMixin(WidgetMixin):
         self._hover_leave()
 
     def show_modal(self, dialog_cls, props):
-        props.listen(lambda: dialog.update_props(props.get()))
-        dialog = dialog_cls(self.GetTopLevelParent(), None, {}, props.get())
+        @profile_sub("render")
+        def update(props):
+            dialog.update_props(props)
+        @profile("show dialog")
+        @profile_sub("show dialog")
+        def show_dialog():
+            props.listen(lambda: update(props.get()))
+            dialog = dialog_cls(self.GetTopLevelParent(), None, {}, props.get())
+            return dialog
+        dialog = show_dialog()
         dialog.ShowModal()
         return dialog.result
 
