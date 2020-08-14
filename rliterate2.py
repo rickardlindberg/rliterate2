@@ -172,8 +172,10 @@ def toolbar_props(document):
         "text_fragments_selected": text_fragments is not None,
         "style_text_props": TextPropsBuilder().text("Style:").get(),
         "variable_text_props": TextPropsBuilder().text("Variable:").get(),
+        "page_reference_text_props": TextPropsBuilder().text("Page reference:").get(),
         "selected_variable": document.get_selected_variable(),
         "cursor_variable": cursor_variable,
+        "document": document,
         "selection": selection,
         "actions": document.actions,
     }
@@ -867,6 +869,11 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
         **kwargs,
     }
 
+def page_selector_dialog_props(state, document):
+    return {
+        "title": "Select page",
+    }
+
 def load_document_from_file(path):
     if os.path.exists(path):
         return load_json_from_file(path)
@@ -1462,6 +1469,12 @@ class WxWidgetMixin(WidgetMixin):
         menu.Destroy()
         self._hover_leave()
 
+    def show_modal(self, dialog_cls, props):
+        props.listen(lambda: dialog.update_props(props.get()))
+        dialog = dialog_cls(self.GetTopLevelParent(), None, {}, props.get())
+        dialog.ShowModal()
+        return dialog.result
+
     def _request_refresh(self, layout=False, layout_me=False, immediate=False):
         self.handle_refresh_requests(RefreshRequests(
             {
@@ -1891,6 +1904,27 @@ class Frame(wx.Frame, WxContainerWidgetMixin):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
 
+class Dialog(wx.Dialog, WxContainerWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Frame.__init__(self, wx_parent)
+        WxContainerWidgetMixin.__init__(self, *args)
+        self.result = None
+
+    def _setup_gui(self):
+        WxContainerWidgetMixin._setup_gui(self)
+        self._register_builtin("title", self.SetTitle)
+
+    def _setup_layout(self):
+        self._wx_parent = wx.Panel(self)
+        self._wx_parent.Sizer = self._sizer = self._create_sizer()
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
+
+    def end_modal(self, result):
+        self.result = result
+        self.EndModal(0)
+
 class Panel(wx.Panel, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):
@@ -2179,6 +2213,29 @@ class Toolbar(Panel):
             sizer["flag"] |= wx.TOP
             sizer["flag"] |= wx.BOTTOM
             self._create_widget(ToolbarButton, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props.update(self.prop(['page_reference_text_props']))
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            sizer["flag"] |= wx.ALIGN_CENTER
+            self._create_widget(Text, props, sizer, handlers, name)
+            self._create_space(self.prop(['margin']))
+            props = {}
+            sizer = {"flag": 0, "border": 0, "proportion": 0}
+            name = None
+            handlers = {}
+            props['icon'] = 'add'
+            props['tooltip'] = 'Add'
+            handlers['button'] = lambda event: self._add_page_reference()
+            sizer["border"] = self.prop(['margin'])
+            sizer["flag"] |= wx.TOP
+            sizer["flag"] |= wx.BOTTOM
+            self._create_widget(ToolbarButton, props, sizer, handlers, name)
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
@@ -2213,6 +2270,17 @@ class Toolbar(Panel):
 
     def _add_variable(self):
         self._make(lambda x: x.variable())
+    def _add_page_reference(self):
+        result = self.show_modal(
+            PageSelectorDialog,
+            create_props(
+                page_selector_dialog_props,
+                PageSelectorState(),
+                self.prop(["document"])
+            )
+        )
+        if result:
+            self._make(lambda x: x.page_reference(result['selected_page']))
     def _make(self, fn):
         selection = self.prop(["selection"])
         new_text_fragments, new_variables, new_selection_value = fn(TextFragments(
@@ -3447,6 +3515,42 @@ class TextFragmentsInputHandler(StringInputHandler):
     def handle_key(self, key_event, text):
         StringInputHandler.handle_key(self, key_event, text)
 
+class PageSelectorDialog(Dialog):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = 'OK'
+        handlers['click'] = lambda event: self._on_ok()
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+
+    def _on_ok(self):
+        self.end_modal({"selected_page": "2c5e170cc0f34e9787d74d319b5bb4f2"})
+
+class PageSelectorState(Immutable):
+
+    def __init__(self):
+        Immutable.__init__(self, {
+            "search_string": "",
+        })
+
+    def get_search_string(self):
+        return self.get(["search_string"])
+
+    def set_search_string(self, search_string):
+        self.replace(["search_string"], search_string)
+
 class Document(Immutable):
 
     ROOT_PAGE_PATH = ["doc", "root_page"]
@@ -3998,6 +4102,15 @@ class TextFragments(object):
             variable_id = genid()
             self.new_variables[variable_id] = ""
         self.text_fragments = [{"type": "variable", "id": variable_id}]+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[0, 0],
+            end=[0, 0],
+            cursor_at_start=False
+        )
+        return self
+
+    def page_reference(self, page_id):
+        self.text_fragments = [{"type": "reference", "page_id": page_id, "text": ""}]+self.text_fragments
         self.selection_value = dict(self.selection_value,
             start=[0, 0],
             end=[0, 0],

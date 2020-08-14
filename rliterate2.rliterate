@@ -628,7 +628,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        %space[#margin]\n        %space[#margin]\n        Text {\n            #style_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"text\"\n            tooltip = \"Regular\"\n            @button = self._make_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"bold\"\n            tooltip = \"Strong emphasis\"\n            @button = self._make_strong()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"italic\"\n            tooltip = \"Emphasis\"\n            @button = self._make_emphasis()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"code\"\n            tooltip = \"Code\"\n            @button = self._make_code()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #variable_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"copy\"\n            tooltip = \"Select\"\n            enabled = bool(#cursor_variable)\n            @button = self._select_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"remove\"\n            tooltip = \"Unselect\"\n            enabled = bool(#selected_variable)\n            @button = self._unselect_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"paste\"\n            tooltip = \"Insert selected\"\n            enabled = bool(#selected_variable)\n            @button = self._insert_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Create new\"\n            @button = self._add_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n    }\n}\n\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        %space[#margin]\n        %space[#margin]\n        Text {\n            #style_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"text\"\n            tooltip = \"Regular\"\n            @button = self._make_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"bold\"\n            tooltip = \"Strong emphasis\"\n            @button = self._make_strong()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"italic\"\n            tooltip = \"Emphasis\"\n            @button = self._make_emphasis()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"code\"\n            tooltip = \"Code\"\n            @button = self._make_code()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #variable_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"copy\"\n            tooltip = \"Select\"\n            enabled = bool(#cursor_variable)\n            @button = self._select_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"remove\"\n            tooltip = \"Unselect\"\n            enabled = bool(#selected_variable)\n            @button = self._unselect_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"paste\"\n            tooltip = \"Insert selected\"\n            enabled = bool(#selected_variable)\n            @button = self._insert_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Create new\"\n            @button = self._add_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #page_reference_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Add\"\n            @button = self._add_page_reference()\n            %margin[#margin,TOP|BOTTOM]\n        }\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -696,6 +696,25 @@
 ],
 "fragments":[
 {
+"text":"def _add_page_reference(self):\n    result = self.show_modal(\n        PageSelectorDialog,\n        create_props(\n            page_selector_dialog_props,\n            PageSelectorState(),\n            self.prop([\"document\"])\n        )\n    )\n    if result:\n        self._make(lambda x: x.page_reference(result['selected_page']))\n",
+"type":"code"
+}
+],
+"id":"a370fdd3ef3f4485891acbc0a64e5875",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Toolbar"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
 "text":"def _make(self, fn):\n    selection = self.prop([\"selection\"])\n    new_text_fragments, new_variables, new_selection_value = fn(TextFragments(\n        self.prop([\"text_fragments\"]),\n        selection.value\n    )).get()\n    self.prop([\"actions\", \"modify_paragraph\"])(\n        selection.value[\"paragraph_id\"],\n        selection.value[\"path\"],\n        new_text_fragments,\n        new_variables,\n        selection.",
 "type":"code"
 },
@@ -722,7 +741,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragments = document.get_paragraph(\n            selection.value[\"paragraph_id\"],\n            selection.value[\"path\"]\n        )\n        if selection.value[\"cursor_at_start\"]:\n            fragment_under_cursor = text_fragments[selection.value[\"start\"][0]]\n        else:\n            fragment_under_cursor = text_fragments[selection.value[\"end\"][0]]\n        if fragment_under_cursor[\"type\"] == \"variable\":\n            cursor_variable = fragment_under_cursor[\"id\"]\n        else:\n            cursor_variable = None\n    else:\n        text_fragments = None\n        cursor_variable = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragments\": text_fragments,\n        \"text_fragments_selected\": text_fragments is not None,\n        \"style_text_props\": TextPropsBuilder().text(\"Style:\").get(),\n        \"variable_text_props\": TextPropsBuilder().text(\"Variable:\").get(),\n        \"selected_variable\": document.get_selected_variable(),\n        \"cursor_variable\": cursor_variable,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragments = document.get_paragraph(\n            selection.value[\"paragraph_id\"],\n            selection.value[\"path\"]\n        )\n        if selection.value[\"cursor_at_start\"]:\n            fragment_under_cursor = text_fragments[selection.value[\"start\"][0]]\n        else:\n            fragment_under_cursor = text_fragments[selection.value[\"end\"][0]]\n        if fragment_under_cursor[\"type\"] == \"variable\":\n            cursor_variable = fragment_under_cursor[\"id\"]\n        else:\n            cursor_variable = None\n    else:\n        text_fragments = None\n        cursor_variable = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragments\": text_fragments,\n        \"text_fragments_selected\": text_fragments is not None,\n        \"style_text_props\": TextPropsBuilder().text(\"Style:\").get(),\n        \"variable_text_props\": TextPropsBuilder().text(\"Variable:\").get(),\n        \"page_reference_text_props\": TextPropsBuilder().text(\"Page reference:\").get(),\n        \"selected_variable\": document.get_selected_variable(),\n        \"cursor_variable\": cursor_variable,\n        \"document\": document,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -3171,6 +3190,93 @@
 "title":"Main frame"
 },
 {
+"children":[],
+"id":"cad6521c056945e98b3f4540e53e4cfe",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"dialog PageSelectorDialog %layout_rows {\n    Button {\n        label = \"OK\"\n        @click = self._on_ok()\n        %align[EXPAND]\n    }\n}\n\n",
+"type":"code"
+},
+{
+"blank_lines_before":0,
+"path":[
+"PageSelectorDialog"
+],
+"prefix":"",
+"type":"chunk"
+}
+],
+"id":"53ecc3560db649ee9c8e42cbc2280f4e",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"PageSelectorDialog"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def _on_ok(self):\n    self.end_modal({\"selected_page\": \"2c5e170cc0f34e9787d74d319b5bb4f2\"})\n",
+"type":"code"
+}
+],
+"id":"998f0f1410a1419c8e14823b8c5bbf55",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class PageSelectorState(Immutable):\n\n    def __init__(self):\n        Immutable.__init__(self, {\n            \"search_string\": \"\",\n        })\n\n    def get_search_string(self):\n        return self.get([\"search_string\"])\n\n    def set_search_string(self, search_string):\n        self.replace([\"search_string\"], search_string)\n",
+"type":"code"
+}
+],
+"id":"0531e16867644763a0320e573ecc8348",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def page_selector_dialog_props(state, document):\n    return {\n        \"title\": \"Select page\",\n    }\n",
+"type":"code"
+}
+],
+"id":"876dda6187b44c8d9c3bf805604ef6b3",
+"type":"code"
+}
+],
+"title":"Page selector dialog"
+},
+{
 "children":[
 {
 "children":[],
@@ -3498,7 +3604,7 @@
 ],
 "fragments":[
 {
-"text":"class TextFragments(object):\n\n    def __init__(self, text_fragments, selection_value, variables={}):\n        self.text_fragments = text_fragments\n        self.selection_value = selection_value\n        self.variables = variables\n        self.new_variables = {}\n\n    @property\n    def start(self):\n        return self.selection_value[\"start\"]\n\n    @property\n    def end(self):\n        return self.selection_value[\"end\"]\n\n    @property\n    def cursor_at_start(self):\n        return self.selection_value[\"cursor_at_start\"]\n\n    def text(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Text!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def strong(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Strong!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def emphasis(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Emphasis!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def code(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Code!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def replace(self, text):\n        before = self.text_fragments[:self.start[0]]\n        left = self.text_fragments[self.start[0]]\n        right = self.text_fragments[self.end[0]]\n        after = self.text_fragments[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.text_fragments = before + middle + after\n        self.selection_value = dict(self.selection_value, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n        return self\n\n    def variable(self, variable_id=None):\n        if variable_id is None:\n            variable_id = genid()\n            self.new_variables[variable_id] = \"\"\n        self.text_fragments = [{\"type\": \"variable\", \"id\": variable_id}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 0],\n            cursor_at_start=False\n        )\n        return self\n\n    def normalize(self):\n        return self\n\n    def get(self):\n        self.normalize()\n        return (\n            self.text_fragments,\n            self.new_variables,\n            self.selection_value\n        )\n",
+"text":"class TextFragments(object):\n\n    def __init__(self, text_fragments, selection_value, variables={}):\n        self.text_fragments = text_fragments\n        self.selection_value = selection_value\n        self.variables = variables\n        self.new_variables = {}\n\n    @property\n    def start(self):\n        return self.selection_value[\"start\"]\n\n    @property\n    def end(self):\n        return self.selection_value[\"end\"]\n\n    @property\n    def cursor_at_start(self):\n        return self.selection_value[\"cursor_at_start\"]\n\n    def text(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Text!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def strong(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Strong!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def emphasis(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Emphasis!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def code(self):\n        self.text_fragments = [{\"type\": \"text\", \"text\": \"Code!\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 3],\n            cursor_at_start=False\n        )\n        return self\n\n    def replace(self, text):\n        before = self.text_fragments[:self.start[0]]\n        left = self.text_fragments[self.start[0]]\n        right = self.text_fragments[self.end[0]]\n        after = self.text_fragments[self.end[0]+1:]\n        if left is right:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]\n                ),\n            ]\n            position = [self.start[0], self.start[1]+len(text)]\n        elif self.cursor_at_start:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]] + text\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: value[self.end[1]:]\n                ),\n            ]\n            if not middle[1][\"text\"]:\n                middle.pop(1)\n            position = [self.start[0], self.start[1]+len(text)]\n        else:\n            middle = [\n                im_modify(\n                    left,\n                    [\"text\"],\n                    lambda value: value[:self.start[1]]\n                ),\n                im_modify(\n                    right,\n                    [\"text\"],\n                    lambda value: text + value[self.end[1]:]\n                ),\n            ]\n            if not middle[0][\"text\"]:\n                middle.pop(0)\n                position = [self.end[0]-1, len(text)]\n            else:\n                position = [self.end[0], len(text)]\n        self.text_fragments = before + middle + after\n        self.selection_value = dict(self.selection_value, **{\n            \"start\": position,\n            \"end\": position,\n            \"cursor_at_start\": True,\n        })\n        return self\n\n    def variable(self, variable_id=None):\n        if variable_id is None:\n            variable_id = genid()\n            self.new_variables[variable_id] = \"\"\n        self.text_fragments = [{\"type\": \"variable\", \"id\": variable_id}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 0],\n            cursor_at_start=False\n        )\n        return self\n\n    def page_reference(self, page_id):\n        self.text_fragments = [{\"type\": \"reference\", \"page_id\": page_id, \"text\": \"\"}]+self.text_fragments\n        self.selection_value = dict(self.selection_value,\n            start=[0, 0],\n            end=[0, 0],\n            cursor_at_start=False\n        )\n        return self\n\n    def normalize(self):\n        return self\n\n    def get(self):\n        self.normalize()\n        return (\n            self.text_fragments,\n            self.new_variables,\n            self.selection_value\n        )\n",
 "type":"code"
 }
 ],
@@ -4428,7 +4534,7 @@
 "type":"tabstop"
 },
 {
-"text":"=\n    WS (\n      | 'frame'\n      | 'panel'\n      | 'scroll'\n      | 'vscroll'\n      | 'hscroll'\n    ):x WB ",
+"text":"=\n    WS (\n      | 'frame'\n      | 'dialog'\n      | 'panel'\n      | 'scroll'\n      | 'vscroll'\n      | 'hscroll'\n    ):x WB ",
 "type":"code"
 },
 {
@@ -5125,7 +5231,7 @@
 ],
 "fragments":[
 {
-"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|hscroll|scroll|frame|panel|loop|if|else|True|False|None|cache_limit)\\b', Keyword),\n            (r'#(\\w+([.]\\w+)*)?', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
+"text":"from pygments.lexer import RegexLexer\nfrom pygments.token import *\n\nclass RLGuiLexer(RegexLexer):\n\n    name = 'RLGui'\n    aliases = ['rlgui']\n    filenames = ['*.rlgui']\n\n    tokens = {\n        'root': [\n            (r'\"', String, \"string\"),\n            (r'[=]', Name.Builtin),\n            (r'\\b(vscroll|hscroll|scroll|frame|dialog|panel|loop|if|else|True|False|None|cache_limit)\\b', Keyword),\n            (r'#(\\w+([.]\\w+)*)?', Name.Class),\n            (r'[$]\\w*', Name.Builtin),\n            (r'@\\w+', Name.Exception),\n            (r'%\\w+', Comment),\n            (r'.', Text),\n        ],\n        'string': [\n            (r'[^\"\\\\]+', String),\n            (r'\"', String, \"#pop\"),\n        ],\n    }\n\n",
 "type":"code"
 }
 ],
@@ -5188,7 +5294,7 @@
 ],
 "fragments":[
 {
-"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | ast:class [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" class \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast*:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast*:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"align\" \"center\"        -> { \"sizer[\\\"flag\\\"] |= wx.ALIGN_CENTER\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"panel\"   -> \"Panel\"\n    | \"scroll\"  -> \"Scroll\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
+"text":"WxCodeGenerator {\n  ast = [%:x] -> x\n  astItems =\n    | ast:x astItem*:xs -> { x xs }\n    |                   -> {}\n  astItem = ast:x -> { \", \" x }\n  widget = .:name ast:container ast:sizer [ast*:props] [ast*:inst] .:verbatim -> {\n    \"class \" name \"(\" container \"):\\n\\n\" >\n      \"def _get_local_props(self):\\n\" >\n        \"return {\\n\" >\n          props\n        < \"}\\n\\n\"\n      <\n      \"def _create_sizer(self):\\n\" >\n        \"return \" sizer \"\\n\\n\"\n      <\n      \"def _create_widgets(self):\\n\" >\n        \"pass\\n\"\n        inst\n      <\n      verbatim\n    <\n  }\n  instance =\n    | \"%space\" ast:x -> {\n      \"self._create_space(\" x \")\\n\"\n    }\n    | ast:class [ast*:xs] -> {\n      \"props = {}\\n\"\n      \"sizer = {\\\"flag\\\": 0, \\\"border\\\": 0, \\\"proportion\\\": 0}\\n\"\n      \"name = None\\n\"\n      \"handlers = {}\\n\"\n      xs\n      \"self._create_widget(\" class \", props, sizer, handlers, name)\\n\"\n    }\n    | \"%loop\" ast:x [ast*:ys] [ast*:zs] -> {\n      \"def loop_fn(loopvar):\\n\" >\n        \"pass\\n\"\n        zs\n      <\n      \"loop_options = {}\\n\"\n      ys\n      \"with self._loop(**loop_options):\\n\" >\n        \"for loopvar in \" x \":\\n\" >\n          \"loop_fn(loopvar)\\n\"\n        <\n      <\n    }\n    | \"%if\" ast:x ifTrue:y ifFalse:z -> {\n      \"if_condition = \" x \"\\n\"\n      y\n      z\n    }\n  instanceName =\n    | py:x -> { \"name = \" x \"\\n\" }\n    |      -> {}\n  loopOption = py:x ast:y -> { \"loop_options[\" x \"] = \" y \"\\n\" }\n  ifTrue = [ast*:xs] -> {\n    \"def loop_fn(loopvar):\\n\" >\n      \"pass\\n\"\n      xs\n    <\n    \"with self._loop():\\n\" >\n      \"for loopvar in ([None] if (if_condition) else []):\\n\" >\n        \"loop_fn(loopvar)\\n\"\n      <\n    <\n  }\n  ifFalse =\n    | [ast*:xs] -> {\n        \"def loop_fn(loopvar):\\n\" >\n          \"pass\\n\"\n          xs\n        <\n        \"with self._loop():\\n\" >\n          \"for loopvar in ([None] if (not if_condition) else []):\\n\" >\n            \"loop_fn(loopvar)\\n\"\n          <\n        <\n      }\n    | -> {}\n  layoutAttribute =\n    | \"proportion\" ast:x      -> { \"sizer[\\\"proportion\\\"] = \" x \"\\n\" }\n    | \"align\" \"expand\"        -> { \"sizer[\\\"flag\\\"] |= wx.EXPAND\\n\" }\n    | \"align\" \"center\"        -> { \"sizer[\\\"flag\\\"] |= wx.ALIGN_CENTER\\n\" }\n    | \"margin\" ast:x ast*:ys  -> { \"sizer[\\\"border\\\"] = \" x \"\\n\" ys }\n  margin =\n    | \"TOP\"    -> \"sizer[\\\"flag\\\"] |= wx.TOP\\n\"\n    | \"BOTTOM\" -> \"sizer[\\\"flag\\\"] |= wx.BOTTOM\\n\"\n    | \"LEFT\"   -> \"sizer[\\\"flag\\\"] |= wx.LEFT\\n\"\n    | \"RIGHT\"  -> \"sizer[\\\"flag\\\"] |= wx.RIGHT\\n\"\n    | \"ALL\"    -> \"sizer[\\\"flag\\\"] |= wx.ALL\\n\"\n  prop = py:name ast:default -> {\n    name \": \" default \",\\n\"\n  }\n  chain = ast:x chainAst*:xs -> { x xs }\n  chainAst = ast:x -> { \".\" x }\n  propRef = ast:x -> { \"self.prop(\" x \")\" }\n  propAssign = py:name ast:value -> { \"props[\" name \"] = \" value \"\\n\" }\n  propExplode = ast:x -> { \"props.update(self.prop(\" x \"))\\n\" }\n  propChain = .*:xs -> repr(xs)\n  loopvarRef = ast:x -> { \"loopvar\" x }\n  loopvarChain = loopvar*:xs -> { xs }\n  loopvar = py:x -> { \"[\" x \"]\" }\n  loopvarExplode = ast:x -> { \"props.update(loopvar\" x \")\\n\" }\n  call = ast:x astItems:y -> { x \"(\" y \")\" }\n  handler = py:name ast:y -> { \"handlers[\" name \"] = lambda event: \" y \"\\n\" }\n  layout =\n    | \"%layout_rows\"    -> \"wx.BoxSizer(wx.VERTICAL)\"\n    | \"%layout_columns\" -> \"wx.BoxSizer(wx.HORIZONTAL)\"\n  container =\n    | \"frame\"   -> \"Frame\"\n    | \"dialog\"  -> \"Dialog\"\n    | \"panel\"   -> \"Panel\"\n    | \"scroll\"  -> \"Scroll\"\n    | \"vscroll\" -> \"VScroll\"\n    | \"hscroll\" -> \"HScroll\"\n  string = py\n  bool = py\n  none = -> \"None\"\n  number = py\n  identifier = .\n  py = .:x -> repr(x)\n}\n",
 "type":"code"
 }
 ],
@@ -6137,7 +6243,7 @@
 "type":"variable"
 },
 {
-"text":"(layout=True)\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self):\n        WidgetMixin._update_gui(self)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self._call_mouse_event_handler(wx_event, \"left_down\")\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            self._wx_down_pos.x,\n            self._wx_down_pos.y,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"right_click\")\n\n    def _call_mouse_event_handler(self, wx_event, name):\n        screen_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\n            name,\n            MouseEvent(screen_pos.x, screen_pos.y, self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                new_pos.x,\n                new_pos.y,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def _set_focus(self, focus):\n        if focus:\n            self.SetFocus()\n\n    def _on_wx_char(self, wx_event):\n        self.call_event_handler(\n            \"key\",\n            KeyEvent(chr(wx_event.GetUnicodeKey())),\n            propagate=False\n        )\n\n    def _on_wx_set_focus(self, wx_event):\n        self.call_event_handler(\n            \"focus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def _on_wx_kill_focus(self, wx_event):\n        self.call_event_handler(\n            \"unfocus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n\n",
+"text":"(layout=True)\n\n    def _setup_wx_events(self):\n        self._wx_event_handlers = set()\n        self._wx_down_pos = None\n\n    def _update_gui(self):\n        WidgetMixin._update_gui(self)\n        for name in [\"drag\", \"hover\", \"click\", \"right_click\"]:\n            if self._parent is not None and self._parent.has_event_handler(name):\n                self._register_wx_events(name)\n\n    def update_event_handlers(self, handlers):\n        WidgetMixin.update_event_handlers(self, handlers)\n        for name in handlers:\n            self._register_wx_events(name)\n\n    def _register_wx_events(self, name):\n        if name not in self._wx_event_handlers:\n            self._wx_event_handlers.add(name)\n            for event_id, handler in self._event_map.get(name, []):\n                self.Bind(event_id, handler)\n\n    def _on_wx_left_down(self, wx_event):\n        self._wx_down_pos = self.ClientToScreen(wx_event.Position)\n        self._call_mouse_event_handler(wx_event, \"left_down\")\n        self.call_event_handler(\"drag\", DragEvent(\n            True,\n            self._wx_down_pos.x,\n            self._wx_down_pos.y,\n            0,\n            0,\n            self.initiate_drag_drop\n        ), propagate=True)\n\n    def _on_wx_left_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"click\")\n        self._wx_down_pos = None\n\n    def _on_wx_right_up(self, wx_event):\n        if self.HitTest(wx_event.Position) == wx.HT_WINDOW_INSIDE:\n            self._call_mouse_event_handler(wx_event, \"right_click\")\n\n    def _call_mouse_event_handler(self, wx_event, name):\n        screen_pos = self.ClientToScreen(wx_event.Position)\n        self.call_event_handler(\n            name,\n            MouseEvent(screen_pos.x, screen_pos.y, self._show_context_menu),\n            propagate=True\n        )\n\n    def _on_wx_motion(self, wx_event):\n        if self._wx_down_pos is not None:\n            new_pos = self.ClientToScreen(wx_event.Position)\n            dx = new_pos.x-self._wx_down_pos.x\n            dy = new_pos.y-self._wx_down_pos.y\n            self.call_event_handler(\"drag\", DragEvent(\n                False,\n                new_pos.x,\n                new_pos.y,\n                dx,\n                dy,\n                self.initiate_drag_drop\n            ), propagate=True)\n\n    def _on_wx_enter_window(self, wx_event):\n        self.call_event_handler(\"hover\", HoverEvent(True), propagate=True)\n\n    def _on_wx_leave_window(self, wx_event):\n        self._hover_leave()\n\n    def initiate_drag_drop(self, kind, data):\n        self._wx_down_pos = None\n        self._hover_leave()\n        obj = wx.CustomDataObject(f\"rliterate/{kind}\")\n        obj.SetData(json.dumps(data).encode(\"utf-8\"))\n        drag_source = wx.DropSource(self)\n        drag_source.SetData(obj)\n        result = drag_source.DoDragDrop(wx.Drag_DefaultMove)\n\n    def _hover_leave(self):\n        self.call_event_handler(\"hover\", HoverEvent(False), propagate=True)\n\n    def _set_drop_target(self, kind):\n        self.SetDropTarget(RLiterateDropTarget(self, kind))\n\n    def _set_focus(self, focus):\n        if focus:\n            self.SetFocus()\n\n    def _on_wx_char(self, wx_event):\n        self.call_event_handler(\n            \"key\",\n            KeyEvent(chr(wx_event.GetUnicodeKey())),\n            propagate=False\n        )\n\n    def _on_wx_set_focus(self, wx_event):\n        self.call_event_handler(\n            \"focus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def _on_wx_kill_focus(self, wx_event):\n        self.call_event_handler(\n            \"unfocus\",\n            None,\n            propagate=False\n        )\n        wx_event.Skip()\n\n    def on_drag_drop_over(self, x, y):\n        pass\n\n    def on_drag_drop_leave(self):\n        pass\n\n    def on_drag_drop_data(self, x, y, data):\n        pass\n\n    def get_y(self):\n        return self.Position.y\n\n    def get_height(self):\n        return self.Size.height\n\n    def get_width(self):\n        return self.Size.width\n\n    def _show_context_menu(self, items):\n        def create_handler(fn):\n            return lambda event: fn()\n        menu = wx.Menu()\n        for item in items:\n            if item is None:\n                menu.AppendSeparator()\n            else:\n                text, enabled, fn = item\n                menu_item = menu.Append(wx.NewId(), text)\n                menu_item.Enable(enabled)\n                menu.Bind(\n                    wx.EVT_MENU,\n                    create_handler(fn),\n                    menu_item\n                )\n        self.PopupMenu(menu)\n        menu.Destroy()\n        self._hover_leave()\n\n    def show_modal(self, dialog_cls, props):\n        props.listen(lambda: dialog.update_props(props.get()))\n        dialog = dialog_cls(self.GetTopLevelParent(), None, {}, props.get())\n        dialog.ShowModal()\n        return dialog.result\n\n",
 "type":"code"
 },
 {
@@ -6195,6 +6301,29 @@
 }
 ],
 "title":"Frame"
+},
+{
+"children":[],
+"id":"d0d9dd98378d4798b1554ead954f8afa",
+"paragraphs":[
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Dialog(wx.Dialog, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n        self.result = None\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n\n    def end_modal(self, result):\n        self.result = result\n        self.EndModal(0)\n",
+"type":"code"
+}
+],
+"id":"04c10971e28c4c0e8b0cdb5c56075d98",
+"type":"code"
+}
+],
+"title":"Dialog"
 },
 {
 "children":[],
