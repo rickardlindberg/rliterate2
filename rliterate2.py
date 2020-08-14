@@ -1896,11 +1896,7 @@ class WxContainerWidgetMixin(WxWidgetMixin):
             )
             self._request_refresh(layout_me=True)
 
-class Frame(wx.Frame, WxContainerWidgetMixin):
-
-    def __init__(self, wx_parent, *args):
-        wx.Frame.__init__(self, wx_parent)
-        WxContainerWidgetMixin.__init__(self, *args)
+class WxTopLevelWidgetMixin(WxContainerWidgetMixin):
 
     def _setup_gui(self):
         WxContainerWidgetMixin._setup_gui(self)
@@ -1912,24 +1908,20 @@ class Frame(wx.Frame, WxContainerWidgetMixin):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
 
-class Dialog(wx.Dialog, WxContainerWidgetMixin):
+class Frame(wx.Frame, WxTopLevelWidgetMixin):
 
     def __init__(self, wx_parent, *args):
         wx.Frame.__init__(self, wx_parent)
-        WxContainerWidgetMixin.__init__(self, *args)
+        WxTopLevelWidgetMixin.__init__(self, *args)
+
+class Dialog(wx.Dialog, WxTopLevelWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.Dialog.__init__(self, wx_parent)
+        WxTopLevelWidgetMixin.__init__(self, *args)
         self.result = None
 
-    def _setup_gui(self):
-        WxContainerWidgetMixin._setup_gui(self)
-        self._register_builtin("title", self.SetTitle)
-
-    def _setup_layout(self):
-        self._wx_parent = wx.Panel(self)
-        self._wx_parent.Sizer = self._sizer = self._create_sizer()
-        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)
-
-    def end_modal(self, result):
+    def end_modal(self, result=None):
         self.result = result
         self.EndModal(0)
 

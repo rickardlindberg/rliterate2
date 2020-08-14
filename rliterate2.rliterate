@@ -6311,20 +6311,21 @@
 ],
 "fragments":[
 {
-"text":"class Frame(wx.Frame, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n",
+"text":"class ",
 "type":"code"
-}
-],
-"id":"1f2d77d65d6345b884d7755a1e963332",
-"type":"code"
-}
-],
-"title":"Frame"
 },
 {
-"children":[],
-"id":"d0d9dd98378d4798b1554ead954f8afa",
-"paragraphs":[
+"id":"451bde00f5494ab6a4693b637d9808c4",
+"type":"variable"
+},
+{
+"text":"(WxContainerWidgetMixin):\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n",
+"type":"code"
+}
+],
+"id":"b303494a4c41441b9d2e00d55b7ecf9f",
+"type":"code"
+},
 {
 "chunkpath":[
 "base classes"
@@ -6334,7 +6335,55 @@
 ],
 "fragments":[
 {
-"text":"class Dialog(wx.Dialog, WxContainerWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        WxContainerWidgetMixin.__init__(self, *args)\n        self.result = None\n\n    def _setup_gui(self):\n        WxContainerWidgetMixin._setup_gui(self)\n        self._register_builtin(\"title\", self.SetTitle)\n\n    def _setup_layout(self):\n        self._wx_parent = wx.Panel(self)\n        self._wx_parent.Sizer = self._sizer = self._create_sizer()\n        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)\n        self.Sizer.Add(self._wx_parent, flag=wx.EXPAND, proportion=1)\n\n    def end_modal(self, result):\n        self.result = result\n        self.EndModal(0)\n",
+"text":"class Frame(wx.Frame, ",
+"type":"code"
+},
+{
+"id":"451bde00f5494ab6a4693b637d9808c4",
+"type":"variable"
+},
+{
+"text":"):\n\n    def __init__(self, wx_parent, *args):\n        wx.Frame.__init__(self, wx_parent)\n        ",
+"type":"code"
+},
+{
+"id":"451bde00f5494ab6a4693b637d9808c4",
+"type":"variable"
+},
+{
+"text":".__init__(self, *args)\n",
+"type":"code"
+}
+],
+"id":"1f2d77d65d6345b884d7755a1e963332",
+"type":"code"
+},
+{
+"chunkpath":[
+"base classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class Dialog(wx.Dialog, ",
+"type":"code"
+},
+{
+"id":"451bde00f5494ab6a4693b637d9808c4",
+"type":"variable"
+},
+{
+"text":"):\n\n    def __init__(self, wx_parent, *args):\n        wx.Dialog.__init__(self, wx_parent)\n        ",
+"type":"code"
+},
+{
+"id":"451bde00f5494ab6a4693b637d9808c4",
+"type":"variable"
+},
+{
+"text":".__init__(self, *args)\n        self.result = None\n\n    def end_modal(self, result=None):\n        self.result = result\n        self.EndModal(0)\n",
 "type":"code"
 }
 ],
@@ -6342,7 +6391,7 @@
 "type":"code"
 }
 ],
-"title":"Dialog"
+"title":"Top level"
 },
 {
 "children":[],
@@ -8690,6 +8739,7 @@
 "3ba864082a154e8c99749cffdc408b43":"StringInputHandler",
 "3bdb899dc8ff44fc955b9ad365b56cea":"_characters_by_line",
 "3f6837e94b454b4e86ef9445b41aa7ad":"text_fragments_to_text_edit_props",
+"451bde00f5494ab6a4693b637d9808c4":"WxTopLevelWidgetMixin",
 "4b0e90fa95694164a52ab7e6ec283fc2":"update_value",
 "4dabcd9b4f634a85af8d9119a745a33c":"create_props",
 "5591f6bb68d24320aee6f91d489b5513":"build",
