@@ -3541,6 +3541,7 @@ class PageSelectorDialog(Dialog):
         handlers = {}
         props['ok_action'] = self._on_ok
         props['cancel_action'] = self.end_modal
+        props['margin'] = 10
         sizer["flag"] |= wx.EXPAND
         self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
@@ -3575,11 +3576,20 @@ class OkCancelButtons(Panel):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
+        sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 1
+        self._create_widget(Panel, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
         props['label'] = 'Cancel'
         props['cancel_dialog'] = True
         handlers['click'] = lambda event: self.prop(['cancel_action'])()
         sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 0
         self._create_widget(Button, props, sizer, handlers, name)
+        self._create_space(self.prop(['margin']))
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -3587,6 +3597,7 @@ class OkCancelButtons(Panel):
         props['label'] = 'OK'
         handlers['click'] = lambda event: self.prop(['ok_action'])()
         sizer["flag"] |= wx.EXPAND
+        sizer["proportion"] = 0
         self._create_widget(Button, props, sizer, handlers, name)
 
 class Document(Immutable):

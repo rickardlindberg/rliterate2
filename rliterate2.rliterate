@@ -3212,7 +3212,7 @@
 "type":"variable"
 },
 {
-"text":" %layout_columns {\n    Button {\n        label         = \"Cancel\"\n        cancel_dialog = True\n        @click        = #cancel_action()\n        %align[EXPAND]\n    }\n    Button {\n        label  = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n    }\n}\n",
+"text":" %layout_columns {\n    Panel {\n        %align[EXPAND]\n        %proportion[1]\n    }\n    Button {\n        label         = \"Cancel\"\n        cancel_dialog = True\n        @click        = #cancel_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n    %space[#margin]\n    Button {\n        label  = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -3247,7 +3247,7 @@
 "type":"variable"
 },
 {
-"text":" {\n        ok_action     = self._on_ok\n        cancel_action = self.end_modal\n        %align[EXPAND]\n    }\n}\n\n",
+"text":" {\n        ok_action     = self._on_ok\n        cancel_action = self.end_modal\n        margin        = 10\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {
