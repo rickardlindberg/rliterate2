@@ -872,7 +872,7 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
 def page_selector_dialog_props(state, document):
     return {
         "title": "Select page",
-        "margin": 10,
+        "margin": document.get(["theme", "dialogs", "margin"]),
     }
 
 def load_document_from_file(path):
@@ -3797,6 +3797,9 @@ class Document(Immutable):
     green   = "#859900"
 
     DEFAULT_THEME = {
+        "dialogs": {
+            "margin": 8,
+        },
         "toolbar": {
             "margin": 4,
             "background": None,
@@ -3885,6 +3888,9 @@ class Document(Immutable):
     }
 
     ALTERNATIVE_THEME = {
+        "dialogs": {
+            "margin": 10,
+        },
         "toolbar": {
             "margin": 4,
             "background": "#dcd6c6",
