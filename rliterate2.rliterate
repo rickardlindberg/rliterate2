@@ -3212,7 +3212,7 @@
 "type":"variable"
 },
 {
-"text":" %layout_columns {\n    Button {\n        label = \"Cancel\"\n        @click = #cancel_action()\n        %align[EXPAND]\n    }\n    Button {\n        label = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n    }\n}\n",
+"text":" %layout_columns {\n    Button {\n        label         = \"Cancel\"\n        cancel_dialog = True\n        @click        = #cancel_action()\n        %align[EXPAND]\n    }\n    Button {\n        label  = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -5400,7 +5400,7 @@
 ],
 "fragments":[
 {
-"text":"class Button(wx.Button, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"label\", self._set_label)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _set_label(self, label):\n        self.SetLabel(label)\n        self.",
+"text":"class Button(wx.Button, WxWidgetMixin):\n\n    def __init__(self, wx_parent, *args):\n        wx.Button.__init__(self, wx_parent)\n        WxWidgetMixin.__init__(self, *args)\n\n    def _setup_gui(self):\n        WxWidgetMixin._setup_gui(self)\n        self._register_builtin(\"label\", self._set_label)\n        self._register_builtin(\"cancel_dialog\", self._set_cancel_dialog)\n        self._event_map[\"button\"] = [(wx.EVT_BUTTON, self._on_wx_button)]\n\n    def _set_label(self, label):\n        self.SetLabel(label)\n        self.",
 "type":"code"
 },
 {
@@ -5408,7 +5408,7 @@
 "type":"variable"
 },
 {
-"text":"(layout=True)\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
+"text":"(layout=True)\n\n    def _set_cancel_dialog(self, cancel_dialog):\n        if cancel_dialog:\n            self.SetId(wx.ID_CANCEL)\n\n    def _on_wx_button(self, wx_event):\n        self.call_event_handler(\"button\", None)\n",
 "type":"code"
 }
 ],

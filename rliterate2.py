@@ -1626,11 +1626,16 @@ class Button(wx.Button, WxWidgetMixin):
     def _setup_gui(self):
         WxWidgetMixin._setup_gui(self)
         self._register_builtin("label", self._set_label)
+        self._register_builtin("cancel_dialog", self._set_cancel_dialog)
         self._event_map["button"] = [(wx.EVT_BUTTON, self._on_wx_button)]
 
     def _set_label(self, label):
         self.SetLabel(label)
         self._request_refresh(layout=True)
+
+    def _set_cancel_dialog(self, cancel_dialog):
+        if cancel_dialog:
+            self.SetId(wx.ID_CANCEL)
 
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
@@ -3571,6 +3576,7 @@ class OkCancelButtons(Panel):
         name = None
         handlers = {}
         props['label'] = 'Cancel'
+        props['cancel_dialog'] = True
         handlers['click'] = lambda event: self.prop(['cancel_action'])()
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
