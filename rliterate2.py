@@ -1641,6 +1641,15 @@ class Button(wx.Button, WxWidgetMixin):
     def _on_wx_button(self, wx_event):
         self.call_event_handler("button", None)
 
+class TextField(wx.TextCtrl, WxWidgetMixin):
+
+    def __init__(self, wx_parent, *args):
+        wx.TextCtrl.__init__(self, wx_parent)
+        WxWidgetMixin.__init__(self, *args)
+
+    def _setup_gui(self):
+        WxWidgetMixin._setup_gui(self)
+
 class Slider(wx.Slider, WxWidgetMixin):
 
     def __init__(self, wx_parent, *args):
@@ -3544,12 +3553,35 @@ class PageSelectorDialog(Dialog):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.ALL
+        sizer["proportion"] = 0
+        self._create_widget(TextField, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.LEFT
+        sizer["flag"] |= wx.BOTTOM
+        sizer["flag"] |= wx.RIGHT
+        sizer["proportion"] = 1
+        self._create_widget(PageList, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
         props['ok_action'] = self._on_ok
         props['cancel_action'] = self.end_modal
         props['margin'] = self.prop(['margin'])
         sizer["flag"] |= wx.EXPAND
         sizer["border"] = self.prop(['margin'])
-        sizer["flag"] |= wx.ALL
+        sizer["flag"] |= wx.LEFT
+        sizer["flag"] |= wx.BOTTOM
+        sizer["flag"] |= wx.RIGHT
+        sizer["proportion"] = 0
         self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
     def _on_ok(self):
@@ -3605,6 +3637,25 @@ class OkCancelButtons(Panel):
         handlers['click'] = lambda event: self.prop(['ok_action'])()
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 0
+        self._create_widget(Button, props, sizer, handlers, name)
+
+class PageList(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = 'Page list'
+        sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
 
 class Document(Immutable):
