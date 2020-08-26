@@ -3212,7 +3212,7 @@
 "type":"variable"
 },
 {
-"text":" %layout_columns {\n    Button {\n        label = \"Cancel\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"OK\"\n        %align[EXPAND]\n    }\n}\n",
+"text":" %layout_columns {\n    Button {\n        label = \"Cancel\"\n        @click = #cancel_action()\n        %align[EXPAND]\n    }\n    Button {\n        label = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n    }\n}\n",
 "type":"code"
 }
 ],
@@ -3239,7 +3239,7 @@
 ],
 "fragments":[
 {
-"text":"dialog PageSelectorDialog %layout_rows {\n    Button {\n        label = \"OK\"\n        @click = self._on_ok()\n        %align[EXPAND]\n    }\n    ",
+"text":"dialog PageSelectorDialog %layout_rows {\n    ",
 "type":"code"
 },
 {
@@ -3247,7 +3247,7 @@
 "type":"variable"
 },
 {
-"text":" {\n        %align[EXPAND]\n    }\n}\n\n",
+"text":" {\n        ok_action = self._on_ok\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {

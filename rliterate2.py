@@ -3534,14 +3534,7 @@ class PageSelectorDialog(Dialog):
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
         handlers = {}
-        props['label'] = 'OK'
-        handlers['click'] = lambda event: self._on_ok()
-        sizer["flag"] |= wx.EXPAND
-        self._create_widget(Button, props, sizer, handlers, name)
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
+        props['ok_action'] = self._on_ok
         sizer["flag"] |= wx.EXPAND
         self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
@@ -3577,6 +3570,7 @@ class OkCancelButtons(Panel):
         name = None
         handlers = {}
         props['label'] = 'Cancel'
+        handlers['click'] = lambda event: self.prop(['cancel_action'])()
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
         props = {}
@@ -3584,6 +3578,7 @@ class OkCancelButtons(Panel):
         name = None
         handlers = {}
         props['label'] = 'OK'
+        handlers['click'] = lambda event: self.prop(['ok_action'])()
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
 
