@@ -3190,80 +3190,7 @@
 "title":"Main frame"
 },
 {
-"children":[
-{
 "children":[],
-"id":"047f83ec614a41e98dae1a0b12a70511",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel ",
-"type":"code"
-},
-{
-"id":"84be235485c14cc29cb3f9a3f1d39e8e",
-"type":"variable"
-},
-{
-"text":" %layout_columns {\n    Panel {\n        %align[EXPAND]\n        %proportion[1]\n    }\n    Button {\n        label         = \"Cancel\"\n        cancel_dialog = True\n        @click        = #cancel_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n    %space[#margin]\n    Button {\n        label  = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n}\n",
-"type":"code"
-}
-],
-"id":"585264d8abaf47afa388aa27c9fb138c",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-}
-],
-"title":"OK/Cancel"
-},
-{
-"children":[],
-"id":"64e53cba53964e5f9b5036d158109480",
-"paragraphs":[
-{
-"chunkpath":[
-"classes"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"panel ",
-"type":"code"
-},
-{
-"id":"93722565c5f04e07b613e21dfc92ccd4",
-"type":"variable"
-},
-{
-"text":" %layout_columns {\n    Button {\n        label         = \"Page list\"\n        %align[EXPAND]\n    }\n}\n",
-"type":"code"
-}
-],
-"id":"03756d478f26436f97daf29768bd6b58",
-"language":"rlgui",
-"post_process":[
-"python",
-"rlgui/rlgui.py"
-],
-"type":"code"
-}
-],
-"title":"New page..."
-}
-],
 "id":"cad6521c056945e98b3f4540e53e4cfe",
 "paragraphs":[
 {
@@ -3291,7 +3218,7 @@
 "type":"variable"
 },
 {
-"text":" {\n        %align[EXPAND]\n        %margin[#margin,LEFT|BOTTOM|RIGHT]\n        %proportion[1]\n    }\n    ",
+"text":" {\n        #page_list\n        %align[EXPAND]\n        %margin[#margin,LEFT|BOTTOM|RIGHT]\n        %proportion[1]\n    }\n    ",
 "type":"code"
 },
 {
@@ -3363,15 +3290,80 @@
 ],
 "fragments":[
 {
-"text":"def page_selector_dialog_props(state, document):\n    return {\n        \"title\": \"Select page\",\n        \"margin\": document.get([\"theme\", \"dialogs\", \"margin\"]),\n    }\n",
+"text":"def page_selector_dialog_props(state, document):\n    return {\n        \"title\": \"Select page\",\n        \"margin\": document.get([\"theme\", \"dialogs\", \"margin\"]),\n        \"page_list\": {\n            \"min_size\": (-1, 200),\n        },\n    }\n",
 "type":"code"
 }
 ],
 "id":"876dda6187b44c8d9c3bf805604ef6b3",
 "type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"vscroll ",
+"type":"code"
+},
+{
+"id":"93722565c5f04e07b613e21dfc92ccd4",
+"type":"variable"
+},
+{
+"text":" %layout_rows {\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"Page list\"\n        %align[EXPAND]\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"03756d478f26436f97daf29768bd6b58",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
 }
 ],
 "title":"Page selector dialog"
+},
+{
+"children":[],
+"id":"047f83ec614a41e98dae1a0b12a70511",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel ",
+"type":"code"
+},
+{
+"id":"84be235485c14cc29cb3f9a3f1d39e8e",
+"type":"variable"
+},
+{
+"text":" %layout_columns {\n    Panel {\n        %align[EXPAND]\n        %proportion[1]\n    }\n    Button {\n        label         = \"Cancel\"\n        cancel_dialog = True\n        @click        = #cancel_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n    %space[#margin]\n    Button {\n        label  = \"OK\"\n        @click = #ok_action()\n        %align[EXPAND]\n        %proportion[0]\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"585264d8abaf47afa388aa27c9fb138c",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"OK/Cancel"
 },
 {
 "children":[
