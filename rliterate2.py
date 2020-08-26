@@ -1935,6 +1935,10 @@ class Dialog(wx.Dialog, WxTopLevelWidgetMixin):
         self.result = result
         self.EndModal(0)
 
+    def Layout(self):
+        wx.Dialog.Layout(self)
+        self.Fit()
+
 class Panel(wx.Panel, WxContainerWidgetMixin):
 
     def __init__(self, wx_parent, *args):

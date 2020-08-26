@@ -6428,7 +6428,7 @@
 "type":"variable"
 },
 {
-"text":".__init__(self, *args)\n        self.result = None\n\n    def end_modal(self, result=None):\n        self.result = result\n        self.EndModal(0)\n",
+"text":".__init__(self, *args)\n        self.result = None\n\n    def end_modal(self, result=None):\n        self.result = result\n        self.EndModal(0)\n\n    def Layout(self):\n        wx.Dialog.Layout(self)\n        self.Fit()\n",
 "type":"code"
 }
 ],
