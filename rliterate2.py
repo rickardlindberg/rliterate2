@@ -1176,7 +1176,7 @@ class WidgetMixin(object):
     def __init__(self, parent, handlers, props):
         self._pending_props = None
         self._parent = parent
-        self._props = {}
+        self._props = None
         self._builtin_props = {}
         self._event_handlers = {}
         self._setup_gui()
@@ -1228,13 +1228,17 @@ class WidgetMixin(object):
             self._pending_props = props
 
     def _update_props(self, props):
+        first_time = False
+        if self._props is None:
+            first_time = True
+            self._props = {}
         self._changed_props = []
         for p in [lambda: props, self._get_local_props]:
             for key, value in p().items():
                 if self._prop_differs(key, value):
                     self._props[key] = value
                     self._changed_props.append(key)
-        return len(self._changed_props) > 0
+        return first_time or len(self._changed_props) > 0
 
     def prop_changed(self, name):
         return (name in self._changed_props)
@@ -3534,6 +3538,12 @@ class PageSelectorDialog(Dialog):
         handlers['click'] = lambda event: self._on_ok()
         sizer["flag"] |= wx.EXPAND
         self._create_widget(Button, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
     def _on_ok(self):
         self.end_modal({"selected_page": "2c5e170cc0f34e9787d74d319b5bb4f2"})
@@ -3550,6 +3560,32 @@ class PageSelectorState(Immutable):
 
     def set_search_string(self, search_string):
         self.replace(["search_string"], search_string)
+
+class OkCancelButtons(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = 'Cancel'
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = 'OK'
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
 
 class Document(Immutable):
 

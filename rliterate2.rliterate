@@ -3190,7 +3190,44 @@
 "title":"Main frame"
 },
 {
+"children":[
+{
 "children":[],
+"id":"047f83ec614a41e98dae1a0b12a70511",
+"paragraphs":[
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"panel ",
+"type":"code"
+},
+{
+"id":"84be235485c14cc29cb3f9a3f1d39e8e",
+"type":"variable"
+},
+{
+"text":" %layout_columns {\n    Button {\n        label = \"Cancel\"\n        %align[EXPAND]\n    }\n    Button {\n        label = \"OK\"\n        %align[EXPAND]\n    }\n}\n",
+"type":"code"
+}
+],
+"id":"585264d8abaf47afa388aa27c9fb138c",
+"language":"rlgui",
+"post_process":[
+"python",
+"rlgui/rlgui.py"
+],
+"type":"code"
+}
+],
+"title":"OK/Cancel"
+}
+],
 "id":"cad6521c056945e98b3f4540e53e4cfe",
 "paragraphs":[
 {
@@ -3202,7 +3239,15 @@
 ],
 "fragments":[
 {
-"text":"dialog PageSelectorDialog %layout_rows {\n    Button {\n        label = \"OK\"\n        @click = self._on_ok()\n        %align[EXPAND]\n    }\n}\n\n",
+"text":"dialog PageSelectorDialog %layout_rows {\n    Button {\n        label = \"OK\"\n        @click = self._on_ok()\n        %align[EXPAND]\n    }\n    ",
+"type":"code"
+},
+{
+"id":"84be235485c14cc29cb3f9a3f1d39e8e",
+"type":"variable"
+},
+{
+"text":" {\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -4185,7 +4230,7 @@
 ],
 "fragments":[
 {
-"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._pending_props = None\n        self._parent = parent\n        self._props = {}\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._pending_props is None:\n            self._pending_props = props\n            if self._update_props(props):\n                self._update_gui()\n            pending_props = self._pending_props\n            self._pending_props = None\n            if pending_props is not props:\n                self.update_props(pending_props)\n        else:\n            self._pending_props = props\n\n    def _update_props(self, props):\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
+"text":"class WidgetMixin(object):\n\n    def __init__(self, parent, handlers, props):\n        self._pending_props = None\n        self._parent = parent\n        self._props = None\n        self._builtin_props = {}\n        self._event_handlers = {}\n        self._setup_gui()\n        self.update_event_handlers(handlers)\n        self.update_props(props)\n\n    def update_event_handlers(self, handlers):\n        for name, fn in handlers.items():\n            self.register_event_handler(name, fn)\n\n    @profile_sub(\"register event\")\n    def register_event_handler(self, name, fn):\n        self._event_handlers[name] = profile(f\"on_{name}\")(profile_sub(f\"on_{name}\")(fn))\n\n    def call_event_handler(self, name, event, propagate=False):\n        if self.has_event_handler(name):\n            self._event_handlers[name](event)\n        elif self._parent is not None and propagate:\n            self._parent.call_event_handler(name, event, True)\n\n    def has_event_handler(self, name):\n        return name in self._event_handlers\n\n    def _setup_gui(self):\n        pass\n\n    def prop_with_default(self, path, default):\n        try:\n            return self.prop(path)\n        except (KeyError, IndexError):\n            return default\n\n    def prop(self, path):\n        value = self._props\n        for part in path:\n            value = value[part]\n        return value\n\n    def update_props(self, props):\n        if self._pending_props is None:\n            self._pending_props = props\n            if self._update_props(props):\n                self._update_gui()\n            pending_props = self._pending_props\n            self._pending_props = None\n            if pending_props is not props:\n                self.update_props(pending_props)\n        else:\n            self._pending_props = props\n\n    def _update_props(self, props):\n        first_time = False\n        if self._props is None:\n            first_time = True\n            self._props = {}\n        self._changed_props = []\n        for p in [lambda: props, self._get_local_props]:\n            for key, value in p().items():\n                if self._prop_differs(key, value):\n                    self._props[key] = value\n                    self._changed_props.append(key)\n        return first_time or len(self._changed_props) > 0\n\n    def prop_changed(self, name):\n        return (name in self._changed_props)\n\n    def _get_local_props(self):\n        return {}\n\n    def _prop_differs(self, key, value):\n        if key not in self._props:\n            return True\n        prop = self._props[key]\n        if prop is value:\n            return False\n        return prop != value\n\n    def _update_gui(self):\n        for name in self._changed_props:\n            if name in self._builtin_props:\n                self._builtin_props[name](self._props[name])\n\n    @profile_sub(\"register builtin\")\n    def _register_builtin(self, name, fn):\n        self._builtin_props[name] = profile_sub(f\"builtin {name}\")(fn)\n",
 "type":"code"
 }
 ],
@@ -8748,6 +8793,7 @@
 "6e0d0c9950204b6a8b9eebccb0974f72":"TextFragmentKeyHandler",
 "7783f19273504229bb20053bc01b7057":"widget",
 "7f02baf9597a44618c7942768716bba3":"OnDataDropped",
+"84be235485c14cc29cb3f9a3f1d39e8e":"OkCancelButtons",
 "8d0220baf28046c79a4cd7ff7062a47b":"_request_refresh",
 "9b54bdad49e448fcaff29547cf2f40db":"text_fragments_to_text_edit_props",
 "a3a769cc4fba4437af66b01dcc1f11f5":"_find_layout_root",
