@@ -872,6 +872,7 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
 def page_selector_dialog_props(state, document):
     return {
         "title": "Select page",
+        "margin": 10,
     }
 
 def load_document_from_file(path):
@@ -3541,8 +3542,10 @@ class PageSelectorDialog(Dialog):
         handlers = {}
         props['ok_action'] = self._on_ok
         props['cancel_action'] = self.end_modal
-        props['margin'] = 10
+        props['margin'] = self.prop(['margin'])
         sizer["flag"] |= wx.EXPAND
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.ALL
         self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
     def _on_ok(self):

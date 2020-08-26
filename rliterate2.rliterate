@@ -3247,7 +3247,7 @@
 "type":"variable"
 },
 {
-"text":" {\n        ok_action     = self._on_ok\n        cancel_action = self.end_modal\n        margin        = 10\n        %align[EXPAND]\n    }\n}\n\n",
+"text":" {\n        ok_action     = self._on_ok\n        cancel_action = self.end_modal\n        margin        = #margin\n        %align[EXPAND]\n        %margin[#margin,ALL]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -3311,7 +3311,7 @@
 ],
 "fragments":[
 {
-"text":"def page_selector_dialog_props(state, document):\n    return {\n        \"title\": \"Select page\",\n    }\n",
+"text":"def page_selector_dialog_props(state, document):\n    return {\n        \"title\": \"Select page\",\n        \"margin\": 10,\n    }\n",
 "type":"code"
 }
 ],
