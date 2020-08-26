@@ -3247,7 +3247,7 @@
 "type":"variable"
 },
 {
-"text":" {\n        ok_action = self._on_ok\n        %align[EXPAND]\n    }\n}\n\n",
+"text":" {\n        ok_action     = self._on_ok\n        cancel_action = self.end_modal\n        %align[EXPAND]\n    }\n}\n\n",
 "type":"code"
 },
 {

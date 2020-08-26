@@ -3535,6 +3535,7 @@ class PageSelectorDialog(Dialog):
         name = None
         handlers = {}
         props['ok_action'] = self._on_ok
+        props['cancel_action'] = self.end_modal
         sizer["flag"] |= wx.EXPAND
         self._create_widget(OkCancelButtons, props, sizer, handlers, name)
 
