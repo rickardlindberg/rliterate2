@@ -842,7 +842,6 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
         },
     }
 
-@profile_sub("text_paragraph_props")
 def factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):
     return {
         "widget": FactoryParagraph,

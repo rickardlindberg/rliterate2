@@ -2277,7 +2277,7 @@
 ],
 "fragments":[
 {
-"text":"@profile_sub(\"text_paragraph_props\")\ndef factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": FactoryParagraph,\n        \"actions\": actions,\n        \"id\": paragraph[\"id\"],\n    }\n",
+"text":"def factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):\n    return {\n        \"widget\": FactoryParagraph,\n        \"actions\": actions,\n        \"id\": paragraph[\"id\"],\n    }\n",
 "type":"code"
 }
 ],
