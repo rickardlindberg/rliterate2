@@ -586,6 +586,7 @@ def paragraph_props(paragraph, page_theme, body_width, selection, actions):
         "list": list_paragraph_props,
         "code": code_paragraph_props,
         "image": image_paragraph_props,
+        "factory": factory_paragraph_props,
     }
     return BUILDERS.get(
         paragraph["type"],
@@ -839,6 +840,14 @@ def image_paragraph_props(paragraph, page_theme, body_width, selection, actions)
                 max_width=body_width-2*page_theme["indent_size"],
             ),
         },
+    }
+
+@profile_sub("text_paragraph_props")
+def factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": FactoryParagraph,
+        "actions": actions,
+        "id": paragraph["id"],
     }
 
 def unknown_paragraph_props(paragraph, page_theme, body_width, selection, actions):
@@ -3255,6 +3264,39 @@ class ImageText(Panel):
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
         self._create_space(self.prop(['indent']))
+
+class FactoryParagraph(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.VERTICAL)
+
+    def _create_widgets(self):
+        pass
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['label'] = 'Text'
+        handlers['click'] = lambda event: self._make_text()
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(Button, props, sizer, handlers, name)
+
+    def _make_text(self):
+        self.prop(["actions", "modify_paragraph"])(
+            self.prop(["id"]),
+            [],
+            {
+                "id": self.prop(["id"]),
+                "type": "text",
+                "fragments": [{"type": "text", "text": "Enter text here..."}],
+            },
+            None,
+            Selection.empty()
+        )
 
 class UnknownParagraph(Panel):
 
