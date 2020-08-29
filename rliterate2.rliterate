@@ -212,18 +212,6 @@
 {
 "blank_lines_before":1,
 "path":[
-"functions"
-],
-"prefix":"",
-"type":"chunk"
-},
-{
-"text":"\n",
-"type":"code"
-},
-{
-"blank_lines_before":1,
-"path":[
 "base base classes"
 ],
 "prefix":"",
@@ -249,6 +237,18 @@
 "blank_lines_before":1,
 "path":[
 "classes"
+],
+"prefix":"",
+"type":"chunk"
+},
+{
+"text":"\n",
+"type":"code"
+},
+{
+"blank_lines_before":1,
+"path":[
+"functions"
 ],
 "prefix":"",
 "type":"chunk"
@@ -1735,11 +1735,61 @@
 "type":"variable"
 },
 {
-"text":"(\n            paragraph,\n            [\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            max_width=body_width,\n        ),\n    }\n",
+"text":"(\n            paragraph,\n            [\"fragments\"],\n            selection,\n            page_theme,\n            actions,\n            max_width=body_width,\n            handler_cls=",
+"type":"code"
+},
+{
+"id":"f0d9ad578bb94998b624b7c00119b760",
+"type":"variable"
+},
+{
+"text":"\n        ),\n    }\n",
 "type":"code"
 }
 ],
 "id":"68d113eab24a4f6ba6ea56d4f1f147e6",
+"language":"",
+"post_process":[],
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class ",
+"type":"code"
+},
+{
+"id":"f0d9ad578bb94998b624b7c00119b760",
+"type":"variable"
+},
+{
+"text":"(",
+"type":"code"
+},
+{
+"id":"1eaa3d40e7f94d83acb420fed05432f8",
+"type":"variable"
+},
+{
+"text":"):\n\n    def handle_key(self, key_event, text):\n        print(\"in text text\")\n        ",
+"type":"code"
+},
+{
+"id":"1eaa3d40e7f94d83acb420fed05432f8",
+"type":"variable"
+},
+{
+"text":".handle_key(self, key_event, text)\n",
+"type":"code"
+}
+],
+"id":"246c01e92fd248349aed28217f69d833",
 "language":"",
 "post_process":[],
 "type":"code"
@@ -2516,7 +2566,7 @@
 "paragraphs":[
 {
 "chunkpath":[
-"base classes"
+"base base classes"
 ],
 "filepath":[
 "rliterate2.py"
@@ -3109,7 +3159,7 @@
 "type":"variable"
 },
 {
-"text":"(paragraph, path, selection, page_theme, actions, align=\"left\", **kwargs):\n    input_handler = ",
+"text":"(paragraph, path, selection, page_theme, actions, align=\"left\", handler_cls=",
 "type":"code"
 },
 {
@@ -3117,7 +3167,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        paragraph,\n        path,\n        selection,\n        actions,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
+"text":", **kwargs):\n    input_handler = handler_cls(\n        paragraph,\n        path,\n        selection,\n        actions,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -3128,7 +3178,7 @@
 },
 {
 "chunkpath":[
-"classes"
+"base classes"
 ],
 "filepath":[
 "rliterate2.py"
@@ -9146,6 +9196,7 @@
 "e8b2beada24e443aa229cf6e6b85e403":"StringInputHandler",
 "ead9d70512b04e6aac36796c76954814":"_handle_immediate_refresh_request",
 "eb297146753a4691bfe28a4b4e6b2fd6":"TextField",
+"f0d9ad578bb94998b624b7c00119b760":"TextTextFragmentsInputHandler",
 "f9aa655efb5b47b8ac4bcd3a78394fd2":"RefreshRequests",
 "fd51fddc61434acd9476c3404fa1da65":"_handle_delayed_refresh_requests"
 }

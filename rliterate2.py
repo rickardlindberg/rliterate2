@@ -98,1017 +98,6 @@ def _cache_differ(one, two):
             return True
     return False
 
-def main():
-    args = parse_args()
-    start_app(
-        MainFrame,
-        create_props(
-            main_frame_props,
-            Document(args["path"])
-        )
-    )
-
-def parse_args():
-    args = {
-        "path": None,
-    }
-    script = sys.argv[0]
-    rest = sys.argv[1:]
-    if len(rest) != 1:
-        usage(script)
-    args["path"] = rest[0]
-    return args
-
-def usage(script):
-    sys.exit(f"usage: {script} <path>")
-
-def main_frame_props(document):
-    return {
-        "title": format_title(
-            document.get(["path"])
-        ),
-        "toolbar": toolbar_props(
-            document
-        ),
-        "toolbar_divider": toolbar_divider_props(
-            document
-        ),
-        "main_area": main_area_props(
-            document
-        ),
-    }
-
-@cache()
-def format_title(path):
-    return "{} ({}) - RLiterate 2".format(
-        os.path.basename(path),
-        os.path.abspath(os.path.dirname(path))
-    )
-
-def toolbar_props(document):
-    toolbar_theme = document.get(["theme", "toolbar"])
-    selection = document.get(["selection"])
-    if selection.value.get("what") == "text_fragments":
-        text_fragments = document.get_paragraph(
-            selection.value["paragraph_id"],
-            selection.value["path"]
-        )
-        if selection.value["cursor_at_start"]:
-            fragment_under_cursor = text_fragments[selection.value["start"][0]]
-        else:
-            fragment_under_cursor = text_fragments[selection.value["end"][0]]
-        if fragment_under_cursor["type"] == "variable":
-            cursor_variable = fragment_under_cursor["id"]
-        else:
-            cursor_variable = None
-    else:
-        text_fragments = None
-        cursor_variable = None
-    return {
-        "background": toolbar_theme["background"],
-        "margin": toolbar_theme["margin"],
-        "bar": {
-            "background": document.get(["theme", "toolbar_divider", "color"]),
-            "size": (1, -1),
-        },
-        "text_fragments": text_fragments,
-        "text_fragments_selected": text_fragments is not None,
-        "style_text_props": TextPropsBuilder().text("Style:").get(),
-        "variable_text_props": TextPropsBuilder().text("Variable:").get(),
-        "page_reference_text_props": TextPropsBuilder().text("Page reference:").get(),
-        "save_text_props": TextPropsBuilder().text(str(document.get_save_status())).get(),
-        "selected_variable": document.get_selected_variable(),
-        "cursor_variable": cursor_variable,
-        "document": document,
-        "selection": selection,
-        "actions": document.actions,
-    }
-
-def toolbar_divider_props(document):
-    toolbar_divider_theme = document.get(["theme", "toolbar_divider"])
-    return {
-        "background": toolbar_divider_theme["color"],
-        "min_size": (
-            -1,
-            toolbar_divider_theme["thickness"]
-        ),
-    }
-
-def main_area_props(document):
-    return {
-        "actions": document.actions,
-        "toc": toc_props(
-            document
-        ),
-        "toc_divider": toc_divider_props(
-            document
-        ),
-        "workspace": workspace_props(
-            document
-        ),
-    }
-
-def toc_props(document):
-    return {
-        "background": document.get(
-            ["theme", "toc", "background"]
-        ),
-        "min_size": (
-            max(50, document.get(["toc", "width"])),
-            -1
-        ),
-        "has_valid_hoisted_page": is_valid_hoisted_page(
-            document,
-            document.get(["toc", "hoisted_page"]),
-        ),
-        "margin": 1 + document.get(
-            ["theme", "toc", "row_margin"]
-        ),
-        "actions": document.actions,
-        "scroll_area": toc_scroll_area_props(
-            document
-        ),
-    }
-
-def is_valid_hoisted_page(document, page_id):
-    try:
-        page = document.get_page(page_id)
-        root_page = document.get_page()
-        if page["id"] != root_page["id"]:
-            return True
-    except PageNotFound:
-        pass
-    return False
-
-def toc_scroll_area_props(document):
-    return dict(generate_rows_and_drop_points(document), **{
-        "rows_cache_limit": document.count_pages() - 1,
-        "row_margin": document.get(
-            ["theme", "toc", "row_margin"]
-        ),
-        "indent_size": document.get(
-            ["theme", "toc", "indent_size"]
-        ),
-        "dragged_page": document.get(
-            ["toc", "dragged_page"]
-        ),
-        "actions": document.actions,
-    })
-
-def generate_rows_and_drop_points(document):
-    try:
-        root_page = document.get_page(
-            document.get(["toc", "hoisted_page"])
-        )
-    except PageNotFound:
-        root_page = document.get_page(None)
-    return generate_rows_and_drop_points_page(
-        root_page,
-        toc_row_common_props(document),
-        document.get(["toc", "collapsed"]),
-        document.get(["toc", "dragged_page"]),
-        document.get_open_pages(),
-        0,
-        False,
-        0
-    )
-
-@cache(limit=1000, key_path=[0, "id"])
-def generate_rows_and_drop_points_page(
-    page,
-    row_common_props,
-    collapsed,
-    dragged_page,
-    open_pages,
-    level,
-    is_dragged,
-    row_offset
-):
-    rows = []
-    drop_points = []
-    is_collapsed = page["id"] in collapsed
-    is_dragged = is_dragged or page["id"] == dragged_page
-    rows.append(toc_row_props(
-        row_common_props,
-        page,
-        level,
-        is_dragged,
-        is_collapsed,
-        open_pages
-    ))
-    if is_collapsed:
-        target_index = len(page["children"])
-    else:
-        target_index = 0
-    drop_points.append(TableOfContentsDropPoint(
-        row_index=row_offset+len(rows)-1,
-        target_index=target_index,
-        target_page=page["id"],
-        level=level+1
-    ))
-    if not is_collapsed:
-        for target_index, child in enumerate(page["children"]):
-            sub_result = generate_rows_and_drop_points_page(
-                child,
-                row_common_props,
-                collapsed,
-                dragged_page,
-                open_pages,
-                level+1,
-                is_dragged,
-                row_offset+len(rows)
-            )
-            rows.extend(sub_result["rows"])
-            drop_points.extend(sub_result["drop_points"])
-            drop_points.append(TableOfContentsDropPoint(
-                row_index=row_offset+len(rows)-1,
-                target_index=target_index+1,
-                target_page=page["id"],
-                level=level+1
-            ))
-    return {
-        "rows": rows,
-        "drop_points": drop_points,
-    }
-
-def toc_row_common_props(document):
-    return {
-        "row_margin": document.get(
-            ["theme", "toc", "row_margin"]
-        ),
-        "indent_size": document.get(
-            ["theme", "toc", "indent_size"]
-        ),
-        "foreground": document.get(
-            ["theme", "toc", "foreground"]
-        ),
-        "hover_background": document.get(
-            ["theme", "toc", "hover_background"]
-        ),
-        "divider_thickness": document.get(
-            ["theme", "toc", "divider_thickness"]
-        ),
-        "dragdrop_color": document.get(
-            ["theme", "dragdrop_color"]
-        ),
-        "dragdrop_invalid_color": document.get(
-            ["theme", "dragdrop_invalid_color"]
-        ),
-        "placeholder_color": document.get(
-            ["theme", "toc", "placeholder_color"]
-        ),
-        "font": document.get(
-            ["theme", "toc", "font"]
-        ),
-        "actions": document.actions,
-    }
-
-def toc_row_props(
-    row_common_props,
-    page,
-    level,
-    is_dragged,
-    is_collapsed,
-    open_pages
-):
-    return {
-        "id": page["id"],
-        "hover_background": row_common_props["hover_background"],
-        "actions": row_common_props["actions"],
-        "level": level,
-        "title": toc_row_title_props(
-            row_common_props,
-            page,
-            level,
-            is_dragged,
-            is_collapsed,
-            open_pages
-        ),
-        "drop_line": toc_row_drop_line_props(
-            row_common_props
-        ),
-    }
-
-def toc_row_title_props(
-    row_common_props,
-    page,
-    level,
-    is_dragged,
-    is_collapsed,
-    open_pages
-):
-    if page["title"]:
-        text = page["title"]
-        if is_dragged:
-            color = row_common_props["dragdrop_invalid_color"]
-        else:
-            color = row_common_props["foreground"]
-    else:
-        text = "Enter title..."
-        color = row_common_props["placeholder_color"]
-    return dict(row_common_props, **{
-        "id": page["id"],
-        "text_props": TextPropsBuilder(**dict(row_common_props["font"],
-            bold=page["id"] in open_pages,
-            color=color
-        )).text(text).get(),
-        "level": level,
-        "has_children": bool(page["children"]),
-        "collapsed": is_collapsed,
-        "dragged": is_dragged,
-    })
-
-def toc_row_drop_line_props(row_common_props):
-    return {
-        "indent": 0,
-        "active": False,
-        "valid": True,
-        "min_size": (-1, row_common_props["divider_thickness"]),
-        "color": row_common_props["dragdrop_color"],
-        "invalid_color": row_common_props["dragdrop_invalid_color"],
-    }
-
-def toc_divider_props(document):
-    toc_divider_theme = document.get(["theme", "toc_divider"])
-    return {
-        "background": toc_divider_theme["color"],
-        "min_size": (
-            toc_divider_theme["thickness"],
-            -1
-        ),
-        "cursor": "size_horizontal",
-    }
-
-def workspace_props(document):
-    return {
-        "background": document.get(
-            ["theme", "workspace", "background"]
-        ),
-        "margin": document.get(
-            ["theme", "workspace", "margin"]
-        ),
-        "page_body_width": document.get(
-            ["workspace", "page_body_width"]
-        ),
-        "actions": document.actions,
-        "columns": columns_props(
-            document
-        ),
-        "divider_panel": {
-            "cursor": "size_horizontal",
-            "min_size": (document.get(["theme", "workspace", "margin"]), -1)
-        }
-    }
-
-@profile_sub("columns_props")
-def columns_props(document):
-    return [
-        column_props(
-            document,
-            column,
-            document.get(["selection"]).add("workspace", "column", index)
-        )
-        for index, column
-        in enumerate(document.get(["workspace", "columns"]))
-    ]
-
-def column_props(document, column, selection):
-    column_prop = []
-    index = 0
-    for page_id in column:
-        try:
-            column_prop.append(page_props(
-                document,
-                document.get_page(page_id),
-                selection.add("page", index, page_id)
-            ))
-            index += 1
-        except PageNotFound:
-            pass
-    return {
-        "min_size": (
-            document.get(["workspace", "page_body_width"]) +
-            2*document.get(["theme", "page", "margin"]) +
-            document.get(["theme", "page", "border", "size"]),
-            -1
-        ),
-        "margin": document.get(
-            ["theme", "workspace", "margin"]
-        ),
-        "column": column_prop,
-    }
-
-def page_props(document, page, selection):
-    page_theme = document.get(["theme", "page"])
-    return {
-        "body": {
-            "id": page["id"],
-            "actions": document.actions,
-            "title": page_title_props(
-                page,
-                document.get(["workspace", "page_body_width"]),
-                page_theme,
-                selection.add("title"),
-                document.actions
-            ),
-            "paragraphs": paragraphs_props(
-                document,
-                page["paragraphs"],
-                selection.add("paragraphs")
-            ),
-            "background": page_theme["background"],
-            "margin": page_theme["margin"],
-        },
-        "border": page_theme["border"],
-    }
-
-@cache()
-def page_title_props(page, page_body_width, page_theme, selection, actions):
-    input_handler = TitleInputHandler(page, page_theme, selection, actions)
-    return {
-        "text_edit_props": {
-            "text_props": dict(
-                input_handler.text_props,
-                break_at_word=True,
-                line_height=page_theme["line_height"]
-            ),
-            "max_width": page_body_width,
-            "selection": selection,
-            "selection_color": page_theme["selection_border"],
-            "input_handler": input_handler,
-            "actions": actions,
-        },
-    }
-
-def paragraphs_props(document, paragraphs, selection):
-    return [
-        paragraph_props(
-            dict(
-                paragraph,
-                meta=build_paragraph_meta(document, paragraph)
-            ),
-            document.get(["theme", "page"]),
-            document.get(["workspace", "page_body_width"]),
-            selection.add(index, paragraph["id"]),
-            document.actions
-        )
-        for index, paragraph in enumerate(paragraphs)
-    ]
-
-def build_paragraph_meta(document, paragraph):
-    meta = {
-        "variables": {},
-        "page_titles": {},
-    }
-    if paragraph["type"] in ["text", "quote", "image"]:
-        build_text_fragments_meta(meta, document, paragraph["fragments"])
-    if paragraph["type"] == "list":
-        build_list_meta(meta, document, paragraph["children"])
-    return meta
-
-def build_list_meta(meta, document, children):
-    for child in children:
-        build_text_fragments_meta(meta, document, child["fragments"])
-        build_list_meta(meta, document, child["children"])
-
-def build_text_fragments_meta(meta, document, fragments):
-    for fragment in fragments:
-        if fragment["type"] == "variable":
-            meta["variables"][fragment["id"]] = document.get_variable(fragment["id"])
-        elif fragment["type"] == "reference":
-            meta["page_titles"][fragment["page_id"]] = document.get_page(fragment["page_id"])["title"]
-
-@cache(limit=1000, key_path=[0, "id"])
-def paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    BUILDERS = {
-        "text": text_paragraph_props,
-        "quote": quote_paragraph_props,
-        "list": list_paragraph_props,
-        "code": code_paragraph_props,
-        "image": image_paragraph_props,
-        "factory": factory_paragraph_props,
-    }
-    return BUILDERS.get(
-        paragraph["type"],
-        unknown_paragraph_props
-    )(paragraph, page_theme, body_width, selection, actions)
-
-@profile_sub("text_paragraph_props")
-def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": TextParagraph,
-        "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph,
-            ["fragments"],
-            selection,
-            page_theme,
-            actions,
-            max_width=body_width,
-        ),
-    }
-
-@profile_sub("quote_paragraph_props")
-def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": QuoteParagraph,
-        "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph,
-            ["fragments"],
-            selection,
-            page_theme,
-            actions,
-            max_width=body_width-page_theme["indent_size"],
-        ),
-        "indent_size": page_theme["indent_size"],
-    }
-
-
-@profile_sub("list_paragraph_props")
-def list_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": ListParagraph,
-        "rows": list_item_rows_props(
-            paragraph,
-            paragraph["children"],
-            paragraph["child_type"],
-            page_theme,
-            body_width,
-            actions,
-            selection
-        ),
-    }
-
-def list_item_rows_props(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):
-    rows = []
-    for index, child in enumerate(children):
-        rows.append(list_item_row_props(
-            paragraph,
-            child_type,
-            index,
-            child,
-            page_theme,
-            body_width,
-            actions,
-            selection.add(index, "fragments"),
-            path+[index],
-            level
-        ))
-        rows.extend(list_item_rows_props(
-            paragraph,
-            child["children"],
-            child["child_type"],
-            page_theme,
-            body_width,
-            actions,
-            selection.add(index),
-            path+[index, "children"],
-            level+1
-        ))
-    return rows
-
-def list_item_row_props(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
-    return {
-        "level": level,
-        "indent": page_theme["indent_size"],
-        "bullet_props": dict(
-            TextPropsBuilder(
-                **page_theme["text_font"]
-            ).text(_get_bullet_text(child_type, index)).get(),
-            max_width=page_theme["indent_size"],
-            line_height=page_theme["line_height"]
-        ),
-        "text_edit_props": text_fragments_to_text_edit_props(
-            paragraph,
-            ["children"]+path+["fragments"],
-            selection,
-            page_theme,
-            actions,
-            max_width=body_width-(level+1)*page_theme["indent_size"],
-            line_height=page_theme["line_height"]
-        ),
-    }
-
-def _get_bullet_text(list_type, index):
-    if list_type == "ordered":
-        return "{}. ".format(index + 1)
-    else:
-        return u"\u2022 "
-
-@profile_sub("code_paragraph_props")
-def code_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": CodeParagraph,
-        "header": code_paragraph_header_props(
-            paragraph,
-            page_theme,
-            body_width
-        ),
-        "body": code_paragraph_body_props(
-            paragraph,
-            page_theme,
-            body_width
-        ),
-    }
-
-def code_paragraph_header_props(paragraph, page_theme, body_width):
-    return {
-        "background": page_theme["code"]["header_background"],
-        "margin": page_theme["code"]["margin"],
-        "text_props": dict(code_paragraph_header_path_props(
-            paragraph["filepath"],
-            paragraph["chunkpath"],
-            page_theme["code_font"]
-        ), max_width=body_width-2*page_theme["code"]["margin"]),
-    }
-
-@cache()
-def code_paragraph_header_path_props(filepath, chunkpath, font):
-    builder = TextPropsBuilder(**font)
-    for index, x in enumerate(filepath):
-        if index > 0:
-            builder.text("/")
-        builder.text(x)
-    if filepath and chunkpath:
-        builder.text(" ")
-    for index, x in enumerate(chunkpath):
-        if index > 0:
-            builder.text("/")
-        builder.text(x)
-    return builder.get()
-
-def code_paragraph_body_props(paragraph, page_theme, body_width):
-    return {
-        "background": page_theme["code"]["body_background"],
-        "margin": page_theme["code"]["margin"],
-        "text_props": dict(
-            code_paragraph_body_text_props(
-                paragraph,
-                page_theme
-            ),
-            max_width=body_width-2*page_theme["code"]["margin"]
-        ),
-    }
-
-@cache(limit=100, key_path=[0, "id"])
-def code_paragraph_body_text_props(paragraph, page_theme):
-    builder = TextPropsBuilder(**page_theme["code_font"])
-    for fragment in apply_token_styles(
-        code_body_fragments_props(
-            paragraph["fragments"],
-            code_pygments_lexer(
-                paragraph.get("language", ""),
-                paragraph["filepath"][-1] if paragraph["filepath"] else "",
-            )
-        ),
-        page_theme["token_styles"]
-    ):
-        builder.text(**fragment)
-    return builder.get()
-
-@profile_sub("apply_token_styles")
-def apply_token_styles(fragments, token_styles):
-    styles = build_style_dict(token_styles)
-    def style_fragment(fragment):
-        if "token_type" in fragment:
-            token_type = fragment["token_type"]
-            while token_type not in styles:
-                token_type = token_type.parent
-            style = styles[token_type]
-            new_fragment = dict(fragment)
-            new_fragment.update(style)
-            return new_fragment
-        else:
-            return fragment
-    return [
-        style_fragment(fragment)
-        for fragment in fragments
-    ]
-
-def build_style_dict(theme_style):
-    styles = {}
-    for name, value in theme_style.items():
-        styles[string_to_tokentype(name)] = value
-    return styles
-
-def code_body_fragments_props(fragments, pygments_lexer):
-    code_chunk = CodeChunk()
-    for fragment in fragments:
-        if fragment["type"] == "code":
-            code_chunk.add(fragment["text"])
-        elif fragment["type"] == "chunk":
-            code_chunk.add(
-                "{}<<{}>>\n".format(
-                    fragment["prefix"],
-                    "/".join(fragment["path"])
-                ),
-                {"token_type": TokenType.Comment.Preproc}
-            )
-    return code_chunk.tokenize(pygments_lexer)
-
-def code_pygments_lexer(language, filename):
-    try:
-        if language:
-            return pygments.lexers.get_lexer_by_name(
-                language,
-                stripnl=False
-            )
-        else:
-            return pygments.lexers.get_lexer_for_filename(
-                filename,
-                stripnl=False
-            )
-    except:
-        return pygments.lexers.TextLexer(stripnl=False)
-
-@profile_sub("image_paragraph_props")
-def image_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": ImageParagraph,
-        "image": {
-            "base64_image": paragraph.get("image_base64", None),
-            "width": body_width,
-        },
-        "image_text": {
-            "indent": page_theme["indent_size"],
-            "text_edit_props": text_fragments_to_text_edit_props(
-                paragraph,
-                ["fragments"],
-                selection,
-                page_theme,
-                actions,
-                align="center",
-                max_width=body_width-2*page_theme["indent_size"],
-            ),
-        },
-    }
-
-def factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": FactoryParagraph,
-        "actions": actions,
-        "id": paragraph["id"],
-    }
-
-def unknown_paragraph_props(paragraph, page_theme, body_width, selection, actions):
-    return {
-        "widget": UnknownParagraph,
-        "text_props": dict(
-            TextPropsBuilder(**page_theme["code_font"]).text(
-                "Unknown paragraph type '{}'.".format(paragraph["type"])
-            ).get(),
-            max_width=body_width
-        ),
-    }
-
-def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, actions, align="left", **kwargs):
-    input_handler = TextFragmentsInputHandler(
-        paragraph,
-        path,
-        selection,
-        actions,
-        page_theme
-    )
-    return {
-        "text_props": dict(
-            input_handler.text_props,
-            break_at_word=True,
-            line_height=page_theme["line_height"],
-            align=align
-        ),
-        "selection": selection,
-        "selection_color": page_theme["selection_border"],
-        "input_handler": input_handler,
-        "actions": actions,
-        **kwargs,
-    }
-
-def page_selector_dialog_props(state, document):
-    return {
-        "title": "Select page",
-        "margin": document.get(["theme", "dialogs", "margin"]),
-        "page_list": {
-            "min_size": (-1, 200),
-        },
-    }
-
-def load_document_from_file(path):
-    if os.path.exists(path):
-        return load_json_from_file(path)
-    else:
-        return create_new_document()
-
-def load_json_from_file(path):
-    with open(path) as f:
-        return json.load(f)
-
-def create_new_document():
-    return {
-        "root_page": create_new_page(),
-        "variables": {},
-    }
-
-def write_json_to_file(path, data):
-    with safely_write_file(path) as f:
-        json.dump(
-            data,
-            f,
-            sort_keys=True,
-            indent=2,
-            separators=(',', ':')
-        )
-
-@contextlib.contextmanager
-def safely_write_file(path):
-    with tempfile.NamedTemporaryFile(
-        dir=os.path.dirname(path),
-        prefix=os.path.basename(path) + ".tmp",
-        delete=False,
-        mode="w",
-        encoding="utf-8"
-    ) as tmp:
-        yield tmp
-    os.rename(tmp.name, path)
-
-def create_new_page():
-    return {
-        "id": genid(),
-        "title": "New page...",
-        "children": [],
-        "paragraphs": [],
-    }
-
-def genid():
-    return uuid.uuid4().hex
-
-def create_props(fn, *args):
-    fn = profile_sub("create props")(fn)
-    immutable = Immutable(fn(*args))
-    for arg in args:
-        if isinstance(arg, Immutable):
-            arg.listen(lambda: immutable.replace([], fn(*args)))
-    return immutable
-
-def makeTuple(*args):
-    return tuple(args)
-
-def profile_print_summary(text, cprofile_out):
-    text_width = 0
-    for name, times in PROFILING_TIMES.items():
-        text_width = max(text_width, len(f"{name} ({len(times)})"))
-    print(f"=== {text} {'='*60}")
-    print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
-    print(f"--- {text} {'-'*60}")
-    for name, times in sorted(PROFILING_TIMES.items(), key=lambda x: sum(x[1])):
-        time = sum(times)*1000
-        if time > 10:
-            color = "\033[31m"
-        elif time > 5:
-            color = "\033[33m"
-        else:
-            color = "\033[0m"
-        print("    {}{} = {:.3f}ms{}".format(
-            color,
-            f"{name} ({len(times)})".ljust(text_width),
-            time,
-            "\033[0m"
-        ))
-
-@profile_sub("im_modify")
-def im_modify(obj, path, fn):
-    def inner(obj, path):
-        if path:
-            new_child = inner(obj[path[0]], path[1:])
-            if isinstance(obj, list):
-                new_obj = list(obj)
-            elif isinstance(obj, dict):
-                new_obj = dict(obj)
-            else:
-                raise ValueError("unknown type")
-            new_obj[path[0]] = new_child
-            return new_obj
-        else:
-            return fn(obj)
-    return inner(obj, path)
-
-def base64_to_image(data):
-    try:
-        return wx.Image(
-            io.BytesIO(base64.b64decode(data)),
-            wx.BITMAP_TYPE_ANY
-        )
-    except:
-        return wx.ArtProvider.GetBitmap(
-            wx.ART_MISSING_IMAGE,
-            wx.ART_BUTTON,
-            (64, 64)
-        ).ConvertToImage()
-
-
-def fit_image(image, width):
-    if image.Width <= width:
-        return image
-    factor = float(width) / image.Width
-    return image.Scale(
-        int(image.Width*factor),
-        int(image.Height*factor),
-        wx.IMAGE_QUALITY_HIGH
-    )
-
-def start_app(frame_cls, props):
-    @profile_sub("render")
-    def update(props):
-        frame.update_props(props)
-    @profile("show frame")
-    @profile_sub("show frame")
-    def show_frame():
-        props.listen(lambda: update(props.get()))
-        frame = frame_cls(None, None, {}, props.get())
-        frame.Show()
-        return frame
-    app = wx.App()
-    frame = show_frame()
-    if WX_DEBUG_FOCUS:
-        def onTimer(evt):
-            print("Focused window: {}".format(wx.Window.FindFocus()))
-        frame.Bind(wx.EVT_TIMER, onTimer)
-        focus_timer = wx.Timer(frame)
-        focus_timer.Start(1000)
-    app.MainLoop()
-
-def on_gui_thread(fn):
-    def wrapper(*args):
-        wx.CallAfter(fn, *args)
-    return wrapper
-
-class Immutable(object):
-
-    def __init__(self, value):
-        self._listeners = []
-        self._value = value
-        self._transaction_counter = 0
-        self._notify_pending = False
-
-    def listen(self, listener):
-        self._listeners.append(listener)
-
-    @profile_sub("get")
-    def get(self, path=[]):
-        value = self._value
-        for part in path:
-            value = value[part]
-        return value
-
-    def replace(self, path, value):
-        self.modify(
-            path,
-            lambda old_value: value,
-            only_if_differs=True
-        )
-
-    def modify(self, path, fn, only_if_differs=False):
-        try:
-            self._value = im_modify(
-                self._value,
-                path,
-                self._create_modify_fn(fn, only_if_differs)
-            )
-            self._notify()
-        except ValuesEqualError:
-            pass
-
-    def _create_modify_fn(self, fn, only_if_differs):
-        if only_if_differs:
-            def modify_fn(old_value):
-                new_value = fn(old_value)
-                if new_value == old_value:
-                    raise ValuesEqualError()
-                return new_value
-            return modify_fn
-        else:
-            return fn
-
-    @contextlib.contextmanager
-    def transaction(self):
-        self._transaction_counter += 1
-        original_value = self._value
-        try:
-            yield
-        except:
-            self._value = original_value
-            raise
-        finally:
-            self._transaction_counter -= 1
-            if self._notify_pending:
-                self._notify()
-
-    def _notify(self):
-        if self._transaction_counter == 0:
-            for listener in self._listeners:
-                listener()
-            self._notify_pending = False
-        else:
-            self._notify_pending = True
-
 class StringInputHandler(object):
 
     def __init__(self, data, selection_value):
@@ -1214,6 +203,231 @@ class StringInputHandler(object):
         for char in text.char_iterator(self.main_cursor_char_index, 1):
             yield char.get("index_left")
             yield char.get("index_right")
+
+class Immutable(object):
+
+    def __init__(self, value):
+        self._listeners = []
+        self._value = value
+        self._transaction_counter = 0
+        self._notify_pending = False
+
+    def listen(self, listener):
+        self._listeners.append(listener)
+
+    @profile_sub("get")
+    def get(self, path=[]):
+        value = self._value
+        for part in path:
+            value = value[part]
+        return value
+
+    def replace(self, path, value):
+        self.modify(
+            path,
+            lambda old_value: value,
+            only_if_differs=True
+        )
+
+    def modify(self, path, fn, only_if_differs=False):
+        try:
+            self._value = im_modify(
+                self._value,
+                path,
+                self._create_modify_fn(fn, only_if_differs)
+            )
+            self._notify()
+        except ValuesEqualError:
+            pass
+
+    def _create_modify_fn(self, fn, only_if_differs):
+        if only_if_differs:
+            def modify_fn(old_value):
+                new_value = fn(old_value)
+                if new_value == old_value:
+                    raise ValuesEqualError()
+                return new_value
+            return modify_fn
+        else:
+            return fn
+
+    @contextlib.contextmanager
+    def transaction(self):
+        self._transaction_counter += 1
+        original_value = self._value
+        try:
+            yield
+        except:
+            self._value = original_value
+            raise
+        finally:
+            self._transaction_counter -= 1
+            if self._notify_pending:
+                self._notify()
+
+    def _notify(self):
+        if self._transaction_counter == 0:
+            for listener in self._listeners:
+                listener()
+            self._notify_pending = False
+        else:
+            self._notify_pending = True
+
+class TextFragmentsInputHandler(StringInputHandler):
+
+    def __init__(self, paragraph, path, selection, actions, page_theme):
+        self.paragraph = paragraph
+        self.path = path
+        self.selection = selection
+        self.actions = actions
+        self.page_theme = page_theme
+        data = self.paragraph
+        for part in path:
+            data = data[part]
+        StringInputHandler.__init__(
+            self,
+            data,
+            self.selection.value_here
+        )
+        self.new_variables = {}
+
+    def save(self):
+        self.actions["modify_paragraph"](
+            self.paragraph["id"],
+            self.path,
+            self.data,
+            self.new_variables,
+            self.selection.create(self.selection_value)
+        )
+
+    def create_selection_value(self, values):
+        return dict(
+            values,
+            what="text_fragments",
+            paragraph_id=self.paragraph["id"],
+            path=self.path
+        )
+
+    def build(self):
+        builder = TextPropsBuilder(
+            selection_color=self.page_theme["selection_color"],
+            cursor_color=self.page_theme["cursor_color"],
+            **self.page_theme["text_font"]
+        )
+        self.build_with_selection_value(builder, self.selection_value)
+        return builder
+
+    def build_with_selection_value(self, builder, selection_value):
+        for index, fragment in enumerate(self.data):
+            params = {}
+            params["index_prefix"] = [index]
+            start = None
+            end = None
+            cursor_at_start = True
+            placeholder = False
+            if selection_value:
+                cursor_at_start = selection_value["cursor_at_start"]
+                if selection_value["start"][0] == index:
+                    start = selection_value["start"][1]
+                if selection_value["end"][0] == index:
+                    end = selection_value["end"][1]
+            if fragment["type"] == "text":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Text"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "strong":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Strong"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "emphasis":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Emphasis"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "code":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Code"]
+                )
+                text = fragment["text"]
+            elif fragment["type"] == "variable":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Variable"]
+                )
+                text = self.paragraph["meta"]["variables"][fragment["id"]]
+            elif fragment["type"] == "reference":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Reference"]
+                )
+                if fragment["text"]:
+                    text = fragment["text"]
+                    placeholder = False
+                else:
+                    text = self.paragraph["meta"]["page_titles"][fragment["page_id"]]
+                    placeholder = True
+            elif fragment["type"] == "link":
+                params.update(
+                    self.page_theme["token_styles"]["RLiterate.Link"]
+                )
+                if fragment["text"]:
+                    text = fragment["text"]
+                    placeholder = False
+                else:
+                    text = fragment["url"]
+                    placeholder = True
+            self.build_text(
+                text,
+                start,
+                end,
+                cursor_at_start,
+                params,
+                builder,
+                placeholder
+            )
+
+    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):
+        if text:
+            if placeholder and self.selection is not None:
+                text = "<{}>".format(text)
+                params["color"] = self.page_theme["placeholder_color"]
+        else:
+            placeholder = True
+            text = "<enter text>"
+            params["color"] = self.page_theme["placeholder_color"]
+        if placeholder:
+            params["index_constant"] = 0
+        else:
+            params["index_increment"] = 0
+        if start is not None:
+            if placeholder:
+                builder.selection_start(0)
+                if cursor_at_start and self.selection.active:
+                    builder.cursor(1, main=True)
+            else:
+                builder.selection_start(start)
+                if cursor_at_start and self.selection.active:
+                    builder.cursor(start, main=True)
+        if end is not None:
+            if placeholder:
+                builder.selection_end(len(text))
+                if not cursor_at_start and self.selection.active:
+                    builder.cursor(1, main=True)
+            else:
+                builder.selection_end(end)
+                if not cursor_at_start and self.selection.active:
+                    builder.cursor(end, main=True)
+        builder.text(text, **params)
+
+    def replace(self, text):
+        self.data, self.new_variables, self.selection_value = TextFragments(
+            self.data,
+            self.selection_value,
+            self.paragraph["meta"]["variables"]
+        ).replace(text).get()
+
+    def handle_key(self, key_event, text):
+        StringInputHandler.handle_key(self, key_event, text)
 
 class WidgetMixin(object):
 
@@ -3078,6 +2292,12 @@ class TextParagraph(Panel):
         sizer["flag"] |= wx.EXPAND
         self._create_widget(TextEdit, props, sizer, handlers, name)
 
+class TextTextFragmentsInputHandler(TextFragmentsInputHandler):
+
+    def handle_key(self, key_event, text):
+        print("in text text")
+        TextFragmentsInputHandler.handle_key(self, key_event, text)
+
 class QuoteParagraph(Panel):
 
     def _get_local_props(self):
@@ -3520,162 +2740,6 @@ class TextPropsBuilder(object):
 
     def _index(self, offset):
         return len(self._characters) + offset
-
-class TextFragmentsInputHandler(StringInputHandler):
-
-    def __init__(self, paragraph, path, selection, actions, page_theme):
-        self.paragraph = paragraph
-        self.path = path
-        self.selection = selection
-        self.actions = actions
-        self.page_theme = page_theme
-        data = self.paragraph
-        for part in path:
-            data = data[part]
-        StringInputHandler.__init__(
-            self,
-            data,
-            self.selection.value_here
-        )
-        self.new_variables = {}
-
-    def save(self):
-        self.actions["modify_paragraph"](
-            self.paragraph["id"],
-            self.path,
-            self.data,
-            self.new_variables,
-            self.selection.create(self.selection_value)
-        )
-
-    def create_selection_value(self, values):
-        return dict(
-            values,
-            what="text_fragments",
-            paragraph_id=self.paragraph["id"],
-            path=self.path
-        )
-
-    def build(self):
-        builder = TextPropsBuilder(
-            selection_color=self.page_theme["selection_color"],
-            cursor_color=self.page_theme["cursor_color"],
-            **self.page_theme["text_font"]
-        )
-        self.build_with_selection_value(builder, self.selection_value)
-        return builder
-
-    def build_with_selection_value(self, builder, selection_value):
-        for index, fragment in enumerate(self.data):
-            params = {}
-            params["index_prefix"] = [index]
-            start = None
-            end = None
-            cursor_at_start = True
-            placeholder = False
-            if selection_value:
-                cursor_at_start = selection_value["cursor_at_start"]
-                if selection_value["start"][0] == index:
-                    start = selection_value["start"][1]
-                if selection_value["end"][0] == index:
-                    end = selection_value["end"][1]
-            if fragment["type"] == "text":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Text"]
-                )
-                text = fragment["text"]
-            elif fragment["type"] == "strong":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Strong"]
-                )
-                text = fragment["text"]
-            elif fragment["type"] == "emphasis":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Emphasis"]
-                )
-                text = fragment["text"]
-            elif fragment["type"] == "code":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Code"]
-                )
-                text = fragment["text"]
-            elif fragment["type"] == "variable":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Variable"]
-                )
-                text = self.paragraph["meta"]["variables"][fragment["id"]]
-            elif fragment["type"] == "reference":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Reference"]
-                )
-                if fragment["text"]:
-                    text = fragment["text"]
-                    placeholder = False
-                else:
-                    text = self.paragraph["meta"]["page_titles"][fragment["page_id"]]
-                    placeholder = True
-            elif fragment["type"] == "link":
-                params.update(
-                    self.page_theme["token_styles"]["RLiterate.Link"]
-                )
-                if fragment["text"]:
-                    text = fragment["text"]
-                    placeholder = False
-                else:
-                    text = fragment["url"]
-                    placeholder = True
-            self.build_text(
-                text,
-                start,
-                end,
-                cursor_at_start,
-                params,
-                builder,
-                placeholder
-            )
-
-    def build_text(self, text, start, end, cursor_at_start, params, builder, placeholder):
-        if text:
-            if placeholder and self.selection is not None:
-                text = "<{}>".format(text)
-                params["color"] = self.page_theme["placeholder_color"]
-        else:
-            placeholder = True
-            text = "<enter text>"
-            params["color"] = self.page_theme["placeholder_color"]
-        if placeholder:
-            params["index_constant"] = 0
-        else:
-            params["index_increment"] = 0
-        if start is not None:
-            if placeholder:
-                builder.selection_start(0)
-                if cursor_at_start and self.selection.active:
-                    builder.cursor(1, main=True)
-            else:
-                builder.selection_start(start)
-                if cursor_at_start and self.selection.active:
-                    builder.cursor(start, main=True)
-        if end is not None:
-            if placeholder:
-                builder.selection_end(len(text))
-                if not cursor_at_start and self.selection.active:
-                    builder.cursor(1, main=True)
-            else:
-                builder.selection_end(end)
-                if not cursor_at_start and self.selection.active:
-                    builder.cursor(end, main=True)
-        builder.text(text, **params)
-
-    def replace(self, text):
-        self.data, self.new_variables, self.selection_value = TextFragments(
-            self.data,
-            self.selection_value,
-            self.paragraph["meta"]["variables"]
-        ).replace(text).get()
-
-    def handle_key(self, key_event, text):
-        StringInputHandler.handle_key(self, key_event, text)
 
 class PageSelectorDialog(Dialog):
 
@@ -5020,6 +4084,949 @@ class RefreshRequests(object):
             if request[key] != value:
                 return False
         return True
+
+def main():
+    args = parse_args()
+    start_app(
+        MainFrame,
+        create_props(
+            main_frame_props,
+            Document(args["path"])
+        )
+    )
+
+def parse_args():
+    args = {
+        "path": None,
+    }
+    script = sys.argv[0]
+    rest = sys.argv[1:]
+    if len(rest) != 1:
+        usage(script)
+    args["path"] = rest[0]
+    return args
+
+def usage(script):
+    sys.exit(f"usage: {script} <path>")
+
+def main_frame_props(document):
+    return {
+        "title": format_title(
+            document.get(["path"])
+        ),
+        "toolbar": toolbar_props(
+            document
+        ),
+        "toolbar_divider": toolbar_divider_props(
+            document
+        ),
+        "main_area": main_area_props(
+            document
+        ),
+    }
+
+@cache()
+def format_title(path):
+    return "{} ({}) - RLiterate 2".format(
+        os.path.basename(path),
+        os.path.abspath(os.path.dirname(path))
+    )
+
+def toolbar_props(document):
+    toolbar_theme = document.get(["theme", "toolbar"])
+    selection = document.get(["selection"])
+    if selection.value.get("what") == "text_fragments":
+        text_fragments = document.get_paragraph(
+            selection.value["paragraph_id"],
+            selection.value["path"]
+        )
+        if selection.value["cursor_at_start"]:
+            fragment_under_cursor = text_fragments[selection.value["start"][0]]
+        else:
+            fragment_under_cursor = text_fragments[selection.value["end"][0]]
+        if fragment_under_cursor["type"] == "variable":
+            cursor_variable = fragment_under_cursor["id"]
+        else:
+            cursor_variable = None
+    else:
+        text_fragments = None
+        cursor_variable = None
+    return {
+        "background": toolbar_theme["background"],
+        "margin": toolbar_theme["margin"],
+        "bar": {
+            "background": document.get(["theme", "toolbar_divider", "color"]),
+            "size": (1, -1),
+        },
+        "text_fragments": text_fragments,
+        "text_fragments_selected": text_fragments is not None,
+        "style_text_props": TextPropsBuilder().text("Style:").get(),
+        "variable_text_props": TextPropsBuilder().text("Variable:").get(),
+        "page_reference_text_props": TextPropsBuilder().text("Page reference:").get(),
+        "save_text_props": TextPropsBuilder().text(str(document.get_save_status())).get(),
+        "selected_variable": document.get_selected_variable(),
+        "cursor_variable": cursor_variable,
+        "document": document,
+        "selection": selection,
+        "actions": document.actions,
+    }
+
+def toolbar_divider_props(document):
+    toolbar_divider_theme = document.get(["theme", "toolbar_divider"])
+    return {
+        "background": toolbar_divider_theme["color"],
+        "min_size": (
+            -1,
+            toolbar_divider_theme["thickness"]
+        ),
+    }
+
+def main_area_props(document):
+    return {
+        "actions": document.actions,
+        "toc": toc_props(
+            document
+        ),
+        "toc_divider": toc_divider_props(
+            document
+        ),
+        "workspace": workspace_props(
+            document
+        ),
+    }
+
+def toc_props(document):
+    return {
+        "background": document.get(
+            ["theme", "toc", "background"]
+        ),
+        "min_size": (
+            max(50, document.get(["toc", "width"])),
+            -1
+        ),
+        "has_valid_hoisted_page": is_valid_hoisted_page(
+            document,
+            document.get(["toc", "hoisted_page"]),
+        ),
+        "margin": 1 + document.get(
+            ["theme", "toc", "row_margin"]
+        ),
+        "actions": document.actions,
+        "scroll_area": toc_scroll_area_props(
+            document
+        ),
+    }
+
+def is_valid_hoisted_page(document, page_id):
+    try:
+        page = document.get_page(page_id)
+        root_page = document.get_page()
+        if page["id"] != root_page["id"]:
+            return True
+    except PageNotFound:
+        pass
+    return False
+
+def toc_scroll_area_props(document):
+    return dict(generate_rows_and_drop_points(document), **{
+        "rows_cache_limit": document.count_pages() - 1,
+        "row_margin": document.get(
+            ["theme", "toc", "row_margin"]
+        ),
+        "indent_size": document.get(
+            ["theme", "toc", "indent_size"]
+        ),
+        "dragged_page": document.get(
+            ["toc", "dragged_page"]
+        ),
+        "actions": document.actions,
+    })
+
+def generate_rows_and_drop_points(document):
+    try:
+        root_page = document.get_page(
+            document.get(["toc", "hoisted_page"])
+        )
+    except PageNotFound:
+        root_page = document.get_page(None)
+    return generate_rows_and_drop_points_page(
+        root_page,
+        toc_row_common_props(document),
+        document.get(["toc", "collapsed"]),
+        document.get(["toc", "dragged_page"]),
+        document.get_open_pages(),
+        0,
+        False,
+        0
+    )
+
+@cache(limit=1000, key_path=[0, "id"])
+def generate_rows_and_drop_points_page(
+    page,
+    row_common_props,
+    collapsed,
+    dragged_page,
+    open_pages,
+    level,
+    is_dragged,
+    row_offset
+):
+    rows = []
+    drop_points = []
+    is_collapsed = page["id"] in collapsed
+    is_dragged = is_dragged or page["id"] == dragged_page
+    rows.append(toc_row_props(
+        row_common_props,
+        page,
+        level,
+        is_dragged,
+        is_collapsed,
+        open_pages
+    ))
+    if is_collapsed:
+        target_index = len(page["children"])
+    else:
+        target_index = 0
+    drop_points.append(TableOfContentsDropPoint(
+        row_index=row_offset+len(rows)-1,
+        target_index=target_index,
+        target_page=page["id"],
+        level=level+1
+    ))
+    if not is_collapsed:
+        for target_index, child in enumerate(page["children"]):
+            sub_result = generate_rows_and_drop_points_page(
+                child,
+                row_common_props,
+                collapsed,
+                dragged_page,
+                open_pages,
+                level+1,
+                is_dragged,
+                row_offset+len(rows)
+            )
+            rows.extend(sub_result["rows"])
+            drop_points.extend(sub_result["drop_points"])
+            drop_points.append(TableOfContentsDropPoint(
+                row_index=row_offset+len(rows)-1,
+                target_index=target_index+1,
+                target_page=page["id"],
+                level=level+1
+            ))
+    return {
+        "rows": rows,
+        "drop_points": drop_points,
+    }
+
+def toc_row_common_props(document):
+    return {
+        "row_margin": document.get(
+            ["theme", "toc", "row_margin"]
+        ),
+        "indent_size": document.get(
+            ["theme", "toc", "indent_size"]
+        ),
+        "foreground": document.get(
+            ["theme", "toc", "foreground"]
+        ),
+        "hover_background": document.get(
+            ["theme", "toc", "hover_background"]
+        ),
+        "divider_thickness": document.get(
+            ["theme", "toc", "divider_thickness"]
+        ),
+        "dragdrop_color": document.get(
+            ["theme", "dragdrop_color"]
+        ),
+        "dragdrop_invalid_color": document.get(
+            ["theme", "dragdrop_invalid_color"]
+        ),
+        "placeholder_color": document.get(
+            ["theme", "toc", "placeholder_color"]
+        ),
+        "font": document.get(
+            ["theme", "toc", "font"]
+        ),
+        "actions": document.actions,
+    }
+
+def toc_row_props(
+    row_common_props,
+    page,
+    level,
+    is_dragged,
+    is_collapsed,
+    open_pages
+):
+    return {
+        "id": page["id"],
+        "hover_background": row_common_props["hover_background"],
+        "actions": row_common_props["actions"],
+        "level": level,
+        "title": toc_row_title_props(
+            row_common_props,
+            page,
+            level,
+            is_dragged,
+            is_collapsed,
+            open_pages
+        ),
+        "drop_line": toc_row_drop_line_props(
+            row_common_props
+        ),
+    }
+
+def toc_row_title_props(
+    row_common_props,
+    page,
+    level,
+    is_dragged,
+    is_collapsed,
+    open_pages
+):
+    if page["title"]:
+        text = page["title"]
+        if is_dragged:
+            color = row_common_props["dragdrop_invalid_color"]
+        else:
+            color = row_common_props["foreground"]
+    else:
+        text = "Enter title..."
+        color = row_common_props["placeholder_color"]
+    return dict(row_common_props, **{
+        "id": page["id"],
+        "text_props": TextPropsBuilder(**dict(row_common_props["font"],
+            bold=page["id"] in open_pages,
+            color=color
+        )).text(text).get(),
+        "level": level,
+        "has_children": bool(page["children"]),
+        "collapsed": is_collapsed,
+        "dragged": is_dragged,
+    })
+
+def toc_row_drop_line_props(row_common_props):
+    return {
+        "indent": 0,
+        "active": False,
+        "valid": True,
+        "min_size": (-1, row_common_props["divider_thickness"]),
+        "color": row_common_props["dragdrop_color"],
+        "invalid_color": row_common_props["dragdrop_invalid_color"],
+    }
+
+def toc_divider_props(document):
+    toc_divider_theme = document.get(["theme", "toc_divider"])
+    return {
+        "background": toc_divider_theme["color"],
+        "min_size": (
+            toc_divider_theme["thickness"],
+            -1
+        ),
+        "cursor": "size_horizontal",
+    }
+
+def workspace_props(document):
+    return {
+        "background": document.get(
+            ["theme", "workspace", "background"]
+        ),
+        "margin": document.get(
+            ["theme", "workspace", "margin"]
+        ),
+        "page_body_width": document.get(
+            ["workspace", "page_body_width"]
+        ),
+        "actions": document.actions,
+        "columns": columns_props(
+            document
+        ),
+        "divider_panel": {
+            "cursor": "size_horizontal",
+            "min_size": (document.get(["theme", "workspace", "margin"]), -1)
+        }
+    }
+
+@profile_sub("columns_props")
+def columns_props(document):
+    return [
+        column_props(
+            document,
+            column,
+            document.get(["selection"]).add("workspace", "column", index)
+        )
+        for index, column
+        in enumerate(document.get(["workspace", "columns"]))
+    ]
+
+def column_props(document, column, selection):
+    column_prop = []
+    index = 0
+    for page_id in column:
+        try:
+            column_prop.append(page_props(
+                document,
+                document.get_page(page_id),
+                selection.add("page", index, page_id)
+            ))
+            index += 1
+        except PageNotFound:
+            pass
+    return {
+        "min_size": (
+            document.get(["workspace", "page_body_width"]) +
+            2*document.get(["theme", "page", "margin"]) +
+            document.get(["theme", "page", "border", "size"]),
+            -1
+        ),
+        "margin": document.get(
+            ["theme", "workspace", "margin"]
+        ),
+        "column": column_prop,
+    }
+
+def page_props(document, page, selection):
+    page_theme = document.get(["theme", "page"])
+    return {
+        "body": {
+            "id": page["id"],
+            "actions": document.actions,
+            "title": page_title_props(
+                page,
+                document.get(["workspace", "page_body_width"]),
+                page_theme,
+                selection.add("title"),
+                document.actions
+            ),
+            "paragraphs": paragraphs_props(
+                document,
+                page["paragraphs"],
+                selection.add("paragraphs")
+            ),
+            "background": page_theme["background"],
+            "margin": page_theme["margin"],
+        },
+        "border": page_theme["border"],
+    }
+
+@cache()
+def page_title_props(page, page_body_width, page_theme, selection, actions):
+    input_handler = TitleInputHandler(page, page_theme, selection, actions)
+    return {
+        "text_edit_props": {
+            "text_props": dict(
+                input_handler.text_props,
+                break_at_word=True,
+                line_height=page_theme["line_height"]
+            ),
+            "max_width": page_body_width,
+            "selection": selection,
+            "selection_color": page_theme["selection_border"],
+            "input_handler": input_handler,
+            "actions": actions,
+        },
+    }
+
+def paragraphs_props(document, paragraphs, selection):
+    return [
+        paragraph_props(
+            dict(
+                paragraph,
+                meta=build_paragraph_meta(document, paragraph)
+            ),
+            document.get(["theme", "page"]),
+            document.get(["workspace", "page_body_width"]),
+            selection.add(index, paragraph["id"]),
+            document.actions
+        )
+        for index, paragraph in enumerate(paragraphs)
+    ]
+
+def build_paragraph_meta(document, paragraph):
+    meta = {
+        "variables": {},
+        "page_titles": {},
+    }
+    if paragraph["type"] in ["text", "quote", "image"]:
+        build_text_fragments_meta(meta, document, paragraph["fragments"])
+    if paragraph["type"] == "list":
+        build_list_meta(meta, document, paragraph["children"])
+    return meta
+
+def build_list_meta(meta, document, children):
+    for child in children:
+        build_text_fragments_meta(meta, document, child["fragments"])
+        build_list_meta(meta, document, child["children"])
+
+def build_text_fragments_meta(meta, document, fragments):
+    for fragment in fragments:
+        if fragment["type"] == "variable":
+            meta["variables"][fragment["id"]] = document.get_variable(fragment["id"])
+        elif fragment["type"] == "reference":
+            meta["page_titles"][fragment["page_id"]] = document.get_page(fragment["page_id"])["title"]
+
+@cache(limit=1000, key_path=[0, "id"])
+def paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    BUILDERS = {
+        "text": text_paragraph_props,
+        "quote": quote_paragraph_props,
+        "list": list_paragraph_props,
+        "code": code_paragraph_props,
+        "image": image_paragraph_props,
+        "factory": factory_paragraph_props,
+    }
+    return BUILDERS.get(
+        paragraph["type"],
+        unknown_paragraph_props
+    )(paragraph, page_theme, body_width, selection, actions)
+
+@profile_sub("text_paragraph_props")
+def text_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": TextParagraph,
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph,
+            ["fragments"],
+            selection,
+            page_theme,
+            actions,
+            max_width=body_width,
+            handler_cls=TextTextFragmentsInputHandler
+        ),
+    }
+
+@profile_sub("quote_paragraph_props")
+def quote_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": QuoteParagraph,
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph,
+            ["fragments"],
+            selection,
+            page_theme,
+            actions,
+            max_width=body_width-page_theme["indent_size"],
+        ),
+        "indent_size": page_theme["indent_size"],
+    }
+
+
+@profile_sub("list_paragraph_props")
+def list_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": ListParagraph,
+        "rows": list_item_rows_props(
+            paragraph,
+            paragraph["children"],
+            paragraph["child_type"],
+            page_theme,
+            body_width,
+            actions,
+            selection
+        ),
+    }
+
+def list_item_rows_props(paragraph, children, child_type, page_theme, body_width, actions, selection, path=[], level=0):
+    rows = []
+    for index, child in enumerate(children):
+        rows.append(list_item_row_props(
+            paragraph,
+            child_type,
+            index,
+            child,
+            page_theme,
+            body_width,
+            actions,
+            selection.add(index, "fragments"),
+            path+[index],
+            level
+        ))
+        rows.extend(list_item_rows_props(
+            paragraph,
+            child["children"],
+            child["child_type"],
+            page_theme,
+            body_width,
+            actions,
+            selection.add(index),
+            path+[index, "children"],
+            level+1
+        ))
+    return rows
+
+def list_item_row_props(paragraph, child_type, index, child, page_theme, body_width, actions, selection, path, level):
+    return {
+        "level": level,
+        "indent": page_theme["indent_size"],
+        "bullet_props": dict(
+            TextPropsBuilder(
+                **page_theme["text_font"]
+            ).text(_get_bullet_text(child_type, index)).get(),
+            max_width=page_theme["indent_size"],
+            line_height=page_theme["line_height"]
+        ),
+        "text_edit_props": text_fragments_to_text_edit_props(
+            paragraph,
+            ["children"]+path+["fragments"],
+            selection,
+            page_theme,
+            actions,
+            max_width=body_width-(level+1)*page_theme["indent_size"],
+            line_height=page_theme["line_height"]
+        ),
+    }
+
+def _get_bullet_text(list_type, index):
+    if list_type == "ordered":
+        return "{}. ".format(index + 1)
+    else:
+        return u"\u2022 "
+
+@profile_sub("code_paragraph_props")
+def code_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": CodeParagraph,
+        "header": code_paragraph_header_props(
+            paragraph,
+            page_theme,
+            body_width
+        ),
+        "body": code_paragraph_body_props(
+            paragraph,
+            page_theme,
+            body_width
+        ),
+    }
+
+def code_paragraph_header_props(paragraph, page_theme, body_width):
+    return {
+        "background": page_theme["code"]["header_background"],
+        "margin": page_theme["code"]["margin"],
+        "text_props": dict(code_paragraph_header_path_props(
+            paragraph["filepath"],
+            paragraph["chunkpath"],
+            page_theme["code_font"]
+        ), max_width=body_width-2*page_theme["code"]["margin"]),
+    }
+
+@cache()
+def code_paragraph_header_path_props(filepath, chunkpath, font):
+    builder = TextPropsBuilder(**font)
+    for index, x in enumerate(filepath):
+        if index > 0:
+            builder.text("/")
+        builder.text(x)
+    if filepath and chunkpath:
+        builder.text(" ")
+    for index, x in enumerate(chunkpath):
+        if index > 0:
+            builder.text("/")
+        builder.text(x)
+    return builder.get()
+
+def code_paragraph_body_props(paragraph, page_theme, body_width):
+    return {
+        "background": page_theme["code"]["body_background"],
+        "margin": page_theme["code"]["margin"],
+        "text_props": dict(
+            code_paragraph_body_text_props(
+                paragraph,
+                page_theme
+            ),
+            max_width=body_width-2*page_theme["code"]["margin"]
+        ),
+    }
+
+@cache(limit=100, key_path=[0, "id"])
+def code_paragraph_body_text_props(paragraph, page_theme):
+    builder = TextPropsBuilder(**page_theme["code_font"])
+    for fragment in apply_token_styles(
+        code_body_fragments_props(
+            paragraph["fragments"],
+            code_pygments_lexer(
+                paragraph.get("language", ""),
+                paragraph["filepath"][-1] if paragraph["filepath"] else "",
+            )
+        ),
+        page_theme["token_styles"]
+    ):
+        builder.text(**fragment)
+    return builder.get()
+
+@profile_sub("apply_token_styles")
+def apply_token_styles(fragments, token_styles):
+    styles = build_style_dict(token_styles)
+    def style_fragment(fragment):
+        if "token_type" in fragment:
+            token_type = fragment["token_type"]
+            while token_type not in styles:
+                token_type = token_type.parent
+            style = styles[token_type]
+            new_fragment = dict(fragment)
+            new_fragment.update(style)
+            return new_fragment
+        else:
+            return fragment
+    return [
+        style_fragment(fragment)
+        for fragment in fragments
+    ]
+
+def build_style_dict(theme_style):
+    styles = {}
+    for name, value in theme_style.items():
+        styles[string_to_tokentype(name)] = value
+    return styles
+
+def code_body_fragments_props(fragments, pygments_lexer):
+    code_chunk = CodeChunk()
+    for fragment in fragments:
+        if fragment["type"] == "code":
+            code_chunk.add(fragment["text"])
+        elif fragment["type"] == "chunk":
+            code_chunk.add(
+                "{}<<{}>>\n".format(
+                    fragment["prefix"],
+                    "/".join(fragment["path"])
+                ),
+                {"token_type": TokenType.Comment.Preproc}
+            )
+    return code_chunk.tokenize(pygments_lexer)
+
+def code_pygments_lexer(language, filename):
+    try:
+        if language:
+            return pygments.lexers.get_lexer_by_name(
+                language,
+                stripnl=False
+            )
+        else:
+            return pygments.lexers.get_lexer_for_filename(
+                filename,
+                stripnl=False
+            )
+    except:
+        return pygments.lexers.TextLexer(stripnl=False)
+
+@profile_sub("image_paragraph_props")
+def image_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": ImageParagraph,
+        "image": {
+            "base64_image": paragraph.get("image_base64", None),
+            "width": body_width,
+        },
+        "image_text": {
+            "indent": page_theme["indent_size"],
+            "text_edit_props": text_fragments_to_text_edit_props(
+                paragraph,
+                ["fragments"],
+                selection,
+                page_theme,
+                actions,
+                align="center",
+                max_width=body_width-2*page_theme["indent_size"],
+            ),
+        },
+    }
+
+def factory_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": FactoryParagraph,
+        "actions": actions,
+        "id": paragraph["id"],
+    }
+
+def unknown_paragraph_props(paragraph, page_theme, body_width, selection, actions):
+    return {
+        "widget": UnknownParagraph,
+        "text_props": dict(
+            TextPropsBuilder(**page_theme["code_font"]).text(
+                "Unknown paragraph type '{}'.".format(paragraph["type"])
+            ).get(),
+            max_width=body_width
+        ),
+    }
+
+def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, actions, align="left", handler_cls=TextFragmentsInputHandler, **kwargs):
+    input_handler = handler_cls(
+        paragraph,
+        path,
+        selection,
+        actions,
+        page_theme
+    )
+    return {
+        "text_props": dict(
+            input_handler.text_props,
+            break_at_word=True,
+            line_height=page_theme["line_height"],
+            align=align
+        ),
+        "selection": selection,
+        "selection_color": page_theme["selection_border"],
+        "input_handler": input_handler,
+        "actions": actions,
+        **kwargs,
+    }
+
+def page_selector_dialog_props(state, document):
+    return {
+        "title": "Select page",
+        "margin": document.get(["theme", "dialogs", "margin"]),
+        "page_list": {
+            "min_size": (-1, 200),
+        },
+    }
+
+def load_document_from_file(path):
+    if os.path.exists(path):
+        return load_json_from_file(path)
+    else:
+        return create_new_document()
+
+def load_json_from_file(path):
+    with open(path) as f:
+        return json.load(f)
+
+def create_new_document():
+    return {
+        "root_page": create_new_page(),
+        "variables": {},
+    }
+
+def write_json_to_file(path, data):
+    with safely_write_file(path) as f:
+        json.dump(
+            data,
+            f,
+            sort_keys=True,
+            indent=2,
+            separators=(',', ':')
+        )
+
+@contextlib.contextmanager
+def safely_write_file(path):
+    with tempfile.NamedTemporaryFile(
+        dir=os.path.dirname(path),
+        prefix=os.path.basename(path) + ".tmp",
+        delete=False,
+        mode="w",
+        encoding="utf-8"
+    ) as tmp:
+        yield tmp
+    os.rename(tmp.name, path)
+
+def create_new_page():
+    return {
+        "id": genid(),
+        "title": "New page...",
+        "children": [],
+        "paragraphs": [],
+    }
+
+def genid():
+    return uuid.uuid4().hex
+
+def create_props(fn, *args):
+    fn = profile_sub("create props")(fn)
+    immutable = Immutable(fn(*args))
+    for arg in args:
+        if isinstance(arg, Immutable):
+            arg.listen(lambda: immutable.replace([], fn(*args)))
+    return immutable
+
+def makeTuple(*args):
+    return tuple(args)
+
+def profile_print_summary(text, cprofile_out):
+    text_width = 0
+    for name, times in PROFILING_TIMES.items():
+        text_width = max(text_width, len(f"{name} ({len(times)})"))
+    print(f"=== {text} {'='*60}")
+    print(f"{textwrap.indent(cprofile_out.strip(), '    ')}")
+    print(f"--- {text} {'-'*60}")
+    for name, times in sorted(PROFILING_TIMES.items(), key=lambda x: sum(x[1])):
+        time = sum(times)*1000
+        if time > 10:
+            color = "\033[31m"
+        elif time > 5:
+            color = "\033[33m"
+        else:
+            color = "\033[0m"
+        print("    {}{} = {:.3f}ms{}".format(
+            color,
+            f"{name} ({len(times)})".ljust(text_width),
+            time,
+            "\033[0m"
+        ))
+
+@profile_sub("im_modify")
+def im_modify(obj, path, fn):
+    def inner(obj, path):
+        if path:
+            new_child = inner(obj[path[0]], path[1:])
+            if isinstance(obj, list):
+                new_obj = list(obj)
+            elif isinstance(obj, dict):
+                new_obj = dict(obj)
+            else:
+                raise ValueError("unknown type")
+            new_obj[path[0]] = new_child
+            return new_obj
+        else:
+            return fn(obj)
+    return inner(obj, path)
+
+def base64_to_image(data):
+    try:
+        return wx.Image(
+            io.BytesIO(base64.b64decode(data)),
+            wx.BITMAP_TYPE_ANY
+        )
+    except:
+        return wx.ArtProvider.GetBitmap(
+            wx.ART_MISSING_IMAGE,
+            wx.ART_BUTTON,
+            (64, 64)
+        ).ConvertToImage()
+
+
+def fit_image(image, width):
+    if image.Width <= width:
+        return image
+    factor = float(width) / image.Width
+    return image.Scale(
+        int(image.Width*factor),
+        int(image.Height*factor),
+        wx.IMAGE_QUALITY_HIGH
+    )
+
+def start_app(frame_cls, props):
+    @profile_sub("render")
+    def update(props):
+        frame.update_props(props)
+    @profile("show frame")
+    @profile_sub("show frame")
+    def show_frame():
+        props.listen(lambda: update(props.get()))
+        frame = frame_cls(None, None, {}, props.get())
+        frame.Show()
+        return frame
+    app = wx.App()
+    frame = show_frame()
+    if WX_DEBUG_FOCUS:
+        def onTimer(evt):
+            print("Focused window: {}".format(wx.Window.FindFocus()))
+        frame.Bind(wx.EVT_TIMER, onTimer)
+        focus_timer = wx.Timer(frame)
+        focus_timer.Start(1000)
+    app.MainLoop()
+
+def on_gui_thread(fn):
+    def wrapper(*args):
+        wx.CallAfter(fn, *args)
+    return wrapper
 
 if __name__ == "__main__":
     main()
