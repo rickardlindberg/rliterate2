@@ -3258,6 +3258,8 @@ class Document(Immutable):
         "toolbar": {
             "margin": 4,
             "background": None,
+            "color_working": yellow,
+            "color_done": green,
         },
         "toolbar_divider": {
             "thickness": 1,
@@ -3349,6 +3351,8 @@ class Document(Immutable):
         "toolbar": {
             "margin": 4,
             "background": "#dcd6c6",
+            "color_working": yellow,
+            "color_done": green,
         },
         "toolbar_divider": {
             "thickness": 2,
@@ -3501,23 +3505,35 @@ class SavingThread(threading.Thread):
         self.queue.join()
 
     def run(self):
+        SAVE_FLASH_MIN_TIME = 0.2
+        MAX_WAIT_TIME = 0.6
         while True:
             path_doc = self.queue.get()
             if path_doc != self.path_doc:
                 self.path_doc = path_doc
             else:
+                self.queue.task_done()
                 continue
             self._report("Waiting...", working=True)
             while True:
                 try:
-                    path_doc = self.queue.get(timeout=1)
+                    self.path_doc = self.queue.get(timeout=MAX_WAIT_TIME)
                     self.queue.task_done()
                 except queue.Empty:
                     break
             self._report("Saving document...", working=True)
-            write_json_to_file(*self.path_doc)
+            save_start = time.perf_counter()
+            try:
+                write_json_to_file(*self.path_doc)
+                time.sleep(max(
+                    SAVE_FLASH_MIN_TIME,
+                    time.perf_counter() - save_start - SAVE_FLASH_MIN_TIME
+                ))
+            except:
+                self._report("Save failed!", working=False)
+            else:
+                self._report("All saved!", working=False)
             self.queue.task_done()
-            self._report("All saved!", working=False)
 
     def _report(self, text, working=True):
         self.set_save_status({
@@ -4276,6 +4292,11 @@ def toolbar_props(document):
     else:
         text_fragments = None
         cursor_variable = None
+    save_status = document.get_save_status()
+    if save_status["working"]:
+        save_color = toolbar_theme["color_working"]
+    else:
+        save_color = toolbar_theme["color_done"]
     return {
         "background": toolbar_theme["background"],
         "margin": toolbar_theme["margin"],
@@ -4288,7 +4309,7 @@ def toolbar_props(document):
         "style_text_props": TextPropsBuilder().text("Style:").get(),
         "variable_text_props": TextPropsBuilder().text("Variable:").get(),
         "page_reference_text_props": TextPropsBuilder().text("Page reference:").get(),
-        "save_text_props": TextPropsBuilder().text(str(document.get_save_status())).get(),
+        "save_text_props": TextPropsBuilder(color=save_color).text(save_status["text"]).get(),
         "selected_variable": document.get_selected_variable(),
         "cursor_variable": cursor_variable,
         "document": document,
