@@ -1868,15 +1868,27 @@ class WxContainerWidgetMixin(WxWidgetMixin):
             self._children[self._child_index][0] is None):
             new_min_size = self._get_space_size(thickness)
             if self._children[self._child_index][1].MinSize != new_min_size:
-                self._children[self._child_index][1].SetMinSize(
-                    new_min_size
-                )
+                if thickness is None:
+                    self._children[self._child_index][1].SetMinSize((0, 0))
+                    self._children[self._child_index][1].SetProportion(1)
+                else:
+                    self._children[self._child_index][1].SetMinSize(
+                        new_min_size
+                    )
+                    self._children[self._child_index][1].SetProportion(0)
                 self._sizer_changed = True
         else:
-            self._children.insert(self._child_index, (None, self._insert_sizer(
-                self._sizer_index,
-                self._get_space_size(thickness)
-            )))
+            if thickness is None:
+                self._children.insert(self._child_index, (None, self._insert_sizer(
+                    self._sizer_index,
+                    (0, 0),
+                    proportion=1
+                )))
+            else:
+                self._children.insert(self._child_index, (None, self._insert_sizer(
+                    self._sizer_index,
+                    self._get_space_size(thickness)
+                )))
             self._sizer_changed = True
         self._sizer_index += 1
         self._child_index += 1
@@ -2296,6 +2308,7 @@ class Toolbar(Panel):
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
+        self._create_space(None)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
@@ -2306,6 +2319,9 @@ class Toolbar(Panel):
         sizer["flag"] |= wx.BOTTOM
         sizer["flag"] |= wx.ALIGN_CENTER
         self._create_widget(Text, props, sizer, handlers, name)
+        self._create_space(self.prop(['margin']))
+        self._create_space(self.prop(['margin']))
+        self._create_space(self.prop(['margin']))
 
     def _make_text(self):
         self._make(lambda x: x.text())
@@ -3752,13 +3768,7 @@ class OkCancelButtons(Panel):
 
     def _create_widgets(self):
         pass
-        props = {}
-        sizer = {"flag": 0, "border": 0, "proportion": 0}
-        name = None
-        handlers = {}
-        sizer["flag"] |= wx.EXPAND
-        sizer["proportion"] = 1
-        self._create_widget(Panel, props, sizer, handlers, name)
+        self._create_space(None)
         props = {}
         sizer = {"flag": 0, "border": 0, "proportion": 0}
         name = None
