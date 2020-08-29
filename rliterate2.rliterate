@@ -3611,7 +3611,7 @@
 ],
 "fragments":[
 {
-"text":"def add_page(self, source_id):\n    try:\n        self.modify(\n            self._get_page_meta(source_id).path+[\"children\"],\n            lambda x: x+[create_new_page()]\n        )\n    except PageNotFound:\n        pass\n",
+"text":"def add_page(self, source_id):\n    try:\n        with self.transaction():\n            self.modify(\n                self._get_page_meta(source_id).path+[\"children\"],\n                lambda x: x+[create_new_page()]\n            )\n            self._build_page_index()\n    except PageNotFound:\n        pass\n",
 "type":"code"
 }
 ],

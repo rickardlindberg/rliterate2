@@ -3888,10 +3888,12 @@ class Document(Immutable):
         return len(self._page_index)
     def add_page(self, source_id):
         try:
-            self.modify(
-                self._get_page_meta(source_id).path+["children"],
-                lambda x: x+[create_new_page()]
-            )
+            with self.transaction():
+                self.modify(
+                    self._get_page_meta(source_id).path+["children"],
+                    lambda x: x+[create_new_page()]
+                )
+                self._build_page_index()
         except PageNotFound:
             pass
     def move_page(self, source_id, target_id, target_index):
