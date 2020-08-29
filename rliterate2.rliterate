@@ -7872,22 +7872,6 @@
 },
 {
 "chunkpath":[
-"functions"
-],
-"filepath":[
-"rliterate2.py"
-],
-"fragments":[
-{
-"text":"def on_gui_thread(fn):\n    def wrapper(*args):\n        wx.CallAfter(fn, *args)\n    return wrapper\n",
-"type":"code"
-}
-],
-"id":"f70e6d239c9d4994835655a51b004324",
-"type":"code"
-},
-{
-"chunkpath":[
 "globals"
 ],
 "filepath":[
@@ -7904,6 +7888,29 @@
 }
 ],
 "title":"Start app"
+},
+{
+"children":[],
+"id":"7c3e697d80ed4e85b0e97332ee4dd78b",
+"paragraphs":[
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def on_gui_thread(fn):\n    def wrapper(*args):\n        wx.CallAfter(fn, *args)\n    return wrapper\n",
+"type":"code"
+}
+],
+"id":"f70e6d239c9d4994835655a51b004324",
+"type":"code"
+}
+],
+"title":"Threading"
 }
 ],
 "id":"162a73f0d72c4e7ca8d3fe246670c6c5",
