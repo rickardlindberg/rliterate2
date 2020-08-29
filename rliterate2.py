@@ -2625,6 +2625,11 @@ class TableOfContentsRow(Panel):
                     self.prop(["id"])
                 )
             ),
+            ("Add child", True, lambda:
+                self.prop(["actions", "add_page"])(
+                    self.prop(["id"])
+                )
+            ),
         ])
     def _set_background(self, hover):
         if hover:
@@ -3839,6 +3844,7 @@ class Document(Immutable):
         ))
         self._build_page_index()
         self.actions = {
+            "add_page": self.add_page,
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
             "modify_paragraph": self.modify_paragraph,
@@ -3880,6 +3886,14 @@ class Document(Immutable):
             return self.get(self._get_page_meta(page_id).path)
     def count_pages(self):
         return len(self._page_index)
+    def add_page(self, source_id):
+        try:
+            self.modify(
+                self._get_page_meta(source_id).path+["children"],
+                lambda x: x+[create_new_page()]
+            )
+        except PageNotFound:
+            pass
     def move_page(self, source_id, target_id, target_index):
         try:
             self._move_page(

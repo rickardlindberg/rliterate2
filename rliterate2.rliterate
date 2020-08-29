@@ -1165,7 +1165,7 @@
 ],
 "fragments":[
 {
-"text":"def _on_right_click(self, event):\n    event.show_context_menu([\n        (\"Hoist\", self.prop([\"level\"]) > 0, lambda:\n            self.prop([\"actions\", \"set_hoisted_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n    ])\n",
+"text":"def _on_right_click(self, event):\n    event.show_context_menu([\n        (\"Hoist\", self.prop([\"level\"]) > 0, lambda:\n            self.prop([\"actions\", \"set_hoisted_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n        (\"Add child\", True, lambda:\n            self.prop([\"actions\", \"add_page\"])(\n                self.prop([\"id\"])\n            )\n        ),\n    ])\n",
 "type":"code"
 }
 ],
@@ -3611,6 +3611,23 @@
 ],
 "fragments":[
 {
+"text":"def add_page(self, source_id):\n    try:\n        self.modify(\n            self._get_page_meta(source_id).path+[\"children\"],\n            lambda x: x+[create_new_page()]\n        )\n    except PageNotFound:\n        pass\n",
+"type":"code"
+}
+],
+"id":"9f696659f90745bda134e26c847924fc",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
 "text":"def move_page(self, source_id, target_id, target_index):\n    try:\n        self._move_page(\n            self._get_page_meta(source_id),\n            self._get_page_meta(target_id),\n            target_index\n        )\n    except PageNotFound:\n        pass\n",
 "type":"code"
 }
@@ -4124,7 +4141,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._saving_thread = SavingThread(\n            path,\n            self.get([\"doc\"]),\n            on_gui_thread(self.set_save_status)\n        )\n        self.listen(lambda: self._saving_thread.queue_save(\n            path,\n            self.get([\"doc\"])\n        ))\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
+"text":"        })\n        self._saving_thread = SavingThread(\n            path,\n            self.get([\"doc\"]),\n            on_gui_thread(self.set_save_status)\n        )\n        self.listen(lambda: self._saving_thread.queue_save(\n            path,\n            self.get([\"doc\"])\n        ))\n        self._build_page_index()\n        self.actions = {\n            \"add_page\": self.add_page,\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
 "type":"code"
 },
 {
