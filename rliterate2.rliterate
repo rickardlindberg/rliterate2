@@ -1777,7 +1777,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def handle_key(self, key_event, text):\n        print(\"in text text\")\n        ",
+"text":"):\n\n    def handle_key(self, key_event, text):\n        if key_event.key == \"\\r\":\n            with self.actions[\"transaction\"]():\n                self.replace(\"\")\n                self.save()\n        else:\n            ",
 "type":"code"
 },
 {
@@ -4302,7 +4302,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._saving_thread = SavingThread(\n            path,\n            self.get([\"doc\"]),\n            on_gui_thread(self.set_save_status)\n        )\n        self.listen(lambda: self._saving_thread.queue_save(\n            path,\n            self.get([\"doc\"])\n        ))\n        self._build_page_index()\n        self.actions = {\n            \"add_page\": self.add_page,\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"add_factory\": self.add_factory,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
+"text":"        })\n        self._saving_thread = SavingThread(\n            path,\n            self.get([\"doc\"]),\n            on_gui_thread(self.set_save_status)\n        )\n        self.listen(lambda: self._saving_thread.queue_save(\n            path,\n            self.get([\"doc\"])\n        ))\n        self._build_page_index()\n        self.actions = {\n            \"transaction\": self.transaction,\n            \"add_page\": self.add_page,\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"add_factory\": self.add_factory,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
 "type":"code"
 },
 {

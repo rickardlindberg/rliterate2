@@ -2295,8 +2295,12 @@ class TextParagraph(Panel):
 class TextTextFragmentsInputHandler(TextFragmentsInputHandler):
 
     def handle_key(self, key_event, text):
-        print("in text text")
-        TextFragmentsInputHandler.handle_key(self, key_event, text)
+        if key_event.key == "\r":
+            with self.actions["transaction"]():
+                self.replace("")
+                self.save()
+        else:
+            TextFragmentsInputHandler.handle_key(self, key_event, text)
 
 class QuoteParagraph(Panel):
 
@@ -2982,6 +2986,7 @@ class Document(Immutable):
         ))
         self._build_page_index()
         self.actions = {
+            "transaction": self.transaction,
             "add_page": self.add_page,
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
