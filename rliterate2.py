@@ -503,6 +503,7 @@ def page_props(document, page, selection):
     return {
         "body": {
             "id": page["id"],
+            "actions": document.actions,
             "title": page_title_props(
                 page,
                 document.get(["workspace", "page_body_width"]),
@@ -2902,6 +2903,18 @@ class PageBody(Panel):
         with self._loop(**loop_options):
             for loopvar in self.prop(['paragraphs']):
                 loop_fn(loopvar)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['page_id'] = self.prop(['id'])
+        props['actions'] = self.prop(['actions'])
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.LEFT
+        sizer["flag"] |= wx.BOTTOM
+        sizer["flag"] |= wx.RIGHT
+        sizer["flag"] |= wx.EXPAND
+        self._create_widget(PageBar, props, sizer, handlers, name)
 
 class PageRightBorder(Panel):
 
@@ -2946,6 +2959,26 @@ class PageBottomBorder(Panel):
         sizer["flag"] |= wx.EXPAND
         sizer["proportion"] = 1
         self._create_widget(Panel, props, sizer, handlers, name)
+
+class PageBar(Panel):
+
+    def _get_local_props(self):
+        return {
+        }
+
+    def _create_sizer(self):
+        return wx.BoxSizer(wx.HORIZONTAL)
+
+    def _create_widgets(self):
+        pass
+        self._create_space(None)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props['icon'] = 'add'
+        handlers['click'] = lambda event: self.prop(['actions', 'add_factory'])(self.prop(['page_id']))
+        self._create_widget(ToolbarButton, props, sizer, handlers, name)
 
 class Title(Panel):
 
@@ -3847,6 +3880,7 @@ class Document(Immutable):
             "add_page": self.add_page,
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
+            "add_factory": self.add_factory,
             "modify_paragraph": self.modify_paragraph,
             "deactivate_selection": self.deactivate_selection,
             "move_page": self.move_page,
@@ -3963,6 +3997,14 @@ class Document(Immutable):
                     self.replace(path + [key], value)
                 if new_selection is not None:
                     self.set_selection(new_selection)
+        except PageNotFound:
+            pass
+    def add_factory(self, source_id):
+        try:
+            self.modify(
+                self._get_page_meta(source_id).path+["paragraphs"],
+                lambda x: x+[{"type": "factory", "id": genid()}]
+            )
         except PageNotFound:
             pass
     def modify_paragraph(self, source_id, path, new_value, new_variables, new_selection):
