@@ -2296,11 +2296,42 @@ class TextTextFragmentsInputHandler(TextFragmentsInputHandler):
 
     def handle_key(self, key_event, text):
         if key_event.key == "\r":
-            with self.actions["transaction"]():
-                self.replace("")
-                self.save()
-        else:
-            TextFragmentsInputHandler.handle_key(self, key_event, text)
+            first, second = TextFragments(
+                self.data,
+                self.selection_value,
+                self.paragraph["meta"]["variables"]
+            ).split()
+            if first and second:
+                with self.actions["transaction"]():
+                    self.actions["modify_paragraph"](
+                        self.paragraph["id"],
+                        self.path,
+                        first,
+                        [],
+                        Selection.empty()
+                    )
+                    self.paragraph = self.actions["add_paragraph_after"](
+                        self.paragraph["id"],
+                        {"type": "text", "fragments": []}
+                    )
+                    self.actions["modify_paragraph"](
+                        self.paragraph["id"],
+                        self.path,
+                        second,
+                        [],
+                        self.selection
+                            .pop()
+                            .modify(lambda x: x+1)
+                            .add(self.paragraph["id"])
+                            .create(self.create_selection_value({
+                                "start": [0, 0],
+                                "end": [0, 0],
+                                "cursor_at_start": True,
+                            })
+                        )
+                    )
+                return
+        TextFragmentsInputHandler.handle_key(self, key_event, text)
 
 class QuoteParagraph(Panel):
 
@@ -2987,6 +3018,7 @@ class Document(Immutable):
         self._build_page_index()
         self.actions = {
             "transaction": self.transaction,
+            "add_paragraph_after": self.add_paragraph_after,
             "add_page": self.add_page,
             "can_move_page": self.can_move_page,
             "edit_page": self.edit_page,
@@ -3117,6 +3149,15 @@ class Document(Immutable):
             )
         except PageNotFound:
             pass
+    def add_paragraph_after(self, paragraph_id, data={"type": "factory"}):
+        path = self._find_paragraph_path(paragraph_id)
+        split_index = path.pop(-1) + 1
+        new_paragraph = dict(data, id=genid())
+        self.modify(
+            path,
+            lambda x: x[:split_index]+[new_paragraph]+x[split_index:]
+        )
+        return new_paragraph
     def modify_paragraph(self, source_id, path, new_value, new_variables, new_selection):
         try:
             with self.transaction():
@@ -3476,6 +3517,11 @@ class TextFragments(object):
     def cursor_at_start(self):
         return self.selection_value["cursor_at_start"]
 
+    def split(self):
+        first = self.text_fragments[:self.start[0]+1]
+        second = self.text_fragments[self.end[0]:]
+        return first, second
+
     def text(self):
         self.text_fragments = [{"type": "text", "text": "Text!"}]+self.text_fragments
         self.selection_value = dict(self.selection_value,
@@ -3668,6 +3714,12 @@ class Selection(namedtuple("Selection", [
 
     def add(self, *args):
         return self._replace(trail=self.trail+list(args))
+
+    def pop(self):
+        return self._replace(trail=self.trail[:-1])
+
+    def modify(self, fn):
+        return self._replace(trail=self.trail[:-1]+[fn(self.trail[-1])])
 
     def create(self, value):
         return Selection(
