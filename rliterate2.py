@@ -3519,7 +3519,19 @@ class TextFragments(object):
 
     def split(self):
         first = self.text_fragments[:self.start[0]+1]
+        if first and "text" in first[-1]:
+            new_text = first[-1]["text"][:self.start[1]]
+            if new_text:
+                first = first[:-1] + [dict(first[-1], text=new_text)]
+            else:
+                first = []
         second = self.text_fragments[self.end[0]:]
+        if second and "text" in second[0]:
+            new_text = second[0]["text"][self.end[1]:]
+            if new_text:
+                second = [dict(second[0], text=new_text)] + second[1:]
+            else:
+                second = []
         return first, second
 
     def text(self):
