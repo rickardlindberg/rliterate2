@@ -182,7 +182,7 @@
 ],
 "fragments":[
 {
-"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict, OrderedDict\nfrom operator import add, sub, mul, floordiv\nimport base64\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport sys\nimport textwrap\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nfrom pygments.token import string_to_tokentype\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
+"text":"#!/usr/bin/env python3\n\nfrom collections import namedtuple, defaultdict, OrderedDict\nfrom operator import add, sub, mul, floordiv\nimport base64\nimport contextlib\nimport cProfile\nimport io\nimport json\nimport math\nimport os\nimport pstats\nimport queue\nimport sys\nimport tempfile\nimport textwrap\nimport threading\nimport time\nimport uuid\n\nfrom pygments.token import Token as TokenType\nfrom pygments.token import string_to_tokentype\nimport pygments.lexers\nimport pygments.token\nimport wx\n\n",
 "type":"code"
 },
 {
@@ -628,7 +628,7 @@
 ],
 "fragments":[
 {
-"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        %space[#margin]\n        %space[#margin]\n        Text {\n            #style_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"text\"\n            tooltip = \"Regular\"\n            @button = self._make_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"bold\"\n            tooltip = \"Strong emphasis\"\n            @button = self._make_strong()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"italic\"\n            tooltip = \"Emphasis\"\n            @button = self._make_emphasis()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"code\"\n            tooltip = \"Code\"\n            @button = self._make_code()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #variable_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"copy\"\n            tooltip = \"Select\"\n            enabled = bool(#cursor_variable)\n            @button = self._select_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"remove\"\n            tooltip = \"Unselect\"\n            enabled = bool(#selected_variable)\n            @button = self._unselect_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"paste\"\n            tooltip = \"Insert selected\"\n            enabled = bool(#selected_variable)\n            @button = self._insert_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Create new\"\n            @button = self._add_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #page_reference_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Add\"\n            @button = self._add_page_reference()\n            %margin[#margin,TOP|BOTTOM]\n        }\n    }\n}\n\n",
+"text":"panel Toolbar %layout_columns {\n    %space[#margin]\n    ToolbarButton {\n        icon    = \"quit\"\n        %margin[#margin,TOP|BOTTOM]\n    }\n    ToolbarButton {\n        icon    = \"settings\"\n        @button = #actions.rotate_theme()\n        %margin[#margin,TOP|BOTTOM]\n    }\n    %space[#margin]\n    if (#text_fragments_selected) {\n        Panel {\n            #bar\n            %align[EXPAND]\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        %space[#margin]\n        %space[#margin]\n        Text {\n            #style_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"text\"\n            tooltip = \"Regular\"\n            @button = self._make_text()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"bold\"\n            tooltip = \"Strong emphasis\"\n            @button = self._make_strong()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"italic\"\n            tooltip = \"Emphasis\"\n            @button = self._make_emphasis()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"code\"\n            tooltip = \"Code\"\n            @button = self._make_code()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #variable_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"copy\"\n            tooltip = \"Select\"\n            enabled = bool(#cursor_variable)\n            @button = self._select_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"remove\"\n            tooltip = \"Unselect\"\n            enabled = bool(#selected_variable)\n            @button = self._unselect_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"paste\"\n            tooltip = \"Insert selected\"\n            enabled = bool(#selected_variable)\n            @button = self._insert_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Create new\"\n            @button = self._add_variable()\n            %margin[#margin,TOP|BOTTOM]\n        }\n        %space[#margin]\n        Text {\n            #page_reference_text_props\n            %margin[#margin,TOP|BOTTOM]\n            %align[CENTER]\n        }\n        %space[#margin]\n        ToolbarButton {\n            icon    = \"add\"\n            tooltip = \"Add\"\n            @button = self._add_page_reference()\n            %margin[#margin,TOP|BOTTOM]\n        }\n    }\n    Text {\n        #save_text_props\n        %margin[#margin,TOP|BOTTOM]\n        %align[CENTER]\n    }\n}\n\n",
 "type":"code"
 },
 {
@@ -741,7 +741,7 @@
 ],
 "fragments":[
 {
-"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragments = document.get_paragraph(\n            selection.value[\"paragraph_id\"],\n            selection.value[\"path\"]\n        )\n        if selection.value[\"cursor_at_start\"]:\n            fragment_under_cursor = text_fragments[selection.value[\"start\"][0]]\n        else:\n            fragment_under_cursor = text_fragments[selection.value[\"end\"][0]]\n        if fragment_under_cursor[\"type\"] == \"variable\":\n            cursor_variable = fragment_under_cursor[\"id\"]\n        else:\n            cursor_variable = None\n    else:\n        text_fragments = None\n        cursor_variable = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragments\": text_fragments,\n        \"text_fragments_selected\": text_fragments is not None,\n        \"style_text_props\": TextPropsBuilder().text(\"Style:\").get(),\n        \"variable_text_props\": TextPropsBuilder().text(\"Variable:\").get(),\n        \"page_reference_text_props\": TextPropsBuilder().text(\"Page reference:\").get(),\n        \"selected_variable\": document.get_selected_variable(),\n        \"cursor_variable\": cursor_variable,\n        \"document\": document,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
+"text":"def toolbar_props(document):\n    toolbar_theme = document.get([\"theme\", \"toolbar\"])\n    selection = document.get([\"selection\"])\n    if selection.value.get(\"what\") == \"text_fragments\":\n        text_fragments = document.get_paragraph(\n            selection.value[\"paragraph_id\"],\n            selection.value[\"path\"]\n        )\n        if selection.value[\"cursor_at_start\"]:\n            fragment_under_cursor = text_fragments[selection.value[\"start\"][0]]\n        else:\n            fragment_under_cursor = text_fragments[selection.value[\"end\"][0]]\n        if fragment_under_cursor[\"type\"] == \"variable\":\n            cursor_variable = fragment_under_cursor[\"id\"]\n        else:\n            cursor_variable = None\n    else:\n        text_fragments = None\n        cursor_variable = None\n    return {\n        \"background\": toolbar_theme[\"background\"],\n        \"margin\": toolbar_theme[\"margin\"],\n        \"bar\": {\n            \"background\": document.get([\"theme\", \"toolbar_divider\", \"color\"]),\n            \"size\": (1, -1),\n        },\n        \"text_fragments\": text_fragments,\n        \"text_fragments_selected\": text_fragments is not None,\n        \"style_text_props\": TextPropsBuilder().text(\"Style:\").get(),\n        \"variable_text_props\": TextPropsBuilder().text(\"Variable:\").get(),\n        \"page_reference_text_props\": TextPropsBuilder().text(\"Page reference:\").get(),\n        \"save_text_props\": TextPropsBuilder().text(str(document.get_save_status())).get(),\n        \"selected_variable\": document.get_selected_variable(),\n        \"cursor_variable\": cursor_variable,\n        \"document\": document,\n        \"selection\": selection,\n        \"actions\": document.actions,\n    }\n",
 "type":"code"
 }
 ],
@@ -3369,6 +3369,113 @@
 "children":[
 {
 "children":[],
+"id":"34de85d8ca0f43fd9bed61b64a64d3cf",
+"paragraphs":[
+{
+"chunkpath":[
+"classes",
+"Document",
+"init"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"\"save_status\": {\n    \"working\": False,\n    \"text\": \"All saved!\",\n},\n",
+"type":"code"
+}
+],
+"id":"4839373a86054d0db2af880a6f12d8c7",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def get_save_status(self):\n    return self.get([\"save_status\"])\n",
+"type":"code"
+}
+],
+"id":"0687ac8a6383428daed9a1f7022a9a1f",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes",
+"Document"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def set_save_status(self, status):\n    self.replace([\"save_status\"], status)\n",
+"type":"code"
+}
+],
+"id":"fa16de11db98480593f9f21e03ccf3d2",
+"type":"code"
+},
+{
+"chunkpath":[
+"classes"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"class SavingThread(threading.Thread):\n\n    def __init__(self, path, doc, set_save_status):\n        threading.Thread.__init__(self)\n        self.set_save_status = set_save_status\n        self.path_doc = (path, doc)\n        self.daemon = True\n        self.queue = queue.Queue()\n        self.start()\n\n    def queue_save(self, path, doc):\n        self.queue.put_nowait((path, doc))\n\n    def wait_until_done(self):\n        self.queue.join()\n\n    def run(self):\n        while True:\n            path_doc = self.queue.get()\n            if path_doc != self.path_doc:\n                self.path_doc = path_doc\n            else:\n                continue\n            self._report(\"Waiting...\", working=True)\n            while True:\n                try:\n                    path_doc = self.queue.get(timeout=1)\n                    self.queue.task_done()\n                except queue.Empty:\n                    break\n            self._report(\"Saving document...\", working=True)\n            write_json_to_file(*self.path_doc)\n            self.queue.task_done()\n            self._report(\"All saved!\", working=False)\n\n    def _report(self, text, working=True):\n        self.set_save_status({\n            \"text\": text,\n            \"working\": working,\n        })\n",
+"type":"code"
+}
+],
+"id":"40f245f00fdf4c69b30a088b84f158c4",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def write_json_to_file(path, data):\n    with safely_write_file(path) as f:\n        json.dump(\n            data,\n            f,\n            sort_keys=True,\n            indent=2,\n            separators=(',', ':')\n        )\n",
+"type":"code"
+}
+],
+"id":"736cacd8b74749ad915f6c0e36ccf2f8",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"@contextlib.contextmanager\ndef safely_write_file(path):\n    with tempfile.NamedTemporaryFile(\n        dir=os.path.dirname(path),\n        prefix=os.path.basename(path) + \".tmp\",\n        delete=False,\n        mode=\"w\",\n        encoding=\"utf-8\"\n    ) as tmp:\n        yield tmp\n    os.rename(tmp.name, path)\n",
+"type":"code"
+}
+],
+"id":"438d8f2f02d94761bd33067dcf680563",
+"type":"code"
+}
+],
+"title":"Saving"
+},
+{
+"children":[],
 "id":"7c9472a51c374b4e9408ee6a0adf6500",
 "paragraphs":[
 {
@@ -4017,7 +4124,7 @@
 "type":"chunk"
 },
 {
-"text":"        })\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
+"text":"        })\n        self._saving_thread = SavingThread(\n            path,\n            self.get([\"doc\"]),\n            on_gui_thread(self.set_save_status)\n        )\n        self.listen(lambda: self._saving_thread.queue_save(\n            path,\n            self.get([\"doc\"])\n        ))\n        self._build_page_index()\n        self.actions = {\n            \"can_move_page\": self.can_move_page,\n            \"edit_page\": self.edit_page,\n            \"modify_paragraph\": self.modify_paragraph,\n            \"deactivate_selection\": self.deactivate_selection,\n            \"move_page\": self.move_page,\n            \"open_page\": self.open_page,\n            \"rotate_theme\": self.rotate,\n            \"set_dragged_page\": self.set_dragged_page,\n            \"set_hoisted_page\": self.set_hoisted_page,\n            \"set_page_body_width\": self.set_page_body_width,\n            \"set_selection\": self.set_selection,\n            \"set_toc_width\": self.set_toc_width,\n            \"activate_selection\": self.activate_selection,\n            \"toggle_collapsed\": self.toggle_collapsed,\n            \"set_selected_variable\": self.set_selected_variable,\n        }\n\n",
 "type":"code"
 },
 {
@@ -7524,6 +7631,22 @@
 }
 ],
 "id":"557c451273f74393955205d772d86649",
+"type":"code"
+},
+{
+"chunkpath":[
+"functions"
+],
+"filepath":[
+"rliterate2.py"
+],
+"fragments":[
+{
+"text":"def on_gui_thread(fn):\n    def wrapper(*args):\n        wx.CallAfter(fn, *args)\n    return wrapper\n",
+"type":"code"
+}
+],
+"id":"f70e6d239c9d4994835655a51b004324",
 "type":"code"
 },
 {

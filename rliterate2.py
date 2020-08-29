@@ -10,8 +10,11 @@ import json
 import math
 import os
 import pstats
+import queue
 import sys
+import tempfile
 import textwrap
+import threading
 import time
 import uuid
 
@@ -173,6 +176,7 @@ def toolbar_props(document):
         "style_text_props": TextPropsBuilder().text("Style:").get(),
         "variable_text_props": TextPropsBuilder().text("Variable:").get(),
         "page_reference_text_props": TextPropsBuilder().text("Page reference:").get(),
+        "save_text_props": TextPropsBuilder().text(str(document.get_save_status())).get(),
         "selected_variable": document.get_selected_variable(),
         "cursor_variable": cursor_variable,
         "document": document,
@@ -894,6 +898,28 @@ def create_new_document():
         "variables": {},
     }
 
+def write_json_to_file(path, data):
+    with safely_write_file(path) as f:
+        json.dump(
+            data,
+            f,
+            sort_keys=True,
+            indent=2,
+            separators=(',', ':')
+        )
+
+@contextlib.contextmanager
+def safely_write_file(path):
+    with tempfile.NamedTemporaryFile(
+        dir=os.path.dirname(path),
+        prefix=os.path.basename(path) + ".tmp",
+        delete=False,
+        mode="w",
+        encoding="utf-8"
+    ) as tmp:
+        yield tmp
+    os.rename(tmp.name, path)
+
 def create_new_page():
     return {
         "id": genid(),
@@ -999,6 +1025,11 @@ def start_app(frame_cls, props):
         focus_timer = wx.Timer(frame)
         focus_timer.Start(1000)
     app.MainLoop()
+
+def on_gui_thread(fn):
+    def wrapper(*args):
+        wx.CallAfter(fn, *args)
+    return wrapper
 
 class Immutable(object):
 
@@ -2265,6 +2296,16 @@ class Toolbar(Panel):
         with self._loop():
             for loopvar in ([None] if (if_condition) else []):
                 loop_fn(loopvar)
+        props = {}
+        sizer = {"flag": 0, "border": 0, "proportion": 0}
+        name = None
+        handlers = {}
+        props.update(self.prop(['save_text_props']))
+        sizer["border"] = self.prop(['margin'])
+        sizer["flag"] |= wx.TOP
+        sizer["flag"] |= wx.BOTTOM
+        sizer["flag"] |= wx.ALIGN_CENTER
+        self._create_widget(Text, props, sizer, handlers, name)
 
     def _make_text(self):
         self._make(lambda x: x.text())
@@ -3748,6 +3789,10 @@ class Document(Immutable):
             "path": path,
             "doc": load_document_from_file(path),
             "selection": Selection.empty(),
+            "save_status": {
+                "working": False,
+                "text": "All saved!",
+            },
             "selected_variable": None,
             "theme": self.DEFAULT_THEME,
             "toc": {
@@ -3773,6 +3818,15 @@ class Document(Immutable):
                 ],
             },
         })
+        self._saving_thread = SavingThread(
+            path,
+            self.get(["doc"]),
+            on_gui_thread(self.set_save_status)
+        )
+        self.listen(lambda: self._saving_thread.queue_save(
+            path,
+            self.get(["doc"])
+        ))
         self._build_page_index()
         self.actions = {
             "can_move_page": self.can_move_page,
@@ -3792,6 +3846,10 @@ class Document(Immutable):
             "set_selected_variable": self.set_selected_variable,
         }
 
+    def get_save_status(self):
+        return self.get(["save_status"])
+    def set_save_status(self, status):
+        self.replace(["save_status"], status)
     def _build_page_index(self):
         def build(page, path, parent, index):
             page_meta = PageMeta(page["id"], path, parent, index)
@@ -4164,6 +4222,47 @@ class Document(Immutable):
                 ["selection"],
                 lambda x: x._replace(active=active)
             )
+
+class SavingThread(threading.Thread):
+
+    def __init__(self, path, doc, set_save_status):
+        threading.Thread.__init__(self)
+        self.set_save_status = set_save_status
+        self.path_doc = (path, doc)
+        self.daemon = True
+        self.queue = queue.Queue()
+        self.start()
+
+    def queue_save(self, path, doc):
+        self.queue.put_nowait((path, doc))
+
+    def wait_until_done(self):
+        self.queue.join()
+
+    def run(self):
+        while True:
+            path_doc = self.queue.get()
+            if path_doc != self.path_doc:
+                self.path_doc = path_doc
+            else:
+                continue
+            self._report("Waiting...", working=True)
+            while True:
+                try:
+                    path_doc = self.queue.get(timeout=1)
+                    self.queue.task_done()
+                except queue.Empty:
+                    break
+            self._report("Saving document...", working=True)
+            write_json_to_file(*self.path_doc)
+            self.queue.task_done()
+            self._report("All saved!", working=False)
+
+    def _report(self, text, working=True):
+        self.set_save_status({
+            "text": text,
+            "working": working,
+        })
 
 class PageNotFound(Exception):
     pass
