@@ -865,7 +865,7 @@ def text_fragments_to_text_edit_props(paragraph, path, selection, page_theme, ac
         paragraph,
         path,
         selection,
-        actions["modify_paragraph"],
+        actions,
         page_theme
     )
     return {
@@ -3523,11 +3523,11 @@ class TextPropsBuilder(object):
 
 class TextFragmentsInputHandler(StringInputHandler):
 
-    def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):
+    def __init__(self, paragraph, path, selection, actions, page_theme):
         self.paragraph = paragraph
         self.path = path
         self.selection = selection
-        self.modify_paragraph = modify_paragraph
+        self.actions = actions
         self.page_theme = page_theme
         data = self.paragraph
         for part in path:
@@ -3540,7 +3540,7 @@ class TextFragmentsInputHandler(StringInputHandler):
         self.new_variables = {}
 
     def save(self):
-        self.modify_paragraph(
+        self.actions["modify_paragraph"](
             self.paragraph["id"],
             self.path,
             self.data,

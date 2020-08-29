@@ -3117,7 +3117,7 @@
 "type":"variable"
 },
 {
-"text":"(\n        paragraph,\n        path,\n        selection,\n        actions[\"modify_paragraph\"],\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
+"text":"(\n        paragraph,\n        path,\n        selection,\n        actions,\n        page_theme\n    )\n    return {\n        \"text_props\": dict(\n            input_handler.text_props,\n            break_at_word=True,\n            line_height=page_theme[\"line_height\"],\n            align=align\n        ),\n        \"selection\": selection,\n        \"selection_color\": page_theme[\"selection_border\"],\n        \"input_handler\": input_handler,\n        \"actions\": actions,\n        **kwargs,\n    }\n",
 "type":"code"
 }
 ],
@@ -3151,7 +3151,7 @@
 "type":"variable"
 },
 {
-"text":"):\n\n    def __init__(self, paragraph, path, selection, modify_paragraph, page_theme):\n        self.paragraph = paragraph\n        self.path = path\n        self.selection = selection\n        self.modify_paragraph = modify_paragraph\n        self.page_theme = page_theme\n        data = self.paragraph\n        for part in path:\n            data = data[part]\n        ",
+"text":"):\n\n    def __init__(self, paragraph, path, selection, actions, page_theme):\n        self.paragraph = paragraph\n        self.path = path\n        self.selection = selection\n        self.actions = actions\n        self.page_theme = page_theme\n        data = self.paragraph\n        for part in path:\n            data = data[part]\n        ",
 "type":"code"
 },
 {
@@ -3167,7 +3167,7 @@
 "type":"variable"
 },
 {
-"text":"\n        )\n        self.new_variables = {}\n\n    def save(self):\n        self.modify_paragraph(\n            self.paragraph[\"id\"],\n            self.path,\n            self.data,\n            self.new_variables,\n            self.selection.create(self.selection_value)\n        )\n\n    def ",
+"text":"\n        )\n        self.new_variables = {}\n\n    def save(self):\n        self.actions[\"modify_paragraph\"](\n            self.paragraph[\"id\"],\n            self.path,\n            self.data,\n            self.new_variables,\n            self.selection.create(self.selection_value)\n        )\n\n    def ",
 "type":"code"
 },
 {
