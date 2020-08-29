@@ -2295,7 +2295,7 @@ class TextParagraph(Panel):
 class TextTextFragmentsInputHandler(TextFragmentsInputHandler):
 
     def handle_key(self, key_event, text):
-        if key_event.key == "\r":
+        if key_event.key == "\r": # Enter
             first, second = TextFragments(
                 self.data,
                 self.selection_value,
@@ -2331,6 +2331,34 @@ class TextTextFragmentsInputHandler(TextFragmentsInputHandler):
                         )
                     )
                 return
+        elif key_event.key == "\x08": # Backspace
+            if self.start == self.end and self.start == [0, 0]:
+                before = self.actions["get_paragraph_before"](self.paragraph["id"])
+                if before and before["type"] == "text":
+                    with self.actions["transaction"]():
+                        self.actions["delete_paragraph"](self.paragraph["id"])
+                        self.paragraph = before
+                        new_text_fragments, new_variables, new_selection_value = TextFragments(
+                            self.data,
+                            self.selection_value
+                        ).prepend(self.paragraph["fragments"]).get()
+                        self.actions["modify_paragraph"](
+                            self.paragraph["id"],
+                            self.path,
+                            new_text_fragments,
+                            [],
+                            self.selection
+                                .pop()
+                                .modify(lambda x: x-1)
+                                .add(self.paragraph["id"])
+                                .create(self.create_selection_value({
+                                    "start": new_selection_value["start"],
+                                    "end": new_selection_value["end"],
+                                    "cursor_at_start": new_selection_value["cursor_at_start"],
+                                })
+                            )
+                        )
+                    return
         TextFragmentsInputHandler.handle_key(self, key_event, text)
 
 class QuoteParagraph(Panel):
@@ -3018,6 +3046,8 @@ class Document(Immutable):
         self._build_page_index()
         self.actions = {
             "transaction": self.transaction,
+            "delete_paragraph": self.delete_paragraph,
+            "get_paragraph_before": self.get_paragraph_before,
             "add_paragraph_after": self.add_paragraph_after,
             "add_page": self.add_page,
             "can_move_page": self.can_move_page,
@@ -3158,6 +3188,18 @@ class Document(Immutable):
             lambda x: x[:split_index]+[new_paragraph]+x[split_index:]
         )
         return new_paragraph
+    def delete_paragraph(self, paragraph_id):
+        path = self._find_paragraph_path(paragraph_id)
+        index = path.pop(-1)
+        self.modify(
+            path,
+            lambda x: x[:index]+x[index+1:]
+        )
+    def get_paragraph_before(self, paragraph_id):
+        path = self._find_paragraph_path(paragraph_id)
+        before_index = path.pop(-1) - 1
+        if before_index >= 0:
+            return self.get(path+[before_index])
     def modify_paragraph(self, source_id, path, new_value, new_variables, new_selection):
         try:
             with self.transaction():
@@ -3516,6 +3558,20 @@ class TextFragments(object):
     @property
     def cursor_at_start(self):
         return self.selection_value["cursor_at_start"]
+
+    def prepend(self, fragments):
+        self.text_fragments = fragments+self.text_fragments
+        self.selection_value = dict(self.selection_value,
+            start=[
+                self.selection_value["start"][0]+len(fragments),
+                self.selection_value["start"][1]
+            ],
+            end=[
+                self.selection_value["end"][0]+len(fragments),
+                self.selection_value["end"][1]
+            ],
+        )
+        return self
 
     def split(self):
         first = self.text_fragments[:self.start[0]+1]
