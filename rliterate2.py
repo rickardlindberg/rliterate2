@@ -3643,60 +3643,64 @@ class TextFragments(object):
         return self
 
     def replace(self, text):
+        self._replace_selection_with_text(text)
+        return self
+
+    def _replace_selection_with_text(self, text):
         before = self.text_fragments[:self.start[0]]
         left = self.text_fragments[self.start[0]]
         right = self.text_fragments[self.end[0]]
         after = self.text_fragments[self.end[0]+1:]
+        start, end, cursor_at_start = self.start[1], self.end[1], self.cursor_at_start
+        self.text_fragments = []
+        self.text_fragments.extend(before)
         if left is right:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]] + text + value[self.end[1]:]
-                ),
-            ]
-            position = [self.start[0], self.start[1]+len(text)]
-        elif self.cursor_at_start:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]] + text
-                ),
-                im_modify(
-                    right,
-                    ["text"],
-                    lambda value: value[self.end[1]:]
-                ),
-            ]
-            if not middle[1]["text"]:
-                middle.pop(1)
-            position = [self.start[0], self.start[1]+len(text)]
+            self._replace_selection_with_text_single(
+                left,
+                text,
+                start,
+                end,
+                cursor_here=True
+            )
         else:
-            middle = [
-                im_modify(
-                    left,
-                    ["text"],
-                    lambda value: value[:self.start[1]]
-                ),
-                im_modify(
-                    right,
-                    ["text"],
-                    lambda value: text + value[self.end[1]:]
-                ),
-            ]
-            if not middle[0]["text"]:
-                middle.pop(0)
-                position = [self.end[0]-1, len(text)]
+            self._replace_selection_with_text_single(
+                left,
+                text if cursor_at_start else "",
+                start,
+                None,
+                cursor_here=cursor_at_start
+            )
+            self._replace_selection_with_text_single(
+                right,
+                text if not cursor_at_start else "",
+                None,
+                end,
+                cursor_here=not cursor_at_start
+            )
+        self.text_fragments.extend(after)
+
+    def _replace_selection_with_text_single(self, fragment, text, start, end, cursor_here):
+        if fragment["type"] == "variable":
+            fragment_text = self.variables[fragment["id"]]
+        else:
+            fragment_text = fragment["text"] or ""
+        if start is None:
+            start = 0
+        if end is None:
+            end = len(fragment_text)
+        new_text = fragment_text[:start] + text + fragment_text[end:]
+        if new_text or cursor_here:
+            if fragment["type"] == "variable":
+                self.new_variables[fragment["id"]] = new_text
+                self.text_fragments.append(fragment)
             else:
-                position = [self.end[0], len(text)]
-        self.text_fragments = before + middle + after
-        self.selection_value = dict(self.selection_value, **{
-            "start": position,
-            "end": position,
-            "cursor_at_start": True,
-        })
-        return self
+                self.text_fragments.append(dict(fragment, text=new_text))
+        if cursor_here:
+            self.selection_value = dict(self.selection_value,
+                start=[len(self.text_fragments)-1, len(fragment_text[:start] + text)],
+                end=[len(self.text_fragments)-1, len(fragment_text[:start] + text)],
+                cursor_at_start=True
+            )
 
     def variable(self, variable_id=None):
         if variable_id is None:
