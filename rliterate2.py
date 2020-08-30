@@ -3590,21 +3590,45 @@ class TextFragments(object):
         return self
 
     def split(self):
-        first = self.text_fragments[:self.start[0]+1]
-        if first and "text" in first[-1]:
-            new_text = first[-1]["text"][:self.start[1]]
-            if new_text:
-                first = first[:-1] + [dict(first[-1], text=new_text)]
-            else:
-                first = []
-        second = self.text_fragments[self.end[0]:]
-        if second and "text" in second[0]:
-            new_text = second[0]["text"][self.end[1]:]
-            if new_text:
-                second = [dict(second[0], text=new_text)] + second[1:]
-            else:
-                second = []
-        return first, second
+        (before, middle, after) = self._split()
+        return (before, after)
+
+    def _split(self):
+        before = self.text_fragments[:self.start[0]]
+        left = self.text_fragments[self.start[0]]
+        middle = self.text_fragments[self.start[0]+1:max(0, self.end[0]-1)]
+        right = self.text_fragments[self.end[0]]
+        after = self.text_fragments[self.end[0]+1:]
+        left_left, left_right = self._split_single(left, self.start[1])
+        right_left, right_right = self._split_single(right, self.end[1])
+        before = before + left_left
+        middle = left_right + middle
+        middle = middle + right_left
+        after = right_right + after
+        return (before, middle, after)
+
+    def _split_single(self, fragment, index):
+        left = []
+        right = []
+        if fragment["type"] == "variable":
+            text = self.variables[fragment["id"]]
+            left_text = text[:index]
+            if left_text:
+                left.append({"type": "text", "text": left_text})
+            right_text = text[index:]
+            if right_text:
+                right.append({"type": "text", "text": right_text})
+        elif fragment["type"] in ("link", "reference") and not fragment["text"]:
+            right.append(fragment)
+        else:
+            text = fragment["text"]
+            left_text = text[:index]
+            if left_text:
+                left.append(dict(fragment, text=left_text))
+            right_text = text[index:]
+            if right_text:
+                right.append(dict(fragment, text=right_text))
+        return (left, right)
 
     def text(self):
         self.text_fragments = [{"type": "text", "text": "Text!"}]+self.text_fragments
