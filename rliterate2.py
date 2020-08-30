@@ -3680,10 +3680,7 @@ class TextFragments(object):
         self.text_fragments.extend(after)
 
     def _replace_selection_with_text_single(self, fragment, text, start, end, cursor_here):
-        if fragment["type"] == "variable":
-            fragment_text = self.variables[fragment["id"]]
-        else:
-            fragment_text = fragment["text"] or ""
+        fragment_text = self._fragment_text(fragment)
         if start is None:
             start = 0
         if end is None:
@@ -3701,6 +3698,12 @@ class TextFragments(object):
                 end=[len(self.text_fragments)-1, len(fragment_text[:start] + text)],
                 cursor_at_start=True
             )
+
+    def _fragment_text(self, fragment):
+        if fragment["type"] == "variable":
+            return self.variables[fragment["id"]]
+        else:
+            return fragment["text"] or ""
 
     def variable(self, variable_id=None):
         if variable_id is None:
